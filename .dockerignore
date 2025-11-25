@@ -1,0 +1,8 @@
+aqbat/renv/library/windows
+aqbat/renv/staging
+.git
+.gitignore
+.Rproj.user
+.Rhistory
+.RData
+.Ruserdata 

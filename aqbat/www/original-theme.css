@@ -1,0 +1,25 @@
+.tabbable > .nav > li > a {
+  font-weight: bold;
+  background-color: #ccccff;
+  color: white;
+}
+.tabbable > .nav > li > a[data-value='Pollutant Data Upload'] {
+  background-color: #fa8072;
+  color: white;
+}
+.tabbable > .nav > li > a[data-value='Reset/Restart'] {
+  background-color: #fa8072;
+  color: white;
+}
+.tabbable > .nav > li > a[data-value='Results'] {
+  background-color: #40e0d0;
+  color: white;
+}
+.tabbable > .nav > li > a[data-value='Maps'] {
+  background-color: #40e0d0;
+  color: white;
+}
+.tabbable > .nav > li[class='active'] > a {
+  background-color: #6495ed;
+  color: white;
+}

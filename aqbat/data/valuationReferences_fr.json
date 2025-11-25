@@ -1,0 +1,110 @@
+[
+    {
+        "heading": "Tous les effets de mortalité",
+        "description": "La valeur par défaut fournie dans l’OEBQA pour la valeur d’une vie statistique (VVS) est 6,5 millions de dollars (en dollars canadiens, en 2007). Ce montant est dérivé d’une revue de littérature effectuée par Stratus Consulting en 2009 (Chestnut, 2009). Suivant une recommandation émise dans cette revue, des seuils inférieur et supérieur de 3,5 et de 9,5 millions de dollars respectivement ont été proposés, reflétant l’étendue possible des valeurs dans la littérature. Il a aussi été proposé d’attribuer une pondération de probabilité à ces valeurs, afin de tenir compte de la distribution des résultats mentionnés dans la littérature. Les auteurs recommandent une pondération de 50 % pour la valeur centrale (6,5 millions de dollars) et une pondération de 25 % pour chacun des seuils inférieur et supérieur. La revue de littérature portant sur la VVS était basée sur des études de la préférence révélée et de la préférence exprimée qui mesuraient les valeurs liées avec des changements mineurs dans le risque de mortalité. À la suite des conclusions de la revue de littérature, aucun ajustement relatif à l’âge, à l’amplitude du changement du risque de mortalité, au type de risque, à l’état de santé ou au risque de base n’a été apporté à la VVS utilisée dans l’OEBQA.",
+        "authors": "Lauraine G. Chestnut, Stratus Consulting Inc. et Paul De Civita, Projet de recherche sur les politiques.",
+        "source": "https://publications.gc.ca/collections/collection_2009/policyresearch/PH4-51-2009F.pdf",
+        "articleTitle": "Évaluation économique de la réduction des risques de mortalité : Examen et recommandations aux fins d’analyse politique et réglementaire.",
+        "publication": "Rapport de recherche pour Projet du PRP stratégie réglementaire, Canada, mars 2009.",
+        "lang": "fr"
+    },
+    {
+        "heading": "Jours de symptômes respiratoires aigus",
+        "description": "Ce rapport présente l’évaluation monétaire totale, qui comprend, lorsqu’applicable, les coûts de la maladie, de la perte de productivité, de la douleur et la souffrance et les dépenses engagées à titre préventif. Les valeurs totales sont tirées du tableau 5.",
+        "authors": "Stieb DM, De Civita P, Johnson FR, Manary MP, Anis AH, Beveridge RC, Judek S.",
+        "source": "https://ehjournal.biomedcentral.com/articles/10.1186/1476-069x-1-7",
+        "articleTitle": "Economic evaluation of the benefits of reducing acute cardiorespiratory morbidity associated with air pollution.",
+        "publication": "Environ Health. 2002, le 18 déc;1(1):7. doi: 10.1186/1476-069x-1-7.",
+        "lang": "en"
+    },
+    {
+        "heading": "Cas de bronchite chronique chez des adultes",
+        "description": "Traduction d’un extrait du rapport de méthodologie du MEQA 3.0 (Chestnut et coll. 1999): « Nous avons utilisé la valeur médiane rapportée dans Viscusi et coll. (1991) (457 000 $ en dollars US de 1990) comme base pour notre estimation centrale. Pour l’estimation inférieure des cas de bronchite chronique sévère, nous choisissons la valeur du 20e centile, soit 300 000 $, et pour l’estimation élevée nous choisissons la valeur du 80e centile, soit 800 000 $ (en dollars US de 1990). Ces valeurs ont été converties en dollars canadiens équivalents de 1996, d’abord en les multipliant par la valeur de l’indice de parité des pouvoirs d’achat (PPA) de 1990 de 1,22, puis en les ajustant pour l’inflation en utilisant l’IPC du Canada, qui valait 119,5 en 1990 et 135,7 en 1996. Le niveau de sévérité moyen rapporté pour l’échantillon de Krupnick et de Cropper était 6,5 sur une échelle de 0 à 13. En utilisant une élasticité de la moyenne de 1,16, il est suggéré que la volonté de payer (VDP) pour un cas moyen est 58 % inférieure à celle d’un cas situé à 13 sur l’échelle. Si l’on utilise ce résultat pour ajuster les estimations de Viscusi et coll., nous obtenons une estimation centrale de la VDP de 266 000 $, une estimation inférieure de 175 000 $, et une estimation élevée de 465 000 $ (en dollars canadiens de 1996), chacune arrondie au millier près, pour un cas moyen de bronchite chronique. »",
+        "authors": "Chestnut LG, Mills D, Rowe RD. 1999.",
+        "source": "https://search.worldcat.org/title/70515881",
+        "articleTitle": "Air quality valuation model (AQVM 3.0) report 2: methodology.",
+        "publication": "Rapport final préparé à l’intention d’Environnement Canada et de Santé Canada, le 3 septembre 1999, par Lauraine G. Chestnut, David Mills, Shannon Ragland, Robert D. Rowe, de Stratus Consulting Inc.",
+        "lang": "en"
+    },
+    {
+        "heading": "Jours de symptômes d’asthme",
+        "description": "Ce rapport fait état de l’évaluation monétaire totale, qui comprend, lorsqu’applicable, les coûts de la maladie, la perte de productivité, la douleur et la souffrance et les dépenses engagées à titre préventif. Les valeurs totales sont tirées du tableau 5. Étant donné que dans ce cas, l’intervalle de confiance de 95 % n’était pas symétrique par rapport au point de l’estimation, les données ont été caractérisées par une distribution triangulaire.",
+        "authors": "Stieb DM, De Civita P, Johnson FR, Manary MP, Anis AH, Beveridge RC, Judek S.",
+        "source": "https://ehjournal.biomedcentral.com/articles/10.1186/1476-069x-1-7",
+        "articleTitle": "Economic evaluation of the benefits of reducing acute cardiorespiratory morbidity associated with air pollution.",
+        "publication": "Environ Health. 2002, le 18 déc;1(1):7. doi: 10.1186/1476-069x-1-7.",
+        "lang": "en"
+    },
+    {
+        "heading": "Jours de symptômes respiratoires aigus",
+        "description": "Ce rapport présente l’évaluation monétaire totale, qui comprend, lorsqu’applicable, les coûts de la maladie, de la perte de productivité, de la douleur et la souffrance et les dépenses engagées à titre préventif. Les valeurs totales sont tirées du tableau 5.",
+        "authors": "Stieb DM, De Civita P, Johnson FR, Manary MP, Anis AH, Beveridge RC, Judek S.",
+        "source": "https://ehjournal.biomedcentral.com/articles/10.1186/1476-069x-1-7",
+        "articleTitle": "Economic evaluation of the benefits of reducing acute cardiorespiratory morbidity associated with air pollution.",
+        "publication": "Environ Health. 2002, le 18 déc;1(1):7. doi: 10.1186/1476-069x-1-7.",
+        "lang": "en"
+    },
+    {
+        "heading": "Visites à l’urgence pour des problèmes cardiaques",
+        "description": "Ce rapport fait état de l'évaluation monétaire total, qui comprend, lorsqu’applicable, les coûts de la maladie, de la perte de productivité, de la douleur et la souffrance et les dépenses engagées à titre préventif. Les valeurs totales sont tirées du tableau 5.",
+        "authors": "Stieb DM, De Civita P, Johnson FR, Manary MP, Anis AH, Beveridge RC, Judek S.",
+        "source": "https://ehjournal.biomedcentral.com/articles/10.1186/1476-069x-1-7",
+        "articleTitle": "Economic evaluation of the benefits of reducing acute cardiorespiratory morbidity associated with air pollution.",
+        "publication": "Environ Health. 2002, le 18 déc;1(1):7. doi: 10.1186/1476-069x-1-7.",
+        "lang": "en"
+    },
+    {
+        "heading": "Admissions à l’hôpital pour des problèmes cardiaques",
+        "description": "La probabilité et l’évaluation monétaire des admissions à l’hôpital pour des problèmes cardiaques (AHC) sont révélées dans l’évaluation des visites à l’urgence pour des problèmes cardiaques (VUPC). Afin d’éliminer les éventuels doublons, l’évaluation des AHC est établie à zéro. L’évaluation des VUPC s’applique aux comptes bruts.",
+        "authors": "Stieb DM, De Civita P, Johnson FR, Manary MP, Anis AH, Beveridge RC, Judek S.",
+        "source": "https://ehjournal.biomedcentral.com/articles/10.1186/1476-069x-1-7",
+        "articleTitle": "Economic evaluation of the benefits of reducing acute cardiorespiratory morbidity associated with air pollution.",
+        "publication": "Environ Health. 2002, le 18 déc;1(1):7. doi: 10.1186/1476-069x-1-7.",
+        "lang": "en"
+    },
+    {
+        "heading": "Admissions à l’hôpital pour des problèmes cardiaques chez les aînés",
+        "description": "Ce rapport fait état de l'évaluation monétaire totale, qui comprend, lorsqu’applicable, les coûts de la maladie, de la perte de productivité, de la douleur et la souffrance et les dépenses engagées à titre préventif. Les valeurs totales sont tirées du tableau 5.",
+        "authors": "Stieb DM, De Civita P, Johnson FR, Manary MP, Anis AH, Beveridge RC, Judek S.",
+        "source": "https://ehjournal.biomedcentral.com/articles/10.1186/1476-069x-1-7",
+        "articleTitle": "Economic evaluation of the benefits of reducing acute cardiorespiratory morbidity associated with air pollution.",
+        "publication": "Environ Health. 2002, le 18 déc;1(1):7. doi: 10.1186/1476-069x-1-7.",
+        "lang": "en"
+    },
+    {
+        "heading": "Visites à l’urgence pour des problèmes respiratoires",
+        "description": "Ce rapport fait état de l'évaluation monétaire totale, qui comprend, lorsqu’applicable, les coûts de la maladie, de la perte de productivité, de la douleur et la souffrance et les dépenses engagées à titre préventif. Les valeurs totales sont tirées du tableau 5.",
+        "authors": "Stieb DM, De Civita P, Johnson FR, Manary MP, Anis AH, Beveridge RC, Judek S.",
+        "source": "https://ehjournal.biomedcentral.com/articles/10.1186/1476-069x-1-7",
+        "articleTitle": "Economic evaluation of the benefits of reducing acute cardiorespiratory morbidity associated with air pollution.",
+        "publication": "Environ Health. 2002, le 18 déc;1(1):7. doi: 10.1186/1476-069x-1-7.",
+        "lang": "en"
+    },
+    {
+        "heading": "Admissions à l’hôpital pour des problèmes respiratoires",
+        "description": "La probabilité et l’évaluation monétaire des admissions à l’hôpital liées à des problèmes respiratoires (AHR) sont précisées dans l’évaluation des visites à l’urgence pour des problèmes respiratoires (VUPR). Afin d’éliminer les doublons, l’évaluation pour les AHR est établie à zéro. L’évaluation des VUPR s’applique aux comptes bruts.",
+        "authors": "Stieb DM, De Civita P, Johnson FR, Manary MP, Anis AH, Beveridge RC, Judek S.",
+        "source": "https://ehjournal.biomedcentral.com/articles/10.1186/1476-069x-1-7",
+        "articleTitle": "Economic evaluation of the benefits of reducing acute cardiorespiratory morbidity associated with air pollution.",
+        "publication": "Environ Health. 2002, le 18 déc;1(1):7. doi: 10.1186/1476-069x-1-7.",
+        "lang": "en"
+    },
+    {
+        "heading": "Jours d’activité restreinte",
+        "description": "Ce rapport fait état de l'évaluation monétaire totale, qui comprend, lorsqu’applicable, les coûts de la maladie, de la perte de productivité, de la douleur et la souffrance et les dépenses engagées à titre préventif. Les valeurs totales sont tirées du tableau 5.",
+        "authors": "Stieb DM, De Civita P, Johnson FR, Manary MP, Anis AH, Beveridge RC, Judek S.",
+        "source": "https://ehjournal.biomedcentral.com/articles/10.1186/1476-069x-1-7",
+        "articleTitle": "Economic evaluation of the benefits of reducing acute cardiorespiratory morbidity associated with air pollution.",
+            "publication": "Environ Health. 2002, le 18 déc;1(1):7. doi: 10.1186/1476-069x-1-7.",
+        "lang": "en"
+    },
+    {
+        "heading": "Jours d’activité restreinte mineure",
+        "description": "Ce rapport fait état de l'évaluation monétaire totale, qui comprend, lorsqu’applicable, les coûts de la maladie, de la perte de productivité, de la douleur et la souffrance et les dépenses engagées à titre préventif. Étant donné que la valeur liée aux jours d’activité restreinte du tableau 5 a trait à la restriction modérée de l’activité, nous avons utilisé une estimation différente basée sur l’analyse de sensibilité des auteurs, qui a considéré une restriction bénigne de l’activité. Dans ce cas, l’évaluation se chiffrait à 22 $ (IC de 95 % 4-40 $).",
+        "authors": "Stieb DM, De Civita P, Johnson FR, Manary MP, Anis AH, Beveridge RC, Judek S.",
+        "source": "https://ehjournal.biomedcentral.com/articles/10.1186/1476-069x-1-7",
+        "articleTitle": "Economic evaluation of the benefits of reducing acute cardiorespiratory morbidity associated with air pollution.",
+        "publication": "Environ Health. 2002, le 18 déc;1(1):7. doi: 10.1186/1476-069x-1-7.",
+        "lang": "en"
+    }   
+]

@@ -1,0 +1,119 @@
+[
+    {
+        "heading": "PM2.5 and cardiac emergency room visits",
+        "description": "Substantially more data are available pertaining to air pollution and hospital admissions in Canada relative to emergency department visits. We therefore elected to represent the effects of air pollution on cardiac emergency department visits using the results for hospital admissions scaled up in number based on the relative frequency of hospital admissions and emergency visits for these conditions. Thus, the change in frequency per unit air pollution was the same as for hospital admissions based on Burnett et al. (1995) i.e. 0.0711 % (SE 0.0170 %) increase per 1 ug/m3. The baseline rate of emergency visits is equal to the baseline rate of hospital admissions divided by 0.760, the proportion of visits resulting in hospital admission as reported by Stieb et al. (2000).",
+        "authors": "Stieb DM; Beveridge RC; Brook JR; Smith-Doiron M; Burnett RT; Dales RE; Beaulieu S; Judek S; Mamedov A (2000).",
+        "source": "https://www.nature.com/articles/7500112.pdf",
+        "articleTitle": "Air pollution, aeroallergens and cardiorespiratory emergency department visits in Saint John, Canada.",
+        "publication": "J Expo Anal Environ Epidemiol 10(5): 461-477.",
+        "lang": "en"
+    },
+    {
+        "heading": "PM2.5 and chronic exposure internal cause mortality",
+        "description": "Crouse et al. (2012) examined the association between PM2.5 derived from satellite observations and mortality during ten years of follow-up of a cohort of 2.1 million Canadians based on the 1991 long form census. Using a spatial random-effects Cox model including individual and ecological covariates and an urban/rural indicator, and accounting for spatial autocorrelation among cohort members, they reported a hazard ratio of 1.10 (95% CI 1.05- 1.15) per 10 ug/m3 PM2.5. This translates to a beta of 0.00953 with standard error 0.00232.",
+        "authors": "Crouse DL, Peters PA, van Donkelaar A, Goldberg MS, Villeneuve PJ, Brion O, Khan S, Atari DO, Jerrett M, Pope CA, Brauer M, Brook JR, Martin RV, Stieb D, Burnett RT (2012).",
+        "source": "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC3346774/pdf/ehp.1104049.pdf",
+        "articleTitle": "Risk of nonaccidental and cardiovascular mortality in relation to long-term exposure to low concentrations of fine particulate matter: a Canadian national-level cohort study.",
+        "publication": "Environ Health Perspect. 2012 May;120(5):708-14.",
+        "lang": "en"
+    },
+    {
+        "heading": "PM2.5 and acute respiratory symptom days",
+        "description": "Krupnick, Harrington and Ostro (1990) reported on the association between coefficient of haze (coh) and the occurrence of acute respiratory symptoms in a panel of California families. They employed a Markov model which accounted for the occurrence of symptoms on the previous day and adjusted for ozone, nitrogen dioxide and sulphur dioxide as co-pollutants. The incremental change in frequency of symptoms was calculated by substituting the coefficient from table V, column 3, multiplied by 0.211 to convert from coh to PM2.5, together with the transitional probabilities, p1=0.775 and p2=0.0468 (provided by the authors), into equation 3 on page 12 of the paper. The conversion from coh to PM2.5 was calculated by dividing the ratio of coh to TSP (0.116) provided by the authors, by that of PM10 to TSP (0.55) provided by Environment Canada. This assumes that the toxicity of PM2.5 per ug/m3 is the same as that of PM10. The baseline frequency of symptoms was calculated by substituting p1 and p0 into equation 2. Thus the proportional change per ug/m3 PM2.5 is the output from equation 3 divided by that of equation 2, 0.00266 (SE 0.00139).",
+        "authors": "Krupnick AJ; Harrington W; Ostro B (1990).",
+        "source": "https://www.sciencedirect.com/science/article/abs/pii/0095069690900484",
+        "articleTitle": "Ambient ozone and acute health effects: evidence from daily data.",
+        "publication": "J Environ Econ Manage 18(1): 1-18.",
+        "lang": "en"
+    },
+    {
+        "heading": "PM2.5 and asthma symptom days",
+        "description": "These parameters are derived using the same approach as described in the Health Risk of Air Pollution in Europe project of the WHO European Centre for Environment and Health. Weinmayr et al. (2010) conducted a systematic review and meta-analysis based on 36 studies of the association between air pollution and asthma symptoms in children. The pooled odds ratio was 1.028 (95% CI 1.006-1.051) per 10 ug/m3 PM10 (table 2) based on a random effect model including all studies. This is based on single pollutant models, as results from multi-pollutant models were not consistently available. However, the derived effect size is nonetheless much smaller than that observed in a multi-pollutant model for North American cities in Mortimer et al. (2002). In order to derive an odds ratio for PM2.5, we multiplied the log odds ratio for PM10 by 2.37, which is the average of the ratio of log pooled odds ratios for PM2.5 vs. PM10 for cough and other respiratory symptoms reported by Ward and Ayres (2004; tables 3 and 4) in their earlier meta-analysis. The result is an odds ratio for PM2.5 of 1.07 (95% CI 1.01-1.12). The baseline daily frequency of asthma symptoms in asthmatic children varies widely in panel studies. We have conservatively estimated it at 20%. The population to which this is applicable is based on the prevalence of diagnosed asthma in Canada from the Canadian Chronic Disease Surveillance System (17.7%; Public Health Agency of Canada 2018).",
+        "authors": "Weinmayr G; Romeo E; De Sario M; Weiland SK; Forastiere F (2010).",
+        "source": "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC2854719/pdf/ehp-118-449.pdf",
+        "articleTitle": "Short-term effects of PM10 and NO2 on respiratory health among children with asthma or asthma-like symptoms: a systematic review and meta-analysis.",
+        "publication": "Environ Health Perspect 118(4): 449-457.",
+        "lang": "en"
+    },
+    {
+        "heading": "PM2.5 and adult chronic bronchitis cases",
+        "description": "Abbey et al. (1995) reported the results of a cohort study of air pollution and the development of chronic lung disease among non-smoking Seventh Day Adventists living in California. Based on a logistic regression model, which also included personal characteristics, they reported an odds ratio of 1.81 (95%CI 0.98-3.25) for the development of chronic bronchitis per 45 ug/m3 PM2.5 (table 2, row 2). Taking the natural log of the odds ratio and dividing by 45 yields a coefficient of 0.0132 (SE 0.00680) per ug/m3 PM2.5. They reported 10 year incidence of chronic bronchitis was 6.26% (117 new cases occurred among 1868 subjects for whom PM2.5 exposures could be estimated). We calculate the annual incidence, p1, from the expression: 0.0626=1-(1-p1)^10, so that p1=0.0064.",
+        "authors": "Abbey DE; Lebowitz MD; Mills PK; Petersen FF; Beeson WL; Burchette RJ (1995).",
+        "source": "https://www.tandfonline.com/doi/abs/10.3109/08958379509014268",
+        "articleTitle": "Long term ambient concentrations of particulates and oxidants and development of chronic disease in a cohort of nonsmoking California residents.",
+        "publication": "Inhal Toxicol 7: 19-34.",
+        "lang": "en"
+    },  
+    {
+        "heading": "PM2.5 and Cardiac emergency room visits",
+        "description": "Substantially more data are available pertaining to air pollution and hospital admissions in Canada relative to emergency department visits. We therefore elected to represent the effects of air pollution on cardiac emergency department visits using the results for hospital admissions scaled up in number based on the relative frequency of hospital admissions and emergency visits for these conditions. Thus, the change in frequency per unit air pollution was the same as for hospital admissions based on Burnett et al. (1995) i.e. 0.0711 % (SE 0.0170 %) increase per 1 ug/m3. The baseline rate of emergency visits is equal to the baseline rate of hospital admissions divided by 0.760, the proportion of visits resulting in hospital admission as reported by Stieb et al. (2000).",
+        "authors": "Stieb DM; Beveridge RC; Brook JR; Smith-Doiron M; Burnett RT; Dales RE; Beaulieu S; Judek S; Mamedov A (2000).",
+        "source": "https://www.nature.com/articles/7500112.pdf",
+        "articleTitle": "Air pollution, aeroallergens and cardiorespiratory emergency department visits in Saint John, Canada.",
+        "publication": "J Expo Anal Environ Epidemiol 10(5): 461-477.",
+        "lang": "en"
+    },
+    {
+        "heading": "PM2.5 and cardiac hospital admissions",
+        "description": "Burnett et al. (1995) reported a 3.3 % (95%CI 1.7-4.8 %) increase in cardiac hospital admissions per 13 ug/m3 sulfate based on a linear regression model which also included ozone and temperature (table 5, row 2). Multiplying by the average ratio of sulfate to PM2.5 of 0.28 (Environment Canada), this equates to a 0.0711 % (SE 0.0170 %) increase per 1 ug/m3 PM2.5.",
+        "authors": "Burnett RT; Dales R; Krewski D; Vincent R; Dann T; Brook JR (1995).",
+        "source": "https://pubmed.ncbi.nlm.nih.gov/7785669/",
+        "articleTitle": "Associations between ambient particulate sulphate and admissions to Ontario hospitals for cardiac and respiratory diseases.",
+        "publication": "Am J Epidemiol 142(1): 15-22.",
+        "lang": "en"
+    },
+    {
+        "heading": "PM2.5 and respiratory emergency room visits",
+        "description": "Substantially more data are available pertaining to air pollution and hospital admissions in Canada relative to emergency department visits. We therefore elected to represent the effects of air pollution on respiratory emergency department visits using the results for respiratory hospital admissions scaled up in number based on the relative frequency of hospital admissions and emergency visits for these conditions. Thus, the change in frequency per unit air pollution was the same as for hospital admissions based on Burnett et al. (1995) i.e. 0.0754% (SE 0.0132%) increase per 1 ug/m3. The baseline rate of respiratory emergency visits is equal to the baseline rate of hospital admissions divided by 0.198, the proportion of visits resulting in hospital admission as reported by Stieb et al. (2000).",
+        "authors": "Stieb DM; Beveridge RC; Brook JR; Smith-Doiron M; Burnett RT; Dales RE; Beaulieu S; Judek S; Mamedov A (2000).",
+        "source": "https://www.nature.com/articles/7500112.pdf",
+        "articleTitle": "Air pollution, aeroallergens and cardiorespiratory emergency department visits in Saint John, Canada.",
+        "publication": "J Expo Anal Environ Epidemiol 10(5): 461-477.",
+        "lang": "en"
+    },
+    {
+        "heading": "PM2.5 and restricted activity days",
+        "description": "Ostro (1987) reported an association between PM2.5 and reduced activity days (RADs) based on an analysis of data from the U.S. Health Interview Survey. They reported results by year for 1976-1981 based on a Poisson regression model (table III, column 2). We pooled these coefficients using a random effects model and obtained a pooled estimate of 0.00481 (SE 0.00101) per ug/m3 PM2.5. The baseline daily rate of RADs per person was 0.052 (Chestnut et al., 1999). Ostro and Rothschild (1989) also reported an analysis of PM2.5 and respiratory reduced activity days (RRADs), in which they adjusted for the simultaneous effects of ozone. The effects of PM2.5 were unaffected by this adjustment, thus we opted to use the results from their earlier analysis on the grounds that RADs are a more global outcome than the more narrowly defined RRADs.",
+        "authors": "Ostro BD; Rothschild S (1989).",
+        "source": "https://www.sciencedirect.com/science/article/pii/S0013935189800040?via%3Dihub",
+        "articleTitle": "Air pollution and acute respiratory morbidity: an observational study of multiple pollutants.",
+        "publication": "Environ Res 50: 238-247.",
+        "lang": "en"
+    },
+    {
+        "heading": "PM2.5 and respiratory hospital admissions",
+        "description": "Burnett et al. (1995) reported a 3.5% (95%CI 2.3-4.7%) increase in respiratory hospital admissions per 13 ug/m3 sulfate based on a linear regression model which also included ozone and temperature (table 4, row 2). Multiplying by the average ratio of sulfate to PM2.5 of 0.28 (Environment Canada), this equates to a 0.0754% (SE 0.0132%) increase per 1 ug/m3 PM2.5.",
+        "authors": "Burnett RT; Dales R; Krewski D; Vincent R; Dann T; Brook JR (1995).",
+        "source": "https://pubmed.ncbi.nlm.nih.gov/7785669/",
+        "articleTitle": "Associations between ambient particulate sulphate and admissions to Ontario hospitals for cardiac and respiratory diseases.",
+        "publication": "Am J Epidemiol 142(1): 15-22.",
+        "lang": "en"
+    },
+    {
+        "heading": "PM2.5 and child acute bronchitis episodes",
+        "description": "These parameters are derived using the same approach as described in the Health Risk of Air Pollution in Europe project of the WHO European Centre for Environment and Health. Hoek et al. (2012) conducted a meta-analysis of eight cross-sectional studies from Europe and North America, including the 24 cities study, which included data from several Canadian communities. The random effect pooled estimate of the odds ratio was 1.08 (95% CI 0.98-1.19) per 10 ug/m3 PM10 (table 3), adjusted for age, sex, maternal education, paternal education, household crowding, current parental smoking, mother smoking during pregnancy, gas cooking, unvented gas/oil/kerosene heater, mould, nationality, birth order and 'ever had a pet.' The effect size was reduced based on joint models with SO2, but this was based on only three studies (table 4). The average prevalence of bronchitis among the studies was 18.6% (table 2). In the 24 cities study (Dockery et al. 1996), the odds ratio for bronchitis for PM2.5 was identical to that for PM10 across the exposure difference between highest- and lowest-exposure communities, 17.3 and 14.9 ug/m3 for PM10 and PM2.5, respectively (tables 1 and 4). We therefore multiply the log of the pooled odds ratios for PM10 by this ratio (1.16) in order to derive a log odds ratio per 10 ug/m3 PM2.5, resulting in an odds ratio of 1.09 (95% CI 0.98-1.22).",
+        "authors": "Dockery DW; Cunningham J; Damokosh AI; Neas LM; Spengler JD; Koutrakis P; Ware JH; Raizenne M; Speizer FE (1996).",
+        "source": "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC1469356/pdf/envhper00336-0048.pdf",
+        "articleTitle": "Health effects of acid aerosols on North American children: respiratory symptoms.",
+        "publication": "Environ Health Perspect 104: 500-505.",
+        "lang": "en"
+    },
+    {
+        "heading": "PM2.5 and chronic exposure chronic obstructive pulmonary disease (COPD), cerebrovascular, and ischemic heart disease",
+        "description": "Cause-specific CRFs were derived from meta-analyses of worldwide cohort studies as described in Shin et al. 2016. The values specified in AQBAT are the alpha and beta (shape and scale) parameters of the gamma distribution. The mean of the pooled hazard ratio can be calculated as the exponential of the product of the shape and scale parameters of the gamma distribution, while the 95% confidence interval can be calculated as the exponential of the inverse of the gamma distribution at the 2.5th and 97.5th percentiles of the cumulative density function.",
+        "authors": "Shin HH, Cohen AJ, Pope CA 3rd, Ezzati M, Lim SS, Hubbell BJ, Burnett RT (2016).",
+        "source": "https://onlinelibrary.wiley.com/doi/10.1111/risa.12421",
+        "articleTitle": "Meta-Analysis Methods to Estimate the Shape and Uncertainty in the Association Between Long-Term Exposure to Ambient Fine Particulate Matter and Cause-Specific Mortality Over the Global Concentration Range.",
+        "publication": "Risk Anal. 36(9): 1813-1825.",
+        "lang": "en"
+    },
+    {
+        "heading": "PM2.5 and chronic exposure lung cancer mortality",
+        "description": "",
+        "authors": "Health Canada. 2022.",
+        "source": "https://publications.gc.ca/collections/collection_2022/sc-hc/H144-98-2022-eng.pdf",
+        "articleTitle": "Lung Cancer and Ambient PM2.5 in Canada: A Systematic Review and Meta-analysis.",
+        "publication": "",
+        "lang": "en"
+    }
+]

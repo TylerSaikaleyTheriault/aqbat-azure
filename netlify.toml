@@ -1,0 +1,20 @@
+[[redirects]]
+  from = "/"
+  to = "/en"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/fr"
+  to = "/index-fr.html"
+  status = 200
+
+[[redirects]]
+  from = "/en"
+  to = "/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/en/*"
+  to = "/:splat"
+  status = 200

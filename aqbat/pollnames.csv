@@ -1,0 +1,12 @@
+pollutant,poll
+pm25_2,PM2.5
+co24h_2,CO 24h
+no2_2,NO2
+so2_2,SO2
+co1h_2,CO 1h
+o3_2,O3
+summero3_2,O3 Summer
+bz_2,Benzene
+bt_2,"1,3-Butadiene"
+ac_2,Acetaldehyde
+fm_2,Formaldehyde

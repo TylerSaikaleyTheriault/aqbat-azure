@@ -1,0 +1,74 @@
+[
+    {
+        "heading": "Gases (CO, NO2, O3 and SO2) and acute exposure mortality",
+        "description": "Burnett et al. (2004) reported on an analysis of air pollution and mortality in 12 Canadian cities. The author provided results from additional multi-pollutant models not reported in the paper; the 4-gas model was selected based on the overall t-value among the candidate models. Percent excess mortality (associated with the mean pollutant concentration) from Poisson regression models for CO, NO2, O3 and SO2 respectively were: 0.19% (T = 0.73, 1.0 ppm), 1.69% (T = 3.00, 22.4 ppb), 2.60% (T = 6.16, 30.6 ppb), and 0.23% (T = 2.09, 5.0 ppb). These results translate into regression coefficients (standard errors) of: CO, 0.00190 (0.00260), NO2, 0.000748 (0.000249), O3, 0.000839 (0.000136), and SO2, 0.000459 (0.000220). Although this multi-pollutant model excluded particulate matter, it was selected as the model which best reflected the impact of the overall air pollution mix. Because of multi-collinearity among pollutants, this model should nonetheless still reflect impacts of particulate matter. In any case, the effects of particulate matter in this study were reduced substantially when modelled together with NO2, the effect of which predominated in this analysis.",
+        "authors": "Burnett RT; Stieb D; Brook JR; Cakmak S; Dales R; Raizenne M; Vincent R; Dann T (2004).",
+        "source": "https://pubmed.ncbi.nlm.nih.gov/16201668/",
+        "articleTitle": "Associations between short-term changes in nitrogen dioxide and mortality in Canadian cities.",
+        "publication": "Arch Environ Health 59(5): 228-236.",
+        "lang": "en"
+    },
+    {
+        "heading": "O3 (May-Sep) and chronic exposure respiratory mortality",
+        "description": "Jerrett et al. (2009) analyzed data from the American Cancer Society cohort study. The relative risk of death from respiratory causes was 1.040 (95% confidence interval, 1.010 to 1.067) per 10 ppb ozone in a model with PM2.5; exposure was based on average of quarterly averages with >=75% of daily values. This translates into a coefficient of 0.00392 with standard error 0.00132.",
+        "authors": "Jerrett M; Burnett RT; Pope CA III; Ito K; Thurston G; Krewski D; Shi Y; Calle E; Thun M (2009).",
+        "source": "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC4105969/pdf/nihms579328.pdf",
+        "articleTitle": "Long-term ozone exposure and mortality.",
+        "publication": "N Engl J Med 360(11): 1085-1095.",
+        "lang": "en"
+    },
+    {
+        "heading": "O3 (May-Sep) and asthma symptom days",
+        "description": "Numerous panel studies have been conducted on the association between O3 and asthma exacerbations in children. Several of these were carried out in summer camps, which may not reflect typical exposure conditions, in that campers would be expected to spend more time outdoors compared with non-campers. Others have been conducted in locations such as Mexico City and Los Angeles, which experience very high O3 concentrations not representative of conditions in Canada. We therefore selected two large multicentre North American panel studies as the source of the CRF. Mortimer et al. (2002) analyzed data collected in summer 1993 for 846 inner-city children aged 4-9 years from eight American cities. The average 8 h maximum O3 concentration among all cities was 48 ppb. The odds ratio for morning asthma symptoms was 1.16 (95% CI 1.02-1.30) in relation to a 15 ppb increment in average of lag 1-5 day O3. This was reduced to 1.07 (0.92-1.26) in a joint model with NO2 in seven cities and to 1.04 (0.70-1.55) in a joint model with PM10 based on three cities (table 4). Schildcrout et al. (2006) analyzed data collected from 1993 to 1995 for 990 children aged 5-13 years, also from eight cities including Toronto, and only with Baltimore in common with the Mortimer et al. (2002) analysis. Median 1 h maximum O3 concentrations ranged from 43 to 65.8 ppb. The odds ratio for asthma symptoms was 1.06 (95% CI 0.92-1.23) in relation to a 30 ppb increment in lag 0 O3 (the largest effect among lags considered; figure 1). Joint models with other pollutants were not run. The log odds ratio from Mortimer et al. (2002) based on the 8 h maximum (joint model with NO2) was multiplied by 1.13 (the ratio of 1 h maximum to 8 h maximum in Canadian cities) and pooled with the Schildcrout et al. (2006) result to obtain an odds ratio of 1.05 (95% CI 0.96-1.14) per 20 ppb. The same baseline frequency of asthma symptoms and prevalence of current wheeze as for PM2.5 were applied to 17.7% of children aged 5-19 years.",
+        "authors": "Mortimer KM; Neas LM; Dockery DW; Redline S; Tager IB (2002).",
+        "source": "https://publications.ersnet.org/content/erj/19/4/699?implicit-login=true%26527",
+        "articleTitle": "The effect of air pollution on inner-city children with asthma.",
+        "publication": "Eur Respir J 19(4): 699-705.",
+        "lang": "en"
+    },    
+    {
+        "heading": "CO and elderly cardiac hospital admissions",
+        "description": "Burnett et al. (1997) reported a 6.1% (T-ratio = 3.5) increase in hospital admissions for congestive heart failure among individuals over 65 years of age for an increase from 1 to 3 ppm daily one hour maximum CO (table 4, row 1). This was from a Poisson regression model with ln(CO), also controlling for NO2, SO2, O3, coefficient of haze (COH), temperature, and dewpoint temperature. Schwartz and Morris (1995) reported a 2.2% (95% CI 1.0-3.4%) increase in hospital admissions for congestive heart failure in those 65 and over in a Poisson regression model with PM10, temperature, and humidity per 1.28 ppm one hour maximum CO (table 6, row 6). These two estimates were pooled as a percent increase in hospital admissions per ppm one hour maximum CO, using a random effects model. Because the Burnett et al. result was based on ln(CO), the percent increase depends on the baseline concentration. We set this at 1 ppm as being representative of conditions in Canadian cities, thus the Burnett et al. result was expressed as a 4.32% (SE 1.23%) increase in admissions for a change from 1 to 2 ppm and that from Schwartz and Morris as 1.71% (SE 0.472%). The final pooled estimate was 2.77% (SE 1.28%).",
+        "authors": "Burnett RT; Dales RE; Brook JR; Raizenne ME; Krewski D (1997b).",
+        "source": "https://pubmed.ncbi.nlm.nih.gov/9229208/",
+        "articleTitle": "Association between ambient carbon monoxide levels and hospitalizations for congestive heart failure in the elderly in 10 Canadian cities.",
+        "publication": "Epidemiology 8(2): 162-167.",
+        "lang": "en"
+    },
+    {
+        "heading": "O3 (May-Sep) and acute respiratory symptom days",
+        "description": "Krupnick, Harrington and Ostro (1990) reported on the association between ozone and the occurrence of acute respiratory symptoms in a panel of California families. They employed a Markov model which accounted for the occurrence of symptoms on the previous day and adjusted for coefficient of haze, nitrogen dioxide and sulphur dioxide as co-pollutants. The incremental change in frequency of symptoms was calculated by substituting the coefficient from table V, column 3, divided by 10 to convert from pphm to ppb, together with the transitional probabilities, p1=0.775 and p2=0.0468 (provided by the authors), into equation 3 on page 12 of the paper. The baseline frequency of symptoms was calculated by substituting p1 and p0 into equation 2. Thus the proportional change per ppb ozone is the output from equation 3 divided by that of equation 2, 0.000786 (SE 0.000386).",
+        "authors": "Krupnick AJ; Harrington W; Ostro B (1990).",
+        "source": "https://www.sciencedirect.com/science/article/abs/pii/0095069690900484",
+        "articleTitle": "Ambient ozone and acute health effects: evidence from daily data.",
+        "publication": "J Environ Econ Manage 18(1): 1-18.",
+        "lang": "en"
+    },
+    {
+        "heading": "O3 (May-Sep) and respiratory emergency room visits",
+        "description": "Substantially more data are available pertaining to air pollution and hospital admissions in Canada relative to emergency department visits. We therefore elected to represent the effects of air pollution on respiratory emergency department visits using the results for hospital admissions scaled up in number based on the relative frequency of hospital admissions and emergency visits for these conditions. Thus, the coefficient per unit air pollution was the same as for hospital admissions based on Burnett et al. (1997) i.e. 0.000791 (SE 0.000355) per ppb. The baseline rate of emergency visits is equal to the baseline rate of hospital admissions divided by 0.198, the proportion of visits resulting in hospital admission as reported by Stieb et al. (2000).",
+        "authors": "Stieb DM; Beveridge RC; Brook JR; Smith-Doiron M; Burnett RT; Dales RE; Beaulieu S; Judek S; Mamedov A (2000).",
+        "source": "https://www.nature.com/articles/7500112.pdf",
+        "articleTitle": "Air pollution, aeroallergens and cardiorespiratory emergency department visits in Saint John, Canada.",
+        "publication": "J Expo Anal Environ Epidemiol 10(5): 461-477.",
+        "lang": "en"
+    },
+    {
+        "heading": "O3 (May-Sep) and respiratory hospital admissions",
+        "description": "Burnett et al. (1997) reported the results of a study of ozone and respiratory hospital admissions in 16 Canadian cities. Based on results from a Poisson regression model, which simultaneously adjusted for dewpoint temperature, CO, and coefficient of haze, they reported a relative risk of 1.024 (p = 0.0258) per 30 ppb daily one hour maximum ozone. Taking the natural logarithm of the relative risk and dividing by 30 yields a coefficient of 0.000791 (SE 0.000355) per ppb.",
+        "authors": "Burnett RT; Brook JR; Yung WT; Dales RE; Krewski D (1997a).",
+        "source": "https://pubmed.ncbi.nlm.nih.gov/9012369/",
+        "articleTitle": "Association between ozone and hospitalization for respiratory diseases in 16 Canadian cities.",
+        "publication": "Environ Res 72: 24-31.",
+        "lang": "en"
+    },
+    {
+        "heading": "O3 (May-Sep) and minor restricted activity days",
+        "description": "Ostro and Rothschild (1989) reported an association between ozone and minor reduced activity days based on an analysis of data from the U.S. Health Interview Survey. They reported results by year for 1976-1981 based on a Poisson regression model including both ozone and PM2.5 (table 4, column 2). We pooled these coefficients using a random effects model and obtained a pooled estimate of 0.000530 (SE 0.00291) per ppb daily 1 hour maximum ozone. The baseline daily rate of MRADs per person was 7.8/365 = 0.0214.",
+        "authors": "Ostro BD; Rothschild S (1989).",
+        "source": "https://www.sciencedirect.com/science/article/abs/pii/S0013935189800040?via%3Dihub",
+        "articleTitle": "Air pollution and acute respiratory morbidity: an observational study of multiple pollutants.",
+        "publication": "Environ Res 50: 238-247.",
+        "lang": "en"
+    } 
+]

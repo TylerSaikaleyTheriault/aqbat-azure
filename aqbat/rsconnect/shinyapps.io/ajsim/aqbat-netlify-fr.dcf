@@ -1,0 +1,12 @@
+name: aqbat-netlify-fr
+title: aqbat-netlify-fr
+username: ajsim
+account: ajsim
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 14454383
+bundleId: 10073296
+url: https://ajsim.shinyapps.io/aqbat-netlify-fr/
+version: 1
+asMultiple: FALSE
+asStatic: FALSE

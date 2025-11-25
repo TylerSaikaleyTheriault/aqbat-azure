@@ -1,0 +1,74 @@
+[
+    {
+        "heading": "Polluants gazeux (CO, NO2, O3 et SO2) et mortalité liée à une exposition aiguë",
+        "description": "Burnett et coll. (2004) ont rapporté les résultats d’une analyse portant sur l’association entre la pollution de l’air et la mortalité dans 12 villes canadiennes. L’auteur a fourni les résultats de modèle à polluants multiples additionnels qui n’étaient pas inclus dans la publication; le modèle à quatre gaz a été sélectionné sur la base de la valeur t globale parmi les modèles considérés. Les pourcentages excédentaires de mortalité (liés à la concentration moyenne de polluant) des modèles de régression Poisson pour les gaz CO, NO2, O3 et SO2 étaient respectivement : 0,19 % (T = 0,73, 1,0 ppm), 1,69 % (T = 3,00, 22,4 ppb), 2,60 % (T = 6,16, 30,6 ppb), et 0,23 % (T = 2,09, 5,0 ppb). Ces résultats se traduisent par les coefficients de régression (écart-type) suivants : CO, 0,00190 (0,00260), NO2, 0,000748 (0,000249), O3, 0,000839 (0,000136), et SO2, 0,000459 (0,000220). Même si ce modèle à polluants multiples excluait les matières particulaires, il a été retenu comme celui qui illustrait le mieux l’impact du mélange global de polluants atmosphériques. En raison de la colinéarité multiple entre les polluants, ce modèle devrait également refléter l’impact des particules. Dans tous les cas, les effets des particules dans cette étude ont été considérablement diminués lorsque modélisés conjointement avec le NO2, dont les effets étaient prédominants dans cette analyse.",
+        "authors": "Burnett RT; Stieb D; Brook JR; Cakmak S; Dales R; Raizenne M; Vincent R; Dann T (2004).",
+        "source": "https://pubmed.ncbi.nlm.nih.gov/16201668/",
+        "articleTitle": "Associations between short-term changes in nitrogen dioxide and mortality in Canadian cities.",
+        "publication": "Arch Environ Health 59(5): 228-236.",
+        "lang": "en"
+    },
+    {
+        "heading": "O3 (mai-septembre) et mortalité respiratoire liée à une exposition chronique",
+        "description": "Jerrett et coll. (2009) ont analysé les données provenant de l’étude de la cohorte de l’American Cancer Society. Le risque relatif de décès pour causes respiratoires était de 1,040 (avec un intervalle de confiance de 95 % de 1,010 à 1,067) par 10 ppb d’ozone dans un modèle incluant les PM2,5; l’exposition était basée sur une moyenne établie sur des moyennes trimestrielles avec 75 % ou plus des valeurs quotidiennes. Cela se traduit par un coefficient de 0,00392 avec un écart-type de 0,00132.",
+        "authors": "Jerrett M; Burnett RT; Pope CA III; Ito K; Thurston G; Krewski D; Shi Y; Calle E; Thun M (2009).",
+        "source": "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC4105969/pdf/nihms579328.pdf",
+        "articleTitle": "Long-term ozone exposure and mortality.",
+        "publication": "N Engl J Med 360(11): 1085-1095.",
+        "lang": "en"
+    },
+    {
+        "heading": "O3 (mai-septembre) et jours de symptômes d’asthme",
+        "description": "De nombreuses enquêtes ont été réalisées sur l’association entre O3 et les exacerbations de l’asthme chez les enfants. Plusieurs de celles-ci ont été conduites dans des camps de vacances, qui peuvent ne pas refléter les conditions d’exposition typiques, en ce qu’il est attendu des campeurs qu’ils passent davantage de temps à l’extérieur comparé à des non-campeurs. D’autres ont été conduites dans des lieux tels que Mexico et Los Angeles, qui expérimentent des concentrations d’O3 très élevées, non-représentative des conditions au Canada. Nous avons donc choisi deux vastes enquêtes polycentriques nord-américaines comme source du FCR. Mortimer et coll. (2002) ont analysé des données recueillies durant l’été 1993 au sujet de 846 enfants âgés de 4 à 9 ans vivant dans les quartiers centraux de huit ville américaines. La moyenne de concentration maximum d’O3 sur 8h dans toutes les villes était de 48 ppb. Le rapport de cotes pour les symptômes d’asthme matinal était de 1.16 (95% IC 1.02–1.30) en relation avec un accroissement de 15 ppb en moyenne pour décalage de 1 à 5 jour d’O3. Ceci a été réduit à 1.07 (0.92–1.26) dans un model combiné avec le NO2 dans sept villes et à 1.04 (0.70–1.55) dans un modèle combiné avec PM10 basé sur trois villes (voir tableau 4). Schildcrout et coll. (2006) ont analysé des données recueillies de 1993 à 1995 au sujet de 990 enfants âgés de 5 à 13 ans provenant aussi de huit grandes villes, incluant Toronto et avec seulement Baltimore en commun avec l’analyse de Mortimer et coll. (2002). La médiane des concentrations maximum d’O3 sur 1h allait de 43 à 65.8 ppb. Le rapport de cotes pour les symptômes d’asthme était de 1.06 (95% IC 0.92–1.23) en relation avec un accroissement de 30 ppb pour un décalage 0 d’O3 (le plus grand effet parmi les décalages considérés; figure 1). Des modèles conjoints avec d’autres polluants n’ont pas été élaborés. Le log du rapport des cotes de Mortimer et coll. (2002) basé sur un maximum de 8h (model conjoint avec NO2) a été multiplié par 1.13 (rapport de 1 h maximum à 8 h maximum dans des villes canadiennes) et combiné avec le résultat de Schildcrout et coll. (2006) pour obtenir un rapport de cotes de 1.05 (95% IC 0.96–1.14) par 20 ppb. La même fréquence de base pour les symptômes d’asthme et la prévalence de respiration sifflante pour PM2,5 a été appliquée à 17,7% des enfants âgés de 5 à 19 ans.",
+        "authors": "Mortimer KM; Neas LM; Dockery DW; Redline S; Tager IB (2002).",
+        "source": "https://publications.ersnet.org/content/erj/19/4/699?implicit-login=true%26527",
+        "articleTitle": "The effect of air pollution on inner-city children with asthma.",
+        "publication": "Eur Respir J 19(4): 699-705.",
+        "lang": "en"
+    },    
+    {
+        "heading": "CO et admissions à l’hôpital pour des problèmes cardiaques chez les aînés",
+        "description": "Burnett et coll. (1997) ont rapporté une augmentation de 6,1 % (valeur du ratio T = 3,5) des admissions à l’hôpital pour cas d’insuffisance cardiaque congestive parmi les personnes âgées de plus de 65 ans pour une augmentation de 1 à 3 ppm du maximum quotidien sur 1 heure de CO (tableau 4, rangée 1). Cette valeur est tirée d’un modèle de régression Poisson avec le ln(CO), en contrôlant aussi pour le NO2, le SO2, l’O3, et le coefficient de brume sèche (coh), de la température et du point de rosée. Schwartz et Morris (1995) ont rapporté une augmentation de 2,2 % (IC de 95 % 1,0-3,4 %) des admissions à l’hôpital pour cas d’insuffisance cardiaque congestive parmi les personnes âgées de 65 ans et plus pour une augmentation de 1,28 ppm de CO du maximum quotidien sur 1 heure, dans un modèle de régression Poisson qui incluait les PM10, la température et l’humidité (tableau 6, rangée 6). Ces deux estimations ont été combinées en une augmentation en pourcentage des admissions à l’hôpital par ppm de CO maximum sur une heure, à l’aide d’un modèle à effets aléatoires. Puisque le résultat de Burnett et coll. était fondé sur le ln(CO), le pourcentage d’augmentation dépend de la concentration de base. Nous avons fixé cette concentration à 1 ppm, valeur représentative des conditions rencontrées dans les villes canadiennes, ce qui fait que le résultat de Burnett et coll. était exprimé par une augmentation de 4,32 % (erreur-type 1,23 %) du nombre d’admissions pour un changement de 1 à 2 ppm, tandis que celui de Schwartz et de Morris était de 1,71 % (erreurtype 0,472 %). L’estimation combinée finale était 2,77 % (erreur-type 1,28 %).",
+        "authors": "Burnett RT; Dales RE; Brook JR; Raizenne ME; Krewski D (1997b).",
+        "source": "https://pubmed.ncbi.nlm.nih.gov/9229208/",
+        "articleTitle": "Association between ambient carbon monoxide levels and hospitalizations for congestive heart failure in the elderly in 10 Canadian cities.",
+        "publication": "Epidemiology 8(2): 162-167.",
+        "lang": "en"
+    },
+    {
+        "heading": "O3 (mai-septembre) et jours avec symptômes respiratoires aigus",
+        "description": "Krupnick, Harrington et Ostro (1990) ont étudié la corrélation entre l’O3 et l’apparition de symptômes respiratoires aigus dans un panel de familles californiennes. Ils ont utilisé un modèle Markov qui prenait en compte l’apparition des symptômes le jour précédent et ajustait pour un coefficient de brume sèche et le dioxyde d’azote et le dioxyde de soufre comme co-polluants. Le changement graduel de la fréquence des symptômes a été calculé en substituant le coefficient du tableau V, colonne 3, divisé par 10 pour convertir les ppcm en ppb, en parallèle avec les probabilités de transition, p1=0,775 et p2 = 0,0468 (fournies par les auteurs), dans l’équation 3 de la page 12 du rapport. La fréquence de base des symptômes a été calculée en substituant p1 et p0 dans l’équation 2. Alors, le changement proportionnel par ppb d’ozone est ainsi le résultat de l’équation 3 divisé par celui de l’équation 2, 0,000768 (erreurtype 0,000386).",
+        "authors": "Krupnick AJ; Harrington W; Ostro B (1990).",
+        "source": "https://www.sciencedirect.com/science/article/abs/pii/0095069690900484",
+        "articleTitle": "Ambient ozone and acute health effects: evidence from daily data.",
+        "publication": "J Environ Econ Manage 18(1): 1-18.",
+        "lang": "en"
+    },
+    {
+        "heading": "O3 (mai-septembre) et visites à l’urgence pour des problèmes respiratoires",
+        "description": "Les données relatives à la pollution de l’air et aux admissions à l’hôpital au Canada, sont considérément plus nombreuses que celles pour les visites à l’urgence. Par conséquent, nous avons choisi de représenter les effets de la pollution de l’air sur les visites à l’urgence pour des problèmes respiratoires en utilisant les résultats d’admissions à l’hôpital ajustés à la hausse selon la fréquence relative des admissions à l’hôpital et des visites à l’urgence pour ces conditions. Ainsi, le coefficient par unité de pollution atmosphérique était le même que dans le cas des admissions à l’hôpital selon Burnett et coll. (1997), soit 0,000791 (erreur-type 0,000355) par ppb. Le taux de base des visites à l’urgence est égal au taux de base des admissions à l’hôpital divisé par 0,198, qui est la proportion de visites qui se terminent en une admission à l’hôpital rapportée par Stieb et coll. (2000).",
+        "authors": "Stieb DM; Beveridge RC; Brook JR; Smith-Doiron M; Burnett RT; Dales RE; Beaulieu S; Judek S; Mamedov A (2000).",
+        "source": "https://www.nature.com/articles/7500112.pdf",
+        "articleTitle": "Air pollution, aeroallergens and cardiorespiratory emergency department visits in Saint John, Canada.",
+        "publication": "J Expo Anal Environ Epidemiol 10(5): 461-477.",
+        "lang": "en"
+    },
+    {
+        "heading": "O3 (mai-septembre) et admissions à l’hôpital pour des problèmes respiratoires",
+        "description": "Burnett et coll. (1997) ont rapporté les résultats d’une étude portant sur l'association entre l’O3 et les admissions à l’hôpital dans 16 villes canadiennes. D’après les résultats obtenus à partir d’un modèle de régression Poisson ajusté simultanément pour les effets du point de rosée, du CO et du coh, le risque relatif par 30 ppb du maximum quotidien sur 1 heure d’O3 était de 1,024 (p = 0,0258). Si l’on prend le logarithme naturel du risque relatif et qu’on le divise par 30, on obtient un coefficient de 0,000791 (erreur-type 0,000355) par ppb.",
+        "authors": "Burnett RT; Brook JR; Yung WT; Dales RE; Krewski D (1997a).",
+        "source": "https://pubmed.ncbi.nlm.nih.gov/9012369/",
+        "articleTitle": "Association between ozone and hospitalization for respiratory diseases in 16 Canadian cities.",
+        "publication": "Environ Res 72: 24-31.",
+        "lang": "en"
+    },
+    {
+        "heading": "O3 (mai-septembre) et jours d’activité restreinte mineure",
+        "description": "Ostro et Rothschild (1989) ont étudié la corrélation entre l’O3 et les jours d’activité restreinte mineure (JARM) à partir d’une analyse des données de la Health Interview Survey (enquête sur la santé) des États-Unis. Ils ont rapporté les résultats annuels pour la période de 1976 à 1981 qui étaient basés sur un modèle de régression Poisson qui incluait l’O3 et les PM2,5 (tableau 4, colonne 2). Nous avons combiné ces coefficients à l’aide d’un modèle à effets aléatoires et obtenu une estimation combinée de 0,000530 (erreur-type 0,00291) par ppb d’O3 du maximum quotidien sur 1 heure. Le taux de base quotidien de JARM par personne était 7,8/365 = 0,0214.",
+        "authors": "Ostro BD; Rothschild S (1989).",
+        "source": "https://www.sciencedirect.com/science/article/abs/pii/S0013935189800040?via%3Dihub",
+        "articleTitle": "Air pollution and acute respiratory morbidity: an observational study of multiple pollutants.",
+        "publication": "Environ Res 50: 238-247.",
+        "lang": "en"
+    } 
+]

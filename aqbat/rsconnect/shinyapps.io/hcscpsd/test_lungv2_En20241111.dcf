@@ -1,0 +1,12 @@
+name: test_lungv2_En20241111
+title: test_lungv2_En20241111
+username: hcscpsd
+account: hcscpsd
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 13297216
+bundleId: 9345273
+url: https://hcscpsd.shinyapps.io/test_lungv2_En20241111/
+version: 1
+asMultiple: FALSE
+asStatic: FALSE

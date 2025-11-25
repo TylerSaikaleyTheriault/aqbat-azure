@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html class="no-js" lang="fr" dir="ltr">
+  <head>
+    <!-- Fill metadata before launch and edit title at line 33-->
+    <meta content="width=device-width,initial-scale=1" name="viewport" />
+    <meta content="width=device-width,initial-scale=1" name="viewport" charset="utf-8" />
+    <link rel="schema.dcterms" href="http://purl.org/dc/terms/" />
+    <meta name="description" content="" />
+    <meta name="keywords" content="" />
+    <meta name="author" content="Agence de la santé publique du Canada" />
+    <meta name="dcterms.title" content="Titre" />
+    <meta name="dcterms.description" content="" />
+    <meta name="dcterms.creator" content="Agence de la santé publique du Canada" />
+    <meta name="dcterms.language" title="ISO639-2/T" content="eng" />
+    <meta name="dcterms.issued" title="W3CDTF" content="2022-08-12" />
+    <meta name="dcterms.modified" title="W3CDTF" content="2022-08-12" />
+    <meta name="dcterms.spatial" content="Canada" />
+    <meta name="dcterms.type" content="datasets;statistics;education and awareness" />
+    <meta name="dcterms.identifier" content="Public_Health_Agency_of_Canada" />
+
+    <link href="/src/GCWeb/assets/favicon.ico" rel="icon" type="image/x-icon" />
+    <link
+      rel="stylesheet"
+      href="https://use.fontawesome.com/releases/v5.12.0/css/all.css"
+      integrity="sha384-REHJTs1r2ErKBuJB0fCK99gCYsVjwxHrSU0N7I1zl9vZbggVJXRMsv/sLlOAGb4M"
+      crossorigin="anonymous"
+    />
+    <link rel="stylesheet" href="/src/GCWeb2/css/theme.min.css" />
+    <link rel="stylesheet" href="/src/css/global.css" />
+    <link rel="stylesheet" href="https://code.jquery.com/ui/1.12.1/themes/smoothness/jquery-ui.css" />
+
+    <script
+      src="https://cdnjs.cloudflare.com/ajax/libs/iframe-resizer/4.3.9/iframeResizer.min.js"
+      integrity="sha512-+bpyZqiNr/4QlUd6YnrAeLXzgooA1HKN5yUagHgPSMACPZgj8bkpCyZezPtDy5XbviRm4w8Z1RhfuWyoWaeCyg=="
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    ></script>
+    <noscript>
+      <link rel="stylesheet" href="/src/wet-boew/css/noscript.min.css" />
+    </noscript>
+
+    <title>Outil d’évaluation des bénéfices liés à la qualité de l’air — Canada.ca</title>
+    <script src="/src/js/jquery.js"></script>
+    <script src="/src/js/aqbat/iframe-resolvers.js"></script>
+    <script src="/src/js/aqbat/html-scripts.js"></script>
+    <style>
+      /* Ensure the radio button is styled with a visible border */
+      input[type='radio'] {
+        appearance: none;
+        width: 15px;
+        height: 15px;
+        border: 1px solid #333;
+        border-radius: 50%;
+        outline: none;
+        background-color: #fff;
+        transition: border-color 0.3s, background-color 0.3s;
+        box-sizing: border-box; /* Ensure borders don't shift size */
+      }
+
+      /* Change the look when selected */
+      input[type='radio']:checked {
+        background-color: #26374a;
+      }
+
+      .spinner {
+        display: none;
+      }
+    </style>
+  </head>
+
+  <body vocab="http://schema.org/" typeof="WebPage">
+    <!-- Google Tag Manager DO NOT REMOVE OR MODIFY - NE PAS SUPPRIMER OU MODIFIER -->
+    <script>
+      dataLayer1 = [];
+    </script>
+    <script>
+      dataLayer = [];
+    </script>
+    <!-- End Google Tag Manager -->
+    <!-- Google Tag Manager -->
+    <noscript><iframe src="//www.googletagmanager.com/ns.html?id=GTM-TN3RPZ" height="0" width="0" style="display: none; visibility: hidden"></iframe></noscript>
+    <script>
+      (function (w, d, s, l, i) {
+        w[l] = w[l] || [];
+        w[l].push({
+          'gtm.start': new Date().getTime(),
+          event: 'gtm.js',
+        });
+        var f = d.getElementsByTagName(s)[0],
+          j = d.createElement(s),
+          dl = l != 'dataLayer' ? '&l=' + l : '';
+        j.async = true;
+        j.src = '//www.googletagmanager.com/gtm.js?id=' + i + dl;
+        f.parentNode.insertBefore(j, f);
+      })(window, document, 'script', 'dataLayer', 'GTM-TN3RPZ');
+    </script>
+    <!-- End Google Tag Manager -->
+    <!-- Google Tag Manager DO NOT REMOVE OR MODIFY - NE PAS SUPPRIMER OU MODIFIER -->
+    <noscript
+      ><iframe
+        title="Google Tag Manager"
+        src="//www.googletagmanager.com/ns.html?id=GTM-TLGQ9K"
+        height="0"
+        width="0"
+        style="display: none; visibility: hidden"
+      ></iframe
+    ></noscript>
+    <script>
+      (function (w, d, s, l, i) {
+        w[l] = w[l] || [];
+        w[l].push({ 'gtm.start': new Date().getTime(), event: 'gtm.js' });
+        var f = d.getElementsByTagName(s)[0],
+          j = d.createElement(s),
+          dl = l != 'dataLayer1' ? '&l=' + l : '';
+        j.async = true;
+        j.src = '//www.googletagmanager.com/gtm.js?id=' + i + dl;
+        f.parentNode.insertBefore(j, f);
+      })(window, document, 'script', 'dataLayer1', 'GTM-TLGQ9K');
+    </script>
+    <!-- End Google Tag Manager -->
+
+    <ul id="wb-tphp">
+      <li class="wb-slc">
+        <a class="wb-sl" href="#wb-cont">Passer au contenu principal</a>
+      </li>
+      <li class="wb-slc visible-sm visible-md visible-lg">
+        <a class="wb-sl" href="#wb-info">Passer à « Au sujet du gouvernement »</a>
+      </li>
+    </ul>
+
+    <header class="navbar navbar-default" id="navbar">
+      <div id="wb-bnr" class="container">
+        <div class="row">
+          <section id="wb-lng" class="col-xs-3 col-sm-12 pull-right text-right">
+            <h2 class="wb-inv">Sélection de la langue</h2>
+            <div class="row">
+              <div class="col-md-12">
+                <ul class="list-inline mrgn-bttm-0">
+                  <li>
+                    <a lang="en" href="/en">
+                      <span class="hidden-xs" translate="no">English</span>
+                      <abbr title="English" class="visible-xs h3 mrgn-tp-sm mrgn-bttm-0 text-uppercase" translate="no">en</abbr>
+                    </a>
+                  </li>
+                </ul>
+              </div>
+            </div>
+          </section>
+          <div class="brand col-xs-9 col-sm-5 col-md-4" property="publisher" resource="#wb-publisher" typeof="GovernmentOrganization">
+            <link href="/content/canadasite/fr.html" property="url" />
+
+            <img src="/src/GCWeb/assets/sig-blk-fr.svg" alt="Gouvernement du Canada" property="logo" />
+            <span class="wb-inv">
+              /
+
+              <span lang="en">Government of Canada</span>
+            </span>
+
+            <meta property="name" content="Gouvernement du Canada" />
+            <meta property="areaServed" typeof="Country" content="Canada" />
+            <link property="logo" href="/etc/designs/canada/wet-boew/assets/wmms-blk.svg" />
+          </div>
+          <section id="wb-srch" class="col-lg-offset-4 col-md-offset-4 col-sm-offset-2 col-xs-12 col-sm-5 col-md-4">
+            <h2>Recherche</h2>
+
+            <form action="/fr/sr/srb.html" method="get" name="cse-search-box" role="search">
+              <div class="form-group wb-srch-qry">
+                <label for="wb-srch-q" class="wb-inv">Rechercher dans Canada.ca</label>
+
+                <input
+                  id="wb-srch-q"
+                  list="wb-srch-q-ac"
+                  class="wb-srch-q form-control"
+                  name="q"
+                  type="search"
+                  value=""
+                  size="34"
+                  maxlength="170"
+                  placeholder="Rechercher dans Canada.ca"
+                />
+
+                <datalist id="wb-srch-q-ac"> </datalist>
+              </div>
+              <div class="form-group submit">
+                <button type="submit" id="wb-srch-sub" class="btn btn-primary btn-small" name="wb-srch-sub">
+                  <span class="glyphicon-search glyphicon"></span><span class="wb-inv">Recherche</span>
+                </button>
+              </div>
+            </form>
+          </section>
+        </div>
+      </div>
+      <nav id="wb-bc" property="breadcrumb" aria-labelledby="breadcrumbTitle">
+        <h2 id="breadcrumbTitle">Vous êtes ici :</h2>
+        <div class="container">
+          <ol class="breadcrumb">
+            <li><a href="https://www.canada.ca/fr.html">Canada.ca</a></li>
+            <li><a href="https://www.canada.ca/fr/services/sante.html">Santé</a></li>
+            <li><a href="https://www.canada.ca/fr/services/sante/science-recherche-et-donnees.html">Sciences, recherche et données de la santé</a></li>
+            <li><a href="https://sante-infobase.canada.ca/">Infobase Santé</a></li>
+          </ol>
+        </div>
+      </nav>
+    </header>
+    <main property="mainContentOfPage" id="main">
+      <section class="blue-header well well-sm brdr-0 mrgn-bttm-0 mrgn-tp-0">
+        <div class="container mrgn-tp-sm">
+          <h1 class="mrgn-tp-md" property="name" id="wb-cont" dir="ltr">
+            <span class="stacked"><span>Outil d’évaluation des bénéfices liés à la qualité de l’air</span> : <span></span></span>
+          </h1>
+          <!-- <ul class="list-inline small mrgn-bttm-sm" style="line-height: 1.65em" id="list-inline-desktop-only">
+            <li>
+              <a class="pdf" href="/covid-19/post-covid-condition/COVID-19-symptomes-a-long-terme-chez-les-adultes-canadiens.pdf">
+              <i class="fa fa-download" aria-hidden="true"></i> <span class="wb-invisible">Télécharger la page en format </span>PDF<span
+              class="wb-invisible"
+              ></span
+              ></a>
+            </li>
+            <li> <a class="pdf" href="#"><i class="fa fa-download" aria-hidden="true"></i> <span class="wb-invisible">Télécharger les données en format </span>CSV<span class="wb-invisible"></span></a></li>
+          </ul> -->
+          <p>
+            L’Outil d’évaluation des bénéfices liés à la qualité de l’air (OEBQA) est une application informatique pour estimer les répercussions sur la santé
+            humaine associées aux changements dans la qualité de l’air ambiant au Canada. Cet outil est utilisé pour estimer les bénéfices (répercussions
+            positives) ou les dommages (répercussions négatives) des initiatives réglementaires proposées liées à la qualité de l’air extérieur.
+          </p>
+          <p class="mrgn-rght-lg">Dernière mise à jour : 2025-03-04</p>
+        </div>
+      </section>
+
+      <div>
+        <!-- RSHINY APP -->
+        <div id="spin-container">
+          <div id="spinner"></div>
+          <span id="spinner-text">Chargement...</span>
+        </div>
+        <div class="main" style="display: flex; justify-content: center; padding: 0">
+          <iframe
+            id="shinyIframe"
+            title="Iframe de l'outil d'évaluation de la qualité de l'air"
+            style="width: 100%; border: none"
+            allow="autoplay; encrypted-media"
+            allowfullscreen
+          ></iframe>
+        </div>
+        <!--End of your page conteny-->
+
+        <!-- 2 links to other relevant/related Infobase products, customize for your product -->
+        <!-- <div class="container">
+          <div class="well well-md mrgn-tp-lg">
+            <h2 class="h3 mrgn-tp-sm">Ces produits pourraient aussi vous intéresser :</h2>
+            <div class="row">
+              <div class="col-md-6">
+                <div class="col-md-3 hidden-sm hidden-xs">
+                  <img class="img-responsive mrgn-bttm-sm" src="/src/img/covid-icon.png" alt="" />
+                </div>
+                <div class="col-md-9">
+                  <h3 class="h4 mrgn-tp-sm"><a href="url">Titre de la page</a></h3>
+                  <p>Description...</p>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="col-md-3 hidden-sm hidden-xs">
+                  <img class="img-responsive mrgn-bttm-sm" src="/src/img/covid-icon.png" alt="" />
+                </div>
+                <div class="col-md-9">
+                  <h3 class="h4 mrgn-tp-sm"><a href="url">Titre de la page</a></h3>
+                  <p>Description...</p>
+                </div>
+              </div>
+            </div>
+            <a href="https://sante-infobase.canada.ca/">Tous les produits de l'Infobase Santé</a>
+          </div> -->
+
+        <!-- Feedback widget, need to fill inputs below -->
+        <div class="container">
+          <div class="row row-no-gutters mrgn-tp-xl feedbackWidget">
+            <div class="col-sm-7 col-lg-6">
+              <section class="gc-pg-hlpfl provisional">
+                <div class="well mrgn-bttm-0">
+                  <form id="gc-pg-hlpfl-frm" action="#" method="post" autocomplete="off">
+                    <input type="hidden" name="institutionopt" value="Public Health Agency of Canada" />
+                    <input type="hidden" name="themeopt" value="Health" />
+                    <input type="hidden" name="sectionopt" value="Health data" />
+                    <input type="hidden" name="language" value="fr" />
+                    <input type="hidden" name="pageTitle" value="" />
+                    <input type="hidden" name="submissionPage" value=".html" />
+                    <input type="hidden" id="helpful" name="helpful" value="Yes" />
+
+                    <div class="gc-pg-hlpfl-btn">
+                      <div class="row row-no-gutters">
+                        <div class="col-xs-12 col-sm-7 mrgn-tp-sm">
+                          <h2 class="mrgn-tp-sm h5">Avez-vous trouvé ce que vous cherchiez?</h2>
+                        </div>
+                        <div class="col-xs-8 col-sm-5 text-right">
+                          <button id="btnyes" type="submit" value="Yes" class="btn btn-primary">Oui</button>
+                          <button id="btnno" type="button" class="btn btn-primary mrgn-lft-sm nojs-hide">Non</button>
+                        </div>
+                      </div>
+                    </div>
+                    <p class="h3 hidden nojs-show">Sinon, dites nous pourquoi&nbsp;:</p>
+                    <div class="gc-pg-hlpfl-no nojs-show">
+                      <fieldset>
+                        <legend class="h4 mrgn-tp-0 mrgn-bttm-md">Qu’est-ce qui n’allait pas?</legend>
+                        <div class="radio">
+                          <label for="problem1">
+                            <input
+                              name="problem"
+                              id="problem1"
+                              type="radio"
+                              value="The answer I need is missing"
+                              data-gc-analytics-wtph-value="The answer I need is missing-La réponse dont j’ai besoin n’est pas là"
+                              data-gc-analytics-collect="notPrivate"
+                            />
+                            La réponse dont j’ai besoin n’est pas là
+                          </label>
+                        </div>
+                        <div class="radio">
+                          <label for="problem2">
+                            <input
+                              name="problem"
+                              id="problem2"
+                              type="radio"
+                              value="The information isn’t clear"
+                              data-gc-analytics-wtph-value="The information isn’t clear-L'information n'est pas claire"
+                              data-gc-analytics-collect="notPrivate"
+                            />
+                            L'information n'est pas claire
+                          </label>
+                        </div>
+                        <div class="radio">
+                          <label for="problem3">
+                            <input
+                              name="problem"
+                              id="problem3"
+                              type="radio"
+                              value="I’m not in the right place"
+                              data-gc-analytics-wtph-value="I’m not in the right place-Je ne suis pas au bon endroit"
+                              data-gc-analytics-collect="notPrivate"
+                            />
+                            Je ne suis pas au bon endroit
+                          </label>
+                        </div>
+                        <div class="radio">
+                          <label for="problem4">
+                            <input
+                              name="problem"
+                              id="problem4"
+                              type="radio"
+                              value="Something is broken or incorrect"
+                              data-gc-analytics-wtph-value="Something is broken or incorrect-Quelque chose est brisé ou incorrect"
+                              data-gc-analytics-collect="notPrivate"
+                            />
+                            Quelque chose est brisé ou incorrect
+                          </label>
+                        </div>
+                        <div class="radio">
+                          <label for="problem5">
+                            <input
+                              name="problem"
+                              id="problem5"
+                              type="radio"
+                              value="Other reason"
+                              data-gc-analytics-wtph-value="Other reason-Autre raison"
+                              data-gc-analytics-collect="notPrivate"
+                            />
+                            Autre raison
+                          </label>
+                        </div>
+                      </fieldset>
+                      <label for="problem6" class="mrgn-bttm-0">Veuillez fournir plus de détails</label>
+                      <p class="small">
+                        <strong> (N’incluez pas d’information personnelle. Notez que vous ne recevrez aucune réponse.)</strong>
+                        <br />
+                        <span class="small">Maximum de 300 caractères</span>
+                      </p>
+                      <textarea id="problem6" name="details" class="full-width" maxlength="300"></textarea>
+                      <button type="submit" value="No" class="btn btn-primary mrgn-tp-md mrgn-bttm-sm">Soumettre</button>
+                    </div>
+                  </form>
+                  <div class="gc-pg-hlpfl-thnk hide">
+                    <p class="h6 mrgn-tp-sm mrgn-bttm-sm">
+                      <span class="far fa-check-circle text-success mrgn-rght-sm" aria-hidden="true"></span> Merci de vos commentaires
+                    </p>
+                  </div>
+                </div>
+              </section>
+            </div>
+          </div>
+
+          <div class="row pagedetails">
+            <div class="datemod col-xs-12 mrgn-tp-lg">
+              <dl id="wb-dtmd">
+                <dt>Date de modification:</dt>
+                <dd><time class="dateModified" property="dateModified">2025-03-04</time></dd>
+              </dl>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <footer id="wb-info">
+      <h2 class="wb-inv">À propos de ce site</h2>
+      <div class="gc-contextual">
+        <div class="container">
+          <nav>
+            <h3>Infobase Santé</h3>
+            <ul class="list-col-xs-1 list-col-sm-2 list-col-md-3">
+              <li><a href="mailto:infobase@phac-aspc.gc.ca">Communiquer avec nous par courriel</a></li>
+            </ul>
+          </nav>
+        </div>
+      </div>
+
+      <div class="gc-main-footer">
+        <div class="container">
+          <nav>
+            <h3>Gouvernement du Canada</h3>
+            <ul class="list-col-xs-1 list-col-sm-2 list-col-md-3">
+              <li><a href="https://www.canada.ca/fr/contact.html">Toutes les coordonnées</a></li>
+              <li><a href="https://www.canada.ca/fr/gouvernement/min.html">Ministères et organismes</a></li>
+              <li><a href="https://www.canada.ca/fr/gouvernement/systeme.html">À propos du gouvernement</a></li>
+            </ul>
+            <h4><span class="wb-inv">Thèmes et sujets</span></h4>
+            <ul class="list-unstyled colcount-sm-2 colcount-md-3">
+              <li><a href="https://www.canada.ca/fr/services/emplois.html">Emplois</a></li>
+              <li><a href="https://www.canada.ca/fr/services/immigration-citoyennete.html">Immigration et citoyenneté</a></li>
+              <li><a href="https://voyage.gc.ca/">Voyage et tourisme</a></li>
+              <li><a href="https://www.canada.ca/fr/services/entreprises.html">Entreprises</a></li>
+              <li><a href="https://www.canada.ca/fr/services/prestations.html">Prestations</a></li>
+              <li><a href="https://www.canada.ca/fr/services/sante.html">Santé</a></li>
+              <li><a href="https://www.canada.ca/fr/services/impots.html">Impôts</a></li>
+              <li><a href="https://www.canada.ca/fr/services/environnement.html">Environnement et ressources naturelles</a></li>
+              <li><a href="https://www.canada.ca/fr/services/defense.html">Sécurité nationale et défense</a></li>
+              <li><a href="https://www.canada.ca/fr/services/culture.html">Culture, histoire et sport</a></li>
+              <li><a href="https://www.canada.ca/fr/services/police.html">Services de police, justice et urgences</a></li>
+              <li><a href="https://www.canada.ca/fr/services/transport.html">Transport et infrastructure</a></li>
+              <li><a href="https://www.international.gc.ca/world-monde/index.aspx?lang=fra">Le Canada et le monde</a></li>
+              <li><a href="https://www.canada.ca/fr/services/finance.html">Argent et finance</a></li>
+              <li><a href="https://www.canada.ca/fr/services/science.html">Science et innovation</a></li>
+              <li><a href="https://www.canada.ca/fr/services/autochtones.html">Autochtones</a></li>
+              <li><a href="https://www.canada.ca/fr/services/veterans.html">Vétérans et militaires</a></li>
+              <li><a href="https://www.canada.ca/fr/services/jeunesse.html">Jeunesse</a></li>
+            </ul>
+          </nav>
+        </div>
+      </div>
+
+      <div class="gc-sub-footer">
+        <div class="container d-flex align-items-center">
+          <nav>
+            <h3 class="wb-inv">Organisation du gouvernement du Canada</h3>
+            <ul>
+              <li><a href="https://www.canada.ca/fr/sociaux.html">Médias sociaux</a></li>
+              <li><a href="https://www.canada.ca/fr/mobile.html">Applications mobiles</a></li>
+              <li><a href="https://www.canada.ca/fr/gouvernement/a-propos.html">À propos de Canada.ca</a></li>
+              <li><a href="https://www.canada.ca/fr/transparence/avis.html">Avis</a></li>
+              <li><a href="https://www.canada.ca/fr/transparence/confidentialite.html">Confidentialité</a></li>
+            </ul>
+          </nav>
+          <div class="wtrmrk align-self-end">
+            <img src="https://wet-boew.github.io/themes-dist/GCWeb/GCWeb/assets/wmms-blk.svg" alt="Symbole du gouvernement du Canada" />
+          </div>
+        </div>
+      </div>
+    </footer>
+    <script src="/src/wet-boew/js/wet-boew.min.js"></script>
+    <script src="/src/GCWeb/js/theme.min.js"></script>
+    <script
+      src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"
+      integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM"
+      crossorigin="anonymous"
+    ></script>
+    <script src="/src/js/datatables.js"></script>
+    <script
+      src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"
+      integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM"
+      crossorigin="anonymous"
+    ></script>
+    <script src="/src/js/d3.v5.min.js"></script>
+    <!--<script src="https://cdn.jsdelivr.net/npm/d3-interpolate-path@2.0.0/build/d3-interpolate-path.min.js"></script>-->
+    <script src="/src/js/d3-interpolate-path/d3-interpolate-path.min.js"></script>
+    <script src="https://d3js.org/topojson.v2.min.js"></script>
+    <script src="/src/js/polylabel.js"></script>
+    <script src="/src/js/d3-array.v2.min.js"></script>
+    <script src="/src/js/survey.js"></script>
+    <script>
+      var beforePrint = function () {
+        $('details').attr('open', '');
+      };
+
+      var afterPrint = function () {
+        $('details').removeAttr('open');
+      };
+
+      if (window.matchMedia) {
+        var mediaQueryList = window.matchMedia('print');
+        mediaQueryList.addListener(function (mql) {
+          if (mql.matches) {
+            beforePrint();
+          } else {
+            afterPrint();
+          }
+        });
+      }
+
+      $(document).on('wb-ready.wb', function () {
+        $('#btnno').click(function (e) {
+          $('.gc-pg-hlpfl-no').removeClass('nojs-show');
+          $('.gc-pg-hlpfl-btn').addClass('hide');
+          $('#helpful').val('No');
+        });
+        $('#gc-pg-hlpfl-frm').submit(function (e) {
+          e.preventDefault();
+          $('.gc-pg-hlpfl-thnk').removeClass('hide');
+          $('#gc-pg-hlpfl-frm').addClass('hide nojs-show');
+          $.ajax({
+            url: 'https://pagesuccessemailqueue.azurewebsites.net/api/QueueProblemForm',
+            type: 'POST',
+            dataType: 'text',
+            data: $('form#gc-pg-hlpfl-frm').serialize(),
+            success: function (data) {},
+            error: function (xhr, status, err) {
+              console.error(xhr.responseText);
+            },
+          });
+        });
+      });
+    </script>
+    <!-- load iframe from dynamic source -->
+
+    <script>
+      // Get the current URL
+      const currentUrl = window.location.href;
+
+      // Define the URLs for local development and production
+      const localUrl = 'http://127.0.0.1:3252';
+      const netlifyUrl = 'https://ajsim.shinyapps.io/aqbat-fr/'; // Change this to match your local development URL
+      const productionUrl = 'https://hcscpsd.shinyapps.io/aqbat-netlify-fr/'; // Change this to match your production URL
+
+      // Set the src attribute of the iframe based on the URL
+      const iframe = document.getElementById('shinyIframe');
+      const spinnerContainer = document.getElementById('spin-container');
+      if (currentUrl.includes('localhost') || currentUrl.includes('127.0.0.1')) {
+        iframe.src = localUrl;
+        spinnerContainer.style.display = 'none';
+      } else if (currentUrl.includes('netlify')) {
+        iframe.src = netlifyUrl;
+        spinnerContainer.style.display = 'none';
+      } else {
+        iframe.src = productionUrl;
+        spinnerContainer.style.display = 'none';
+      }
+    </script>
+    <!-- instantiate iframeResizer -->
+    <script>
+      iFrameResize({ log: false }, '#shinyIframe');
+    </script>
+  </body>
+</html>

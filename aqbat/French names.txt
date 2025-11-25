@@ -1,0 +1,36 @@
+cdmap$CDNAME<-ifelse(cdmap$CDUID==2451,paste('Maskinong',intToUtf8(0xe9),sep=''),
+ifelse(cdmap$CDUID==2457,paste('La Vall',intToUtf8(0xe9),'e-du-Richelieu',sep=''),
+ifelse(cdmap$CDUID==2466,paste('Montr',intToUtf8(0xe9),'al',sep=''),
+ifelse(cdmap$CDUID==2483,paste('La Vall',intToUtf8(0xe9),'e-de-la-Gatineau',sep=''),
+ifelse(cdmap$CDUID==2485,paste('T',intToUtf8(0xe9),'miscamingue',sep=''),
+ifelse(cdmap$CDUID==2489,paste('La Vall',intToUtf8(0xe9),"e-de-l'Or",sep=''),
+ifelse(cdmap$CDUID==2499,paste('Nord-du-Qu',intToUtf8(0xe9),'bec',sep=''),
+ifelse(cdmap$CDUID==2402,paste('Le Rocher-Perc',intToUtf8(0xe9),sep=''),
+ifelse(cdmap$CDUID==2404,paste('La Haute-Gasp',intToUtf8(0xe9),'sie',sep=''),
+ifelse(cdmap$CDUID==2407,paste('La Matap',intToUtf8(0xe9),'dia',sep=''),
+ifelse(cdmap$CDUID==2413,paste('T',intToUtf8(0xe9),'miscouata',sep=''),
+ifelse(cdmap$CDUID==2423,paste('Qu',intToUtf8(0xe9),'bec',sep=''),
+ifelse(cdmap$CDUID==2425,paste('L',intToUtf8(0xe9),'vis',sep=''),
+ifelse(cdmap$CDUID==2435,paste('M',intToUtf8(0xe9),'kinac',sep=''),
+ifelse(cdmap$CDUID==2438,paste('B',intToUtf8(0xe9),'cancour',sep=''),
+ifelse(cdmap$CDUID==2445,paste('Memphr',intToUtf8(0xe9),'magog',sep=''),
+ifelse(cdmap$CDUID==2475,paste('La Rivi',intToUtf8(0xe8),'re-du-Nord',sep=''),
+ifelse(cdmap$CDUID==2497,paste('Sept-Rivi',intToUtf8(0xe8),'res--Caniapiscau',sep=''),
+ifelse(cdmap$CDUID==2412,paste('Rivi',intToUtf8(0xe8),'re-du-Loup',sep=''),
+ifelse(cdmap$CDUID==2433,paste('Lotbini',intToUtf8(0xe8),'re',sep=''),
+ifelse(cdmap$CDUID==2495,paste('La Haute-C',intToUtf8(0xf4),'te-Nord',sep=''),
+ifelse(cdmap$CDUID==2401,paste('Les ',intToUtf8(0xce),'les-de-la-Madeleine',sep=''),
+ifelse(cdmap$CDUID==2432,paste("L'",intToUtf8(0xce),'rable',sep=''),
+ifelse(cdmap$CDUID==2441,paste('Le Haut-Saint-Fran',intToUtf8(0xe7),'ois',sep=''),
+ifelse(cdmap$CDUID==2442,paste('Le Val-Saint-Fran',intToUtf8(0xe7),'ois',sep=''),
+ifelse(cdmap$CDUID==2473,paste('Th',intToUtf8(0xe9),'r',intToUtf8(0xe8),'se-De Blainville',sep=''),
+ifelse(cdmap$CDUID==2403,paste('La C',intToUtf8(0xf4),'te-de-Gasp',intToUtf8(0xe9),sep=''),
+ifelse(cdmap$CDUID==2421,paste('La C',intToUtf8(0xf4),'te-de-Beaupr',intToUtf8(0xe9),sep=''),
+ifelse(cdmap$CDUID==2420,paste("L'",intToUtf8(0xce),"le-d'Orl",intToUtf8(0xe9),'ans',sep=''),cdmap$CDNAME)))))))))))))))))))))))))))))
+
+cdmap$PRNAME<-ifelse(cdmap$PRUID==24,paste('Qu',intToUtf8(0xe9),'bec',sep=''),cdmap$PRNAME)
+cdmap$PRNAME<-ifelse(cdmap$PRUID==11,paste('Prince Edward Island / ',intToUtf8(0xce),'le-du-Prince-',intToUtf8(0xc9),'douard',sep=''),cdmap$PRNAME)
+cdmap$PRNAME<-ifelse(cdmap$PRUID==12,paste('Nova Scotia / Nouvelle-',intToUtf8(0xc9),'cosse',sep=''),cdmap$PRNAME)
+
+dir.create("c:/users/dstieb/downloads/AQBAT shiny/test5/cdmap")
+writeOGR(obj=cdmap, dsn="c:/users/dstieb/downloads/AQBAT shiny/test5/cdmap", layer="cdmap", driver="ESRI Shapefile")

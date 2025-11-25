@@ -1,0 +1,119 @@
+[
+    {
+        "heading": "PM2,5 et visites à l’urgence pour des problèmes cardiaques",
+        "description": "Les données relatives à la pollution de l’air et aux admissions à l’hôpital au Canada, sont considérément plus nombreuses que celles pour les visites à l’urgence. Par conséquent, nous avons choisi de représenter les effets de la pollution de l’air sur la fréquence des visites à l’urgence pour des problèmes cardiaques en utilisant les résultats d’admissions à l’hôpital ajustés à la hausse selon la fréquence relative des admissions à l’hôpital et des visites à l’urgence pour ces conditions. Ainsi, le changement de la fréquence par unité de pollution atmosphérique est le même que dans le cas des admissions à l’hôpital selon Burnett et coll. (1995), soit une augmentation de 0,0711 % (erreur-type 0,0170 %) par 1 µg/m3. Le taux de base des visites à l’urgence est égal au taux de base des admissions à l’hôpital divisé par 0,760, qui est la proportion de visites qui se terminent en une admission à l’hôpital rapportée par Stieb et coll. (2000).",
+        "authors": "Stieb DM; Beveridge RC; Brook JR; Smith-Doiron M; Burnett RT; Dales RE; Beaulieu S; Judek S; Mamedov A (2000).",
+        "source": "https://www.nature.com/articles/7500112.pdf",
+        "articleTitle": "Air pollution, aeroallergens and cardiorespiratory emergency department visits in Saint John, Canada.",
+        "publication": "J Expo Anal Environ Epidemiol 10(5): 461-477.",
+        "lang": "en"
+    },
+    {
+        "heading": "PM2,5 et mortalité par cause interne liée à une exposition chronique",
+        "description": "Grâce à des observations par satellites et en se basant sur la version longue du recensement de 1991, Crouse et coll. (2012) examinent l’association entre PM2,5 et la mortalité au cours d’un suivi de 10 ans d’une cohorte de 2.1 million de Canadiens. En utilisant un effet aléatoire spatial, le modèle de Cox inclut des covariables individuelles et écologiques et un indicateur urbain/rural. En tenant compte de l’autocorrélation spatiale parmi les membres de la cohorte, ils signalent un ratio de risque de 1.10 (95% IC 1.05-1.15) par 10 µg/m3 PM2,5. Cela se traduit par un β de 0.00953 avec un erreur-type de 0.00232.",
+        "authors": "Crouse DL, Peters PA, van Donkelaar A, Goldberg MS, Villeneuve PJ, Brion O, Khan S, Atari DO, Jerrett M, Pope CA, Brauer M, Brook JR, Martin RV, Stieb D, Burnett RT (2012).",
+        "source": "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC3346774/pdf/ehp.1104049.pdf",
+        "articleTitle": "Risk of nonaccidental and cardiovascular mortality in relation to long-term exposure to low concentrations of fine particulate matter: a Canadian national-level cohort study.",
+        "publication": "Environ Health Perspect. 2012 mai;120(5):708-14.",
+        "lang": "en"
+    },
+    {
+        "heading": "PM2,5 et jours avec symptômes respiratoires aigus",
+        "description": "Krupnick, Harrington et Ostro (1990) ont étudié la relation entre le coefficient de brume (coh) et l’apparition de symptômes respiratoires aigus dans un panel de familles californiennes.  Ils ont utilisé un modèle Markov qui prenait en compte l’apparition des symptômes le jour précédent et ajustait pour l’O3 et le dioxyde d’azote et le dioxyde de soufre comme co-polluants. Le changement graduel de la fréquence des symptômes a été calculé en substituant le coefficient du tableau V, colonne 3, divisé par 0,211 pour convertir le coh en PM2,5, en parallèle avec les probabilités de transition, p1=0,775 et p2 = 0,0468 (fournies par les auteurs), dans l’équation 3 de la page 12 du rapport. La conversion du coh en PM2,5 a été calculée en divisant le rapport du coh aux particules totales en suspension (TSP) (0,116) fourni par les auteurs, par celui des PM10 aux TSP (0,55) fourni par Environnement Canada. Ceci suppose que la toxicité des PM2,5 par µg/m3 est la même que celle des PM10. La fréquence de base des symptômes a été calculée en substituant p1 et p0 dans l’équation 2. Alors, le changement proportionnel par µg/m3 de PM2,5 est le résultat de l’équation 3 divisé par celui de l’équation 2, soit 0,00266 (erreur-type 0,00139).",
+        "authors": "Krupnick AJ; Harrington W; Ostro B (1990).",
+        "source": "https://www.sciencedirect.com/science/article/abs/pii/0095069690900484",
+        "articleTitle": "Ambient ozone and acute health effects: evidence from daily data.",
+        "publication": "J Environ Econ Manage 18(1): 1-18.",
+        "lang": "en"
+    },
+    {
+        "heading": "PM2,5 et jours de symptômes d’asthme",
+        "description": "Ces paramètres sont dérivés en utilisant la même approche décrite dans le projet Health Risk of Air Pollution in Europe du Centre européen pour l’environnement et la santé de l’OMS. Weinmayr et coll. (2010) ont réalisé une revue systématique et une méta-analyse de 36 études sur le lien entre la pollution de l’air et les symptômes de l’asthme chez les enfants. Le rapport de cotes combiné était de 1.028 (95% IC 1.006–1.051) par 10 µg/m3 PM10 (tableau 2) basé sur un model à effet aléatoire qui regroupait toutes les études. Ceci se base sur des modèles à polluant unique puisque des modèles cohérents à polluants multiples n’était pas disponibles. Par contre, l’effet dérivé est d’une dimension beaucoup plus petite que celui observé avec le modèle à polluants multiples de Mortimer et coll. (2002) pour les villes nord-américaines. Afin de dériver un rapport de cotes pour PM2,5, nous avons multiplié le rapport de côtes de log pour PM10 par 2.37, ce qui est la moyenne du ratio des rapports de cotes combinés de log pour PM2,5 versus PM10 pour la toux et les autres symptômes respiratoires rapportés par Ward et Ayres (2004; tableaux 3 et 4) dans leur première méta-analyse. Le résultat est un rapport de côtes pour PM2,5 de 1.07 (95% IC 1.01–1.12). La fréquence quotidienne de base des symptômes d’asthme chez les enfants asthmatiques varie grandement dans les enquêtes. Nous l’avons estimé de manière conservatrice à 20%. La population à laquelle ceci est applicable est basée sur la prévalence de l'asthme diagnostiqué au Canada établie par le Système Canadien de Surveillance des Maladies Chroniques (17,7%; Agence de la santé publique du Canada. 2018).",
+        "authors": "Weinmayr G; Romeo E; De Sario M; Weiland SK; Forastiere F (2010).",
+        "source": "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC2854719/pdf/ehp-118-449.pdf",
+        "articleTitle": "Short-term effects of PM10 and NO2 on respiratory health among children with asthma or asthma-like symptoms: a systematic review and meta-analysis.",
+        "publication": "Environ Health Perspect 118(4): 449-457.",
+        "lang": "en"
+    },
+    {
+        "heading": "PM2,5 et cas de bronchite chronique chez les adultes",
+        "description": "Abbey et coll. (1995) ont rapporté les résultats d’une étude de cohorte portant sur la pollution de l’air et le développement de maladies pulmonaires chroniques parmi les adventistes du septième jour non-fumeurs vivant en Californie. En se basant sur un modèle de régression logistique comportant aussi des caractéristiques individuelles, les auteurs rapportent un rapport de ratios (odds ratio) de 1,81 (intervalle de confiance ou IC à 95 % 0,98-3,25) pour le développement de bronchite chronique par 45 µg/m3 de PM2,5 (tableau 2, rangée 2). En prenant ensuite le logarithme naturel du quotient de probabilité et le divisant par 45, on obtient un coefficient de 0,0132 (erreur-type 0,00680) par µg/m3 de PM2,5. Les auteurs relatent que l’incidence de bronchite chronique sur dix ans était de 6,26 % (117 nouveaux cas sont apparus parmi les 1 868 sujets pour lesquels l’exposition aux PM2,5 a pu être estimée). Nous calculons l’incidence annuelle, p1, à partir de la formule: 0,0626=1-(1-p1)^10, ce qui donne p1=0,0064.",
+        "authors": "Abbey DE; Lebowitz MD; Mills PK; Petersen FF; Beeson WL; Burchette RJ (1995).",
+        "source": "https://www.tandfonline.com/doi/abs/10.3109/08958379509014268",
+        "articleTitle": "Long term ambient concentrations of particulates and oxidants and development of chronic disease in a cohort of nonsmoking California residents.",
+        "publication": "Inhal Toxicol 7: 19-34.",
+        "lang": "en"
+    },  
+    {
+        "heading": "PM2,5 et visites à l’urgence pour des problèmes cardiaques",
+        "description": "Les données relatives à la pollution de l’air et aux admissions à l’hôpital au Canada, sont considérément plus nombreuses que celles pour les visites à l’urgence. Par conséquent, nous avons choisi de représenter les effets de la pollution de l’air sur la fréquence des visites à l’urgence pour des problèmes cardiaques en utilisant les résultats d’admissions à l’hôpital ajustés à la hausse selon la fréquence relative des admissions à l’hôpital et des visites à l’urgence pour ces conditions. Ainsi, le changement de la fréquence par unité de pollution atmosphérique est le même que dans le cas des admissions à l’hôpital selon Burnett et coll. (1995), soit une augmentation de 0,0711 % (erreur-type 0,0170 %) par 1 µg/m3. Le taux de base des visites à l’urgence est égal au taux de base des admissions à l’hôpital divisé par 0,760, qui est la proportion de visites qui se terminent en une admission à l’hôpital rapportée par Stieb et coll. (2000).",
+        "authors": "Stieb DM; Beveridge RC; Brook JR; Smith-Doiron M; Burnett RT; Dales RE; Beaulieu S; Judek S; Mamedov A (2000).",
+        "source": "https://www.nature.com/articles/7500112.pdf",
+        "articleTitle": "Air pollution, aeroallergens and cardiorespiratory emergency department visits in Saint John, Canada.",
+        "publication": "J Expo Anal Environ Epidemiol 10(5): 461-477.",
+        "lang": "en"
+    },
+    {
+        "heading": "PM2,5 et admissions à l’hôpital pour des problèmes cardiaques",
+        "description": "Burnett et coll. (1995) ont signalé une augmentation de 3,3 % (CI à 95 % 1,7-4,8 %) des admissions à l’hôpital pour des problèmes cardiaques par 13 µg/m3 de sulfate particulaire, selon un modèle de régression linéaire qui incluait aussi l’O3 et la température (tableau 5, colonne 2). En multipliant ce chiffre par le rapport moyen entre le sulfate particulaire et les PM2,5, soit 0,28 (Environnement Canada), on obtient une augmentation de 0,0711 % (erreur-type 0,0170 %) par 1 µg/m3 PM2,5.",
+        "authors": "Burnett RT; Dales R; Krewski D; Vincent R; Dann T; Brook JR (1995).",
+        "source": "https://pubmed.ncbi.nlm.nih.gov/7785669/",
+        "articleTitle": "Associations between ambient particulate sulphate and admissions to Ontario hospitals for cardiac and respiratory diseases.",
+        "publication": "Am J Epidemiol 142(1): 15-22.",
+        "lang": "en"
+    },
+    {
+        "heading": "PM2,5 et visites à l’urgence pour des problèmes respiratoires",
+        "description": "Les données relatives à la pollution de l’air et aux admissions à l’hôpital au Canada, sont considérément plus nombreuses que celles pour les visites à l’urgence. Par conséquent, nous avons choisi de représenter les effets de la pollution de l’air sur les visites à l’urgence liées à des problèmes respiratoires en utilisant les résultats d’admissions à l’hôpital ajustés à la hausse selon la fréquence relative des admissions à l’hôpital et des visites à l’urgence pour ces conditions. Ainsi, le changement de la fréquence par unité de pollution atmosphérique était le même que dans le cas des admissions à l’hôpital selon Burnett et coll. (1995), soit une augmentation de 0,0754 % (erreur-type 0,0132 %) par 1 µg/m3. Le taux de base des visites à l’urgence est égal au taux de base des admissions à l’hôpital divisé par 0,198, qui est la proportion de visites qui se terminent en une admission à l’hôpital rapportée par Stieb et coll. (2000).",
+        "authors": "Stieb DM; Beveridge RC; Brook JR; Smith-Doiron M; Burnett RT; Dales RE; Beaulieu S; Judek S; Mamedov A (2000).",        
+        "source": "https://www.nature.com/articles/7500112.pdf",
+        "articleTitle": "Air pollution, aeroallergens and cardiorespiratory emergency department visits in Saint John, Canada.",
+        "publication": "J Expo Anal Environ Epidemiol 10(5): 461-477.",
+        "lang": "en"
+    },
+    {
+        "heading": "PM2,5 et jours d’activité restreinte",
+        "description": "Ostro (1987) a rapporté une association entre les PM2,5 et les jours d’activité réduite (JAR) basée sur une analyse des données de la Health Interview Survey des États-Unis. Ils ont fait état de résultats annuels pour 1976-1981 fondés sur un modèle de régression Poisson (tableau III, colonne 2). Nous avons combiné ces coefficients à l’aide d’un modèle à effets aléatoires et obtenu une estimation combinée de 0,00481 (erreur-type 0,00101) par µg/m3 de PM2,5. Le taux quotidien de base de JAR par personne était 0,052 (Chestnut et coll., 1999). Ostro et Rothschild (1989) ont aussi fait mention d’une analyse des PM2,5 et des jours d’activité réduite liés à des problèmes respiratoires (JARPR), dans laquelle ils ont pris en compte les effets simultanés de l’O3. Les effets des PM2,5 n’ont pas été affectés par ces ajustements, c’est pourquoi nous avons choisi d’utiliser les résultats de leur analyse précédente, puisque les JAR représentent un effet plus général que les JARPR, dont la définition est plus précise.",
+        "authors": "Ostro BD; Rothschild S (1989).",
+        "source": "https://www.sciencedirect.com/science/article/pii/S0013935189800040?via%3Dihub",
+        "articleTitle": "Air pollution and acute respiratory morbidity: an observational study of multiple pollutants.",
+        "publication": "Environ Res 50: 238-247.",
+        "lang": "en"
+    },
+    {
+        "heading": "PM2,5 et admissions à l’hôpital pour des problèmes respiratoires",
+        "description": "Burnett et coll. (1995) ont rapporté une augmentation de 3,5 % (IC de 95 % 2,3-4,7 %) des admissions à l’hôpital pour des problèmes respiratoires par 13 µg/m3 de sulfate particulaire, selon sur un modèle de régression linéaire qui incluait aussi l’O3 et la température (tableau 4, rangée 2). En multipliant ce chiffre par le rapport moyen entre le sulfate particulaire et les PM2,5, soit 0,28 (Environnement Canada), on obtient une augmentation de 0,0754 % (erreur-type 0,0132 %) par 1 µg/m3 de PM2,5.",
+        "authors": "Burnett RT; Dales R; Krewski D; Vincent R; Dann T; Brook JR (1995).",
+        "source": "https://pubmed.ncbi.nlm.nih.gov/7785669/",
+        "articleTitle": "Associations between ambient particulate sulphate and admissions to Ontario hospitals for cardiac and respiratory diseases.",
+        "publication": "Am J Epidemiol 142(1): 15-22.",
+        "lang": "en"
+    },
+    {
+        "heading": "PM2,5 et épisodes de bronchite aiguë chez des enfants",
+        "description": "Ces paramètres sont dérivés en utilisant la même approche décrite dans le projet Health Risk of Air Pollution in Europe du Centre européen pour l’environnement et la santé de l’OMS. Hoek et coll. (2012) ont conduit une métaanalyse de huit études transversales en Europe and Amérique du Nord, incluant l’étude de 24 villes, qui incluait des données de plusieurs communautés canadiennes. L’estimation randomisée globale du rapport de cotes était de 1.08 (95% IC 0.98–1.19) par 10 µg/m3 PM10 (tableau 3), ajustée pour l’âge, le sexe, l’éducation maternelle, l’éducation paternelle, le surpeuplement de la maison, le tabagisme actuel des parents, le tabagisme de la mère durant la grossesse, la cuisine au gaz, le chauffage au gaz, mazout ou kérosène non ventilé, la moisissure, la nationalité, l’ordre de naissance et le fait d’« avoir eu un animal de compagnie ». La taille de l’effet fut réduite sur la base de modèles combinés avec SO2, mais ceci était basé sur seulement trois études (tableau 4). La prévalence moyenne de bronchites parmi les études était de 18.6% (tableau 2). Dans l’étude des 24 villes (Dockery et coll. 1996), le rapport de cotes des bronchites pour PM2,5 était identique à celui pour PM10 à travers la différence d’exposition entre les communauté les plus exposées et les moins exposées, soit respectivement 17.3 et 14.9 µg/m3 par PM10 et PM2,5 (tableaux 1 et 4). Nous multiplions donc le log des rapport de cotes pour PM10 par ce ratio (1.16) de manière à dériver un rapport de cote par 10 µg/m3 PM2,5, résultant en un raport de cotes de 1.09 (95% IC 0.98–1.22).",
+        "authors": "Dockery DW; Cunningham J; Damokosh AI; Neas LM; Spengler JD; Koutrakis P; Ware JH; Raizenne M; Speizer FE (1996).",
+        "source": "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC1469356/pdf/envhper00336-0048.pdf",
+        "articleTitle": "Health effects of acid aerosols on North American children: respiratory symptoms.",
+        "publication": "Environ Health Perspect 104: 500-505.",
+        "lang": "en"
+    },
+    {
+        "heading": "PM2,5 et exposition chronique, maladie pulmonaire obstructive chronique (MPOC), maladies cérébrovasculaires et cardiopathie ischémique",
+        "description": "Les FCR par cause spécifique ont été dérivées de méta-analyses d’études de cohortes mondiales tel que décrit par Shin et coll. 2013. Les valeurs indiquées pour beta et SE and l’OEBQA sont en fait les paramètres alpha et beta (forme et échelle) de la distribution gamma. La moyenne du rapport combiné des risques peut être calculé comme étant l’exponentiel du produit des paramètres forme et échelle de la distribution gamma, alors que le 95% d’intervalle de confiance peut être calculé comme l’exponentiel de l’inverse de la distribution gamma au 2.5e et 97.5e centiles de la fonction cumulative de densité.",
+        "authors": "Shin HH, Cohen AJ, Pope CA 3rd, Ezzati M, Lim SS, Hubbell BJ, Burnett RT (2016).",
+        "source": "https://onlinelibrary.wiley.com/doi/10.1111/risa.12421",
+        "articleTitle": "Meta-Analysis Methods to Estimate the Shape and Uncertainty in the Association Between Long-Term Exposure to Ambient Fine Particulate Matter and Cause-Specific Mortality Over the Global Concentration Range.",
+        "publication": "Risk Anal. 36(9): 1813-1825.",
+        "lang": "en"
+    },
+    {
+        "heading": "PM2,5 et mortalité par cancer du poumon liée à une exposition chronique",
+        "description": "",
+        "authors": "Santé Canada. 2022.",
+        "source": "https://publications.gc.ca/site/archivee-archived.html?url=https://publications.gc.ca/collections/collection_2022/sc-hc/H144-98-2022-fra.pdf",
+        "articleTitle": "Cancer du poumon et PM2,5 ambiant au Canada : une revue systématique et une méta-analyse.",
+        "publication": "",
+        "lang": "fr"
+    }
+]

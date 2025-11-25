@@ -1,0 +1,59 @@
+<!-- Timeout Warning Modal -->
+<div id="{{type}}-centred-popup-modal" class="modal fade" tabindex="-1" data-backdrop="static" data-keyboard="false"role="dialog" aria-labelledby="modal-title" aria-hidden="true">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 class="modal-title" id="modal-title">{{i18n$t("Disconnection Notice")}}</h3>
+      </div>
+      <div class="modal-body">
+        {{message}}
+      </div>
+      <div class="modal-footer">
+        <button id="disconnect-data-warning" 
+          class="btn btn-primary" 
+          type="button" 
+          onclick="location.reload()"
+        >  
+          {{i18n$t("Restart application")}}
+        </button>
+        <!-- <button type="button" class="btn btn-secondary" data-dismiss="modal">{{i18n$t("Cancel")}}</button> -->
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  /* Ensure modal positioning remains unchanged */
+  /* .modal-content {
+    position: absolute;
+    width: 500px;
+    max-width: 100%;
+    top: 200px;
+  } */
+
+  .modal-header {
+    background-color: var(--primary);
+    color: white !important;
+    display: flex;
+    flex-direction: row;
+    justify-content: start;
+  }
+
+  .close {
+    color: white;
+    opacity: unset;
+    position: absolute;
+    right: 10px;
+    top: 8px;
+  }
+
+  /* Custom style to ensure scrollbar is retained */
+  .modal-open {
+    overflow: hidden; /* Hide the overflow only in modal */
+  }
+
+  .modal-open .modal {
+    padding-right: 15px; /* Adjust to match scrollbar width */
+  }
+
+</style>

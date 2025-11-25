@@ -1,0 +1,110 @@
+[
+    {
+        "heading": "All mortality endpoints",
+        "description": "The default value provided in AQBAT for the value of a statistical life is $6.5 million (2007 CDN dollars). It was derived from a literature review conducted by Stratus Consulting in 2009 (Chestnut, 2009). On advice from the review, low and high values were suggested to be $3.5 million and $9.5 million respectively which reflect possible ranges in the literature. It was also suggested that a probability weight be given to each value to account for the distribution of results in the literature. The authors suggest a weight of 50% for the mid value ($6.5 million) and a weight of 25% for each of the low and high values. The VSL literature review was based on revealed preference and stated preference studies that measured values associated with small changes in mortality risk. Based on the conclusions of the literature review, no adjustments to the VSL used in AQBAT are made due to age, size of mortality risk change, type of risk, health status or baseline risk.",
+        "authors": "Lauraine G. Chestnut, Stratus Consulting Inc. and Paul De Civita, Policy Research Initiative.",
+        "source": "https://publications.gc.ca/collections/collection_2009/policyresearch/PH4-51-2009E.pdf",
+        "articleTitle": "Economic Valuation of Mortality Risk Reduction: Review and Recommendations for Policy and Regulatory Analysis.",
+        "publication": "Research Paper for PRI Project Regulatory Strategy, Canada, March 2009.",
+        "lang": "en"
+    },
+    {
+        "heading": "Acute respiratory symptom days",
+        "description": "In this paper, estimates are reported of the total valuation, comprising, where applicable, costs of illness, lost productivity, pain and suffering and averting expenditures. Total values are taken from table 5.",
+        "authors": "Stieb DM, De Civita P, Johnson FR, Manary MP, Anis AH, Beveridge RC, Judek S.",
+        "source": "https://ehjournal.biomedcentral.com/articles/10.1186/1476-069x-1-7",
+        "articleTitle": "Economic evaluation of the benefits of reducing acute cardiorespiratory morbidity associated with air pollution.",
+        "publication": "Environ Health. 2002 Dec 18;1(1):7. doi: 10.1186/1476-069x-1-7.",
+        "lang": "en"
+    },
+    {
+        "heading": "Adult chronic bronchitis cases",
+        "description": "Excerpt from AQVM 3.0 Methodology Report (Chestnut et al. 1999): 'We use the reported median value from Viscusi et al. (1991) ($457,000 1990 U.S. dollars) as the basis for our central estimate. For a low estimate for a severe case of chronic bronchitis we select the 20th percentile value of $300,000 and for a high estimate we select the 80th percentile value of $800,000 (1990 U.S. dollars). These values were converted to their 1996 Canadian dollar equivalents by first multiplying by the 1990 PPP index value of 1.22 and then inflating using the Canadian CPI values of 119.5 for 1990 and 135.7 for 1996. The mean severity rating reported for the Krupnick and Cropper sample is 6.5, based on the 0 to 13 scale. Using the elasticity at the mean of 1.16, this suggests that WTP for an average case is 58% lower than for a case at 13 on the scale. Using this to adjust the Viscusi et al. estimates, we get a central WTP estimate of $266,000, a low of $175,000, and a high of $465,000 (1996 Canadian dollars), rounded to the nearest thousand, for an average case of chronic bronchitis.'",
+        "authors": "Chestnut LG, Mills D, Rowe RD. 1999.",
+        "source": "https://search.worldcat.org/title/70515881",
+        "articleTitle": "Air quality valuation model (AQVM 3.0) report 2: methodology.",
+        "publication": "Prepared for: Environment Canada, Health Canada, September 3, 1999, by Lauraine G. Chestnut, David Mills, Shannon Ragland, Robert D. Rowe, of Stratus Consulting Inc.",
+        "lang": "en"
+    },
+    {
+        "heading": "Asthma symptom days",
+        "description": "In this paper, estimates are reported of the total valuation, comprising, where applicable, costs of illness, lost productivity, pain and suffering and averting expenditures. Total values are taken from table 5. Since in this case the 95% confidence interval was not symmetric around the point estimate, the distribution was characterized as triangular.",
+        "authors": "Stieb DM, De Civita P, Johnson FR, Manary MP, Anis AH, Beveridge RC, Judek S.",
+        "source": "https://ehjournal.biomedcentral.com/articles/10.1186/1476-069x-1-7",
+        "articleTitle": "Economic evaluation of the benefits of reducing acute cardiorespiratory morbidity associated with air pollution.",
+        "publication": "Environ Health. 2002 Dec 18;1(1):7. doi: 10.1186/1476-069x-1-7.",
+        "lang": "en"
+    },
+    {
+        "heading": "Acute respiratory symptom days",
+        "description": "In this paper, estimates are reported of the total valuation, comprising, where applicable, costs of illness, lost productivity, pain and suffering and averting expenditures. Total values are taken from table 5.",
+        "authors": "Stieb DM, De Civita P, Johnson FR, Manary MP, Anis AH, Beveridge RC, Judek S.",
+        "source": "https://ehjournal.biomedcentral.com/articles/10.1186/1476-069x-1-7",
+        "articleTitle": "Economic evaluation of the benefits of reducing acute cardiorespiratory morbidity associated with air pollution.",
+        "publication": "Environ Health. 2002 Dec 18;1(1):7. doi: 10.1186/1476-069x-1-7.",
+        "lang": "en"
+    },
+    {
+        "heading": "Cardiac emergency room visits",
+        "description": "In this paper, estimates are reported of the total valuation, comprising, where applicable, costs of illness, lost productivity, pain and suffering and averting expenditures. Total values are taken from table 5.",
+        "authors": "Stieb DM, De Civita P, Johnson FR, Manary MP, Anis AH, Beveridge RC, Judek S.",
+        "source": "https://ehjournal.biomedcentral.com/articles/10.1186/1476-069x-1-7",
+        "articleTitle": "Economic evaluation of the benefits of reducing acute cardiorespiratory morbidity associated with air pollution.",
+        "publication": "Environ Health. 2002 Dec 18;1(1):7. doi: 10.1186/1476-069x-1-7.",
+        "lang": "en"
+    },
+    {
+        "heading": "Cardiac hospital admissions",
+        "description": "The probability and valuation of cardiac hospital admissions (CHAs) are captured under valuation for cardiac emergency room visits (CERVs). To avoid double counting, valuation for CHAs is set to zero. The valuation for CERVs is applied to gross counts.",
+        "authors": "Stieb DM, De Civita P, Johnson FR, Manary MP, Anis AH, Beveridge RC, Judek S.",
+        "source": "https://ehjournal.biomedcentral.com/articles/10.1186/1476-069x-1-7",
+        "articleTitle": "Economic evaluation of the benefits of reducing acute cardiorespiratory morbidity associated with air pollution.",
+        "publication": "Environ Health. 2002 Dec 18;1(1):7. doi: 10.1186/1476-069x-1-7.",
+        "lang": "en"
+    },
+    {
+        "heading": "Elderly cardiac hospital admissions",
+        "description": "In this paper, estimates are reported of the total valuation, comprising, where applicable, costs of illness, lost productivity, pain and suffering and averting expenditures. Total values are taken from table 5.",
+        "authors": "Stieb DM, De Civita P, Johnson FR, Manary MP, Anis AH, Beveridge RC, Judek S.",
+        "source": "https://ehjournal.biomedcentral.com/articles/10.1186/1476-069x-1-7",
+        "articleTitle": "Economic evaluation of the benefits of reducing acute cardiorespiratory morbidity associated with air pollution.",
+        "publication": "Environ Health. 2002 Dec 18;1(1):7. doi: 10.1186/1476-069x-1-7.",
+        "lang": "en"
+    },
+    {
+        "heading": "Respiratory emergency room visits",
+        "description": "In this paper, estimates are reported of the total valuation, comprising, where applicable, costs of illness, lost productivity, pain and suffering and averting expenditures. Total values are taken from table 5.",
+        "authors": "Stieb DM, De Civita P, Johnson FR, Manary MP, Anis AH, Beveridge RC, Judek S.",
+        "source": "https://ehjournal.biomedcentral.com/articles/10.1186/1476-069x-1-7",
+        "articleTitle": "Economic evaluation of the benefits of reducing acute cardiorespiratory morbidity associated with air pollution.",
+        "publication": "Environ Health. 2002 Dec 18;1(1):7. doi: 10.1186/1476-069x-1-7.",
+        "lang": "en"
+    },
+    {
+        "heading": "Respiratory hospital admissions",
+        "description": "The probability and valuation of Respiratory Hospital Admissions (RHAs) are captured under valuation for respiratory emergency room visits (RERVs). To avoid double counting, valuation for RHAs is set to zero. The valuation for RERVs is applied to gross counts.",
+        "authors": "Stieb DM, De Civita P, Johnson FR, Manary MP, Anis AH, Beveridge RC, Judek S.",
+        "source": "https://ehjournal.biomedcentral.com/articles/10.1186/1476-069x-1-7",
+        "articleTitle": "Economic evaluation of the benefits of reducing acute cardiorespiratory morbidity associated with air pollution.",
+        "publication": "Environ Health. 2002 Dec 18;1(1):7. doi: 10.1186/1476-069x-1-7.",
+        "lang": "en"
+    },
+    {
+        "heading": "Restricted activity days",
+        "description": "In this paper, estimates are reported of the total valuation, comprising, where applicable, costs of illness, lost productivity, pain and suffering and averting expenditures. Total values are taken from table 5.",
+        "authors": "Stieb DM, De Civita P, Johnson FR, Manary MP, Anis AH, Beveridge RC, Judek S.",
+        "source": "https://ehjournal.biomedcentral.com/articles/10.1186/1476-069x-1-7",
+        "articleTitle": "Economic evaluation of the benefits of reducing acute cardiorespiratory morbidity associated with air pollution.",
+        "publication": "Environ Health. 2002 Dec 18;1(1):7. doi: 10.1186/1476-069x-1-7.",
+        "lang": "en"
+    },
+    {
+        "heading": "Minor restricted activity days",
+        "description": "In this paper, estimates are reported of the total valuation, comprising, where applicable, costs of illness, lost productivity, pain and suffering and averting expenditures. Since the value for reduced activity days in table 5 pertains to moderate levels of activity restriction, we used an alternative estimate based on the authors' sensitivity analysis, which employed a mild level of activity restriction. The valuation estimate in this case was $22 (95%CI 4-40).",
+        "authors": "Stieb DM, De Civita P, Johnson FR, Manary MP, Anis AH, Beveridge RC, Judek S.",
+        "source": "https://ehjournal.biomedcentral.com/articles/10.1186/1476-069x-1-7",
+        "articleTitle": "Economic evaluation of the benefits of reducing acute cardiorespiratory morbidity associated with air pollution.",
+        "publication": "Environ Health. 2002 Dec 18;1(1):7. doi: 10.1186/1476-069x-1-7.",
+        "lang": "en"
+    }   
+]

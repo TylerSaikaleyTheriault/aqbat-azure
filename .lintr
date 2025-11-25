@@ -1,0 +1,8 @@
+linters: with_defaults(
+  camel_case_linter = NULL,
+  snake_case_linter = snake_case_linter_ignore_assignments(),
+  object_name_linter = NULL,
+  line_length_linter = line_length_linter(120),
+  commented_code_linter = NULL,
+  trailing_whitespace_linter = trailing_whitespace_linter()
+)

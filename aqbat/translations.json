@@ -1,0 +1,1942 @@
+{
+  "cultural_date_format": "%d-%m-%Y",
+  "languages": ["en", "fr"],
+  "translation": [
+    {
+        "en": "AQBAT",
+        "fr": "OEBQA"
+    },
+    {
+        "en": "Summary",
+        "fr": "Sommaire"
+    },
+    {
+        "en": "Inactivity notice",
+        "fr": "Avis d'inactivité"
+    },
+    {
+        "en": "This application will timeout after 3 hours of inactivity. When that happens, all data will be lost. This tool works best on desktops and laptops. It is not optimized for tablets or mobile devices.",
+        "fr": "Cette application se déconnectera après 3 heures d'inactivité. Lorsque cela se produira, toutes les données seront perdues. Cet outil fonctionne mieux sur les ordinateurs de bureau et les ordinateurs portables. Il n'est pas optimisé pour les tablettes ou les appareils mobiles."
+    },
+    {
+        "en": "About the tool",
+        "fr": "À propos de l'outil"
+    },
+    {
+        "en": "Use the Air Quality Benefits Assessment Tool (AQBAT) to:",
+        "fr": "Utilisez l’Outil d’évaluation des bénéfices liés à la qualité de l’air (OEBQA) pour :"
+    },
+    {
+        "en": "estimate the benefits (positive impacts) or damages (negative impacts) of proposed regulatory initiatives for outdoor air quality",
+        "fr": "estimer les bénéfices (répercussions positives) ou les dommages (répercussions négatives) des initiatives réglementaires proposées liées à la qualité de l’air extérieur"
+    },
+    {
+        "en": "define a wide range of scenarios by combining the following:",
+        "fr": "définir une large gamme de scénarios en combinant les éléments suivants :"
+    },
+    {
+        "en": "geographic areas at the census division level",
+        "fr": "régions géographiques au niveau de la division de recensement"
+    },
+    {
+        "en": "scenario years (2001-2063)",
+        "fr": "années de scénario (2001-2063)"
+    },
+    {
+        "en": "pollutant concentration data",
+        "fr": "données sur les concentrations de polluants"
+    },
+    {
+        "en": "health endpoint valuations",
+        "fr": "valeurs monétaires des impacts sanitaires"
+    },
+    {
+        "en": "Health Canada endorsed concentration-response functions",
+        "fr": "fonctions concentration-réponse approuvées par Santé Canada"
+    },
+    {
+        "en": "upload inputs, run specific scenarios and download outputs",
+        "fr": "téléverser des données, exécuter des scénarios spécifiques et télécharger les résultats"
+    },
+    {
+        "en": "conduct Monte Carlo simulations to examine the effects of uncertainties on estimated health impacts",
+        "fr": "réaliser des simulations Monte Carlo afin d’examiner l'incertitude sur les répercussions prévues sur la santé"
+    },
+
+    {
+        "en": "Quick start steps",
+        "fr": "Étapes pour commencer rapidement"
+    },
+    {
+        "en": "Use the \"CRFs\", \"Valuation\", and \"Pollutant data upload\" tabs to review and input data. View the output in the \"Results\" tab.",
+        "fr": "Utilisez les onglets « FCR », « Évaluation économique » et « Téléchargement des données sur les polluants » pour consulter et entrer des données. Consultez les résultats dans l'onglet « Résultats »."
+    },
+
+    {
+        "en": "Recent applications of AQBAT",
+        "fr": "Applications récentes d'OEBQA"
+    },
+    {
+        "en": "Stieb DM, Smith-Doiron M, Quick M, Christidis T, Xi G, Miles RM, van Donkelaar A, Martin RV, Hystad P, Tjepkema M. <a target='_parent' href='https://agupubs.onlinelibrary.wiley.com/doi/10.1029/2023GH000816' lang='en'>Inequality in the Distribution of Air Pollution Attributable Mortality Within Canadian Cities</a>. Geohealth. 2023 Aug 29;7(9):e2023GH000816.",
+        "fr": "Stieb DM, Smith-Doiron M, Quick M, Christidis T, Xi G, Miles RM, van Donkelaar A, Martin RV, Hystad P, Tjepkema M. <a target='_parent' href='https://agupubs.onlinelibrary.wiley.com/doi/10.1029/2023GH000816' lang='en'>Inequality in the Distribution of Air Pollution Attributable Mortality Within Canadian Cities</a>. Geohealth. 2023, le 29 août;7(9):e2023GH000816."
+    },
+    {
+        "en": "Egyed M, Blagden P, Plummer D, Makar P, Matz CJ, Flannigan M, MacNeill M, Lavigne E, Ling B, Lopez, DV, Edwards B, Pavlovic R, Racine J, Raymond P, Rittmaster R, Wilson A, Xi G. 2022. Air Quality. In P. Berry & R. Schnitter (Eds.), <a target='_parent' href='https://changingclimate.ca/health-in-a-changing-climate/chapter/5-0/' lang='en'>Health of Canadians in a Changing Climate: Advancing our Knowledge for Action</a>. Ottawa, ON: Government of Canada.",
+        "fr": "Egyed M, Blagden P, Plummer D, Makar P, Matz CJ, Flannigan M, MacNeill M, Lavigne E, Ling B, Lopez, DV, Edwards B, Pavlovic R, Racine J, Raymond P, Rittmaster R, Wilson A, Xi G. 2022. Qualité de l’air. Dans P. Berry & R. Schnitter (Eds.), <a target='_parent' href='https://changingclimate.ca/health-in-a-changing-climate/fr/chapter/5-0/' lang='fr'>La santé des Canadiens et des Canadiennes dans un climat en changement : Faire progresser nos connaissances pour agir</a>. Ottawa, Ont.: Gouvernement du Canada."
+    },
+    {
+        "en": "Matz CJ, Egyed M, Xi G, Racine J, Pavlovic R, Rittmaster R, Henderson SB, Stieb DM. <a target='_parent' href='https://doi.org/10.1016/j.scitotenv.2020.138506' lang='en'>Health impact analysis of PM2.5 from wildfire smoke in Canada (2013-2015, 2017-2018)</a>. Sci Total Environ. 2020 Jul 10;725:138506. <a href='https://health-infobase.canada.ca/datalab/wildfire-blog.html' lang='en'>See an interactive map of results</a>.",
+        "fr": "Matz CJ, Egyed M, Xi G, Racine J, Pavlovic R, Rittmaster R, Henderson SB, Stieb DM. <a target='_parent' href='https://doi.org/10.1016/j.scitotenv.2020.138506' lang='en'>Health impact analysis of PM2.5 from wildfire smoke in Canada (2013-2015, 2017-2018)</a>. Sci Total Environ. 2020, le 10 juill;725:138506. <a href='https://sante-infobase.canada.ca/labo-de-donnees/blogue-feux-de-friches.html' lang='fr'>Consulter la carte interactive des résultats.</a>"
+    },
+    {
+        "en": "Health Canada. 2024. <a target='_parent' href='https://www.canada.ca/en/health-canada/services/publications/healthy-living/health-impacts-air-pollution-2018.html' lang='en'>Health Impacts of Air Pollution in Canada in 2018</a>.",
+        "fr": "Santé Canada. 2024. <a target='_parent' href='https://www.canada.ca/fr/sante-canada/services/publications/vie-saine/impacts-pollution-atmospherique-2018.html' lang='fr'>Impacts de la pollution atmosphérique sur la santé au Canada en 2018</a>."
+    },
+
+    {
+        "en": "Contact us",
+        "fr": "Contactez-nous"
+    },
+    {
+        "en": "Please contact aqbat-oebqa@hc-sc.gc.ca to ask a question, provide feedback or report a problem.",
+        "fr": "Veuillez contacter aqbat-oebqa@hc-sc.gc.ca pour poser une question, fournir de la rétroaction ou signaler un problème."
+    },
+
+    {
+        "en": "Disclaimer",
+        "fr": "Avis de non-responsabilité"
+    },
+    {
+        "en": "The Air Quality Benefit Assessment Tool (AQBAT) is intended to help estimate the health benefits or damages associated with a change in exposure to outdoor air pollution. Although Health Canada makes every effort to ensure the accuracy and reliability of the information provided by AQBAT, it is not intended as a substitute for professional advice. Health Canada assumes no responsibility for the use of this product or any information resulting from it.",
+        "fr": "L'Outil d'évaluation des bénéfices liés à la qualité de l'air (OEBQA) est conçu pour estimer les bénéfices ou les dommages sur la santé attribuables à des variations dans l’exposition à des polluants atmosphériques. Bien que Santé Canada prenne toutes les mesures nécessaires pour s'assurer de la précision et de la fiabilité de l'information contenue dans l’OEBQA, celui-ci ne peut se substituer à l’avis d’un professionnel. Santé Canada n’assume aucune responsabilité quant à l’utilisation de ce produit et des informations qui en découlent."
+    },
+
+
+    {
+        "en": "CRFs",
+        "fr": "FCR"
+    },
+    {
+        "en": "Step",
+        "fr": "Étape"
+    },
+    {
+        "en": "of",
+        "fr": "de"
+    },
+    {
+        "en": "Review concentration response functions (CRFs) and other parameters. The default values provided below are Health Canada-endorsed concentration-response functions to support the health impact assessment of air pollution. Change them as needed for your scenario by entering your desired values.",
+        "fr": "Examinez les fonctions concentration-réponse (FCR) et d‘autres paramètres. Les valeurs par défaut fournies ci-dessous sont des fonctions concentration-réponse approuvées par Santé Canada pour soutenir l’évaluation des impacts sur la santé de la pollution de l'air. Modifiez-les selon vos besoins en entrant les valeurs souhaitées."
+    },
+
+    {
+        "en": "Threshold concentration",
+        "fr": "Concentration seuil"
+    },
+    {
+	"en": "Use this section to specify concentrations below which there is no association between air pollution and adverse health effects.",
+	"fr": "Utilisez cette section pour spécifier les concentrations en dessous desquelles il n'y a pas d'association entre la pollution de l'air et les effets néfastes sur la santé."
+    },
+    {
+	"en": "Click \"Restore default values\" to restore the values of each cell back to its preset (the values that show up automatically when the website first loads). Default values are restored in this section only.",
+	"fr": "Cliquez sur « Restaurer les valeurs par défaut » pour rétablir les valeurs de chaque cellule à leur paramètre d'origine (les valeurs qui apparaissent automatiquement lorsque le site Web se charge pour la première fois). Les valeurs par défaut sont restaurées uniquement dans cette section."
+    },
+    {
+	"en": "The default value for each pollutant’s threshold concentration is zero.",
+	"fr": "La valeur par défaut pour la concentration seuil de chaque polluant est zéro."
+    },
+    {
+        "en": "Restore default values",
+        "fr": "Restaurer les valeurs par défaut"
+    },
+    {
+        "en": "Click \"Clear all data and restart\" to restart the app for a new scenario. Data in all tabs will be reset to defaults. The default value for each pollutant is zero.",
+        "fr": "Cliquez sur « Effacer toutes les données et recommencer » pour redémarrer l'application pour un nouveau scénario. Les données dans tous les onglets seront réinitialisées aux valeurs par défaut. La valeur par défaut pour chaque polluant est zéro."
+    },
+    {
+        "en": "Clear all data and restart",
+        "fr": "Effacer toutes les données et recommencer"
+    },
+    {
+        "en": "PM2.5 (ug/m3)",
+        "fr": "PM2,5 (ug/m3)"
+    },
+    {
+        "en": "O3 (ppb)",
+        "fr": "O3 (ppb)"
+    },
+    {
+        "en": "Summer O3 (ppb)",
+        "fr": "O3 en été (ppb)"
+    },
+    {
+        "en": "NO2 (ppb)",
+        "fr": "NO2 (ppb)"
+    },
+    {
+        "en": "SO2 (ppb)",
+        "fr": "SO2 (ppb)"
+    },
+    {
+        "en": "CO (ppm)",
+        "fr": "CO (ppm)"
+    },
+
+    {
+        "en": "PM2.5 CRFs",
+        "fr": "FCR pour PM2,5"
+    },
+    {
+	"en": "This section provides concentration response functions (CRFs) for fine particulate matter (with a 10 ug/m3 change) and ten associated health endpoints. You may edit and use your own values.",
+	"fr": "Cette section fournit les fonctions concentration-réponse (FCR) pour les particules fines (avec une variation de 10 ug/m3) et dix effets sur la santé associés. Vous pouvez modifier et utiliser vos propres valeurs."
+    },
+    {
+	"en": "\"L95%CI\" refers to the lower 95% confidence interval and \"U95%CI\" refers to the upper 95% confidence interval.",
+	"fr": "« ICI95% » fait référence à l'intervalle de confiance inférieur à 95 % et « ICS95% » fait référence à l'intervalle de confiance supérieur à 95 %."
+    },
+    {
+        "en": "\"L95CI\" refers to the lower 95% confidence interval and \"U95CI\" refers to the upper 95% confidence interval.",
+        "fr": "« ICI95 » fait référence à l'intervalle de confiance inférieur à 95 % et « ICS95 » fait référence à l'intervalle de confiance supérieur à 95 %."
+        },
+    {
+        "en": "Chronic exposure mortality",
+        "fr": "Mortalité liée à une exposition chronique"
+    },
+    {
+        "en": "Source",
+        "fr": "Source"
+    },
+    {
+	"en": "Crouse et al. 2012",
+	"fr": "Crouse et coll. 2012"
+    },
+    {
+        "en": "Regression type",
+        "fr": "Type de régression"
+    },
+    {
+	"en": "Log-linear",
+	"fr": "Linéaire log"
+    },
+    {
+        "en": "HR/RR/OR",
+        "fr": "IR/RR/RC"
+    },
+    {
+        "en": "Increment (ug/m3)",
+        "fr": "Accroissement (ug/m3)"
+    },
+    {
+        "en": "L95%CI",
+        "fr": "ICI95%"
+    },
+    {
+        "en": "U95%CI",
+        "fr": "ICS95%"
+    },
+    {
+	"en": "Acute respiratory symptom days",
+	"fr": "Jours avec symptômes respiratoires aigus"
+    },
+    {
+	"en": "Krupnick et al. 1990",
+	"fr": "Krupnick et coll. 1990"
+    },
+    {
+	"en": "Linear",
+	"fr": "Linéaire"
+    },
+    {
+        "en": "Adult chronic bronchitis cases",
+        "fr": "Cas de bronchites chroniques chez des adultes"
+    },
+    {
+	"en": "Abbey et al. 1995",
+	"fr": "Abbey et coll. 1995"
+    },
+    {
+        "en": "Asthma symptom days",
+        "fr": "Jours avec symptômes d’asthme"
+    },
+    {
+	"en": "Weinmayr et al. 2010; Ward and Ayres 2004; Dell et al. 2010",
+	"fr": "Weinmayr et coll. 2010; Ward et Ayres 2004; Dell et coll. 2010"
+    },
+    {
+        "en": "Cardiac emergency room visits",
+        "fr": "Visites à l’urgence pour des problèmes cardiaques"
+    },
+    {
+	"en": "Burnett et al. 1995; Stieb et al. 2000",
+	"fr": "Burnett et coll. 1995; Stieb et coll. 2000"
+    },
+    {
+        "en": "Cardiac hospital admissions",
+        "fr": "Admissions à l’hôpital pour des problèmes cardiaques"
+    },
+    {
+	"en": "Burnett et al. 1995",
+	"fr": "Burnett et coll. 1995"
+    },
+    {
+        "en": "Child acute bronchitis episodes",
+        "fr": "Épisodes de bronchite aiguë chez l’enfant"
+    },
+    {
+	"en": "Heok et al. 2012; Dockery et al. 1996",
+	"fr": "Heok et coll. 2012; Dockery et coll. 1996"
+    },
+    {
+        "en": "Respiratory emergency room visits",
+        "fr": "Visites à l’urgence pour des problèmes respiratoires"
+    },
+    {
+        "en": "Respiratory hospital admissions",
+        "fr": "Admissions à l’hôpital pour des problèmes respiratoires"
+    },
+    {
+        "en": "Restricted activity days",
+        "fr": "Jours d’activité restreinte"
+    },
+    {
+        "en": "Chronic exposure cerebrovascular mortality",
+        "fr": "Mortalité cérébrovasculaire liée à une exposition chronique"
+    },
+    {
+	"en": "Shin et al. 2014",
+	"fr": "Shin et coll. 2014"
+    },
+    {
+	"en": "Shape",
+	"fr": "Forme"
+    },
+    {
+	"en": "Scale",
+	"fr": "Échelle"
+    },
+    {
+        "en": "Chronic exposure COPD mortality",
+        "fr": "Mortalité par MPOC liée à une exposition chronique"
+    },
+    {
+        "en": "Chronic exposure ischemic heart disease mortality",
+        "fr": "Mortalité par cardiopathie ischémique liée à une exposition chronique"
+    },
+    {
+        "en": "Chronic exposure lung cancer mortality",
+        "fr": "Mortalité par cancer du poumon liée à une exposition chronique"
+    },
+
+    {
+        "en": "CRFs (O3, CO, SO2, NO2)",
+        "fr": "FCR (O3, CO, SO2, NO2)"
+    },
+    {
+	"en": "This section lists CRFs for ozone (O3), carbon monoxide (CO), sulfur dioxide (SO2), nitrogen dioxide (NO2), and eight associated health endpoints. You may edit and use your own values.",
+	"fr": "Cette section répertorie les FCR pour l'ozone (O3), le monoxyde de carbone (CO), le dioxyde de soufre (SO2), le dioxyde d'azote (NO2), et huit effets sur la santé associés. Vous pouvez modifier et utiliser vos propres valeurs."
+    },
+    {
+        "en": "O3 and acute exposure mortality",
+        "fr": "O3 et mortalité liée à une exposition aiguë"
+    },
+    {
+	"en": "Burnett et al. 2004",
+	"fr": "Burnett et coll. 2004"
+    },
+    {
+        "en": "Summer O3 and chronic exposure respiratory mortality",
+        "fr": "O3 en été et mortalité respiratoire liée à une exposition chronique"
+    },
+    {
+	"en": "Jerrett et al. 2009",
+	"fr": "Jerrett et coll. 2009"
+    },
+    {
+        "en": "Summer O3 and acute respiratory symptom days",
+        "fr": "O3 en été et jours avec symptômes respiratoires aigus"
+    },
+    {
+        "en": "Summer O3 and asthma symptom days",
+        "fr": "O3 en été et jours avec symptômes d’asthme"
+    },
+    {
+        "en": "Mortimer et al. 2002; Schildcrout et al. 2006",
+        "fr": "Mortimer et coll. 2002; Schildcrout et coll. 2006"
+    },
+    {
+        "en": "Summer O3 and minor restricted activity days",
+        "fr": "O3 en été et jours d’activité restreinte mineure"
+    },
+    {
+	"en": "Ostro and Rothschild 1989",
+	"fr": "Ostro et Rothschild 1989"
+    },
+    {
+        "en": "Summer O3 and respiratory emergency room visits",
+        "fr": "O3 en été et visites à l’urgence pour des problèmes respiratoires"
+    },
+    {
+	"en": "Burnett et al. 1997a; Stieb et al. 2000",
+	"fr": "Burnett et coll. 1997a; Stieb et coll. 2000"
+    },
+    {
+        "en": "Summer O3 and respiratory hospital admissions",
+        "fr": "O3 en été et admissions à l’hôpital pour des problèmes respiratoires"
+    },
+    {
+	"en": "Burnett et al. 1997a",
+	"fr": "Burnett et coll. 1997a"
+    },
+    {
+        "en": "NO2 and acute exposure mortality",
+        "fr": "NO2 et mortalité liée à une exposition aiguë"
+    },
+    {
+        "en": "SO2 and acute exposure mortality",
+        "fr": "SO2 et mortalité liée à une exposition aiguë"
+    },
+    {
+        "en": "24h-CO and acute exposure mortality",
+        "fr": "CO 24h et mortalité liée à une exposition aiguë"
+    },
+    {
+        "en": "1h-CO and elderly cardiac hospital admissions",
+        "fr": "CO 1h et admissions à l’hôpital pour des problèmes cardiaques chez des ainés"
+    },
+    {
+	"en": "Burnett et al. 1997b; Schwartz and Morris 1995",
+	"fr": "Burnett et coll. 1997b; Schwartz et Morris 1995"
+    },
+
+    {
+        "en": "Toxics",
+        "fr": "Substances toxiques"
+    },
+    {
+	"en": "This section provides reference concentrations for benzene, formaldehyde, and acetaldehyde.",
+	"fr": "Cette section fournit des concentrations de référence pour le benzène, le formaldéhyde et l'acétaldéhyde."
+    },
+    {
+	"en": "\"DALYs\" refers to disability-adjusted life years.",
+	"fr": "« AVCI » fait référence aux années de vie corrigées de l'incapacité."
+    },
+    {
+	"en": "Health Canada 2015",
+	"fr": "Santé Canada 2015"
+    },
+    {
+        "en": "Outcome",
+        "fr": "Paramètre"
+    },
+    {
+        "en": "Inhalation unit risk per ug/m3",
+        "fr": "Risque unitaire par inhalation par ug/m3"
+    },
+    {
+        "en": "DALYs per case",
+        "fr": "AVCI par cas"
+    },
+    {
+	"en": "Health Canada 2010",
+	"fr": "Santé Canada 2010"
+    },
+    {
+	"en": "California OEHHA 2016",
+	"fr": "OEHHA Californie 2016"
+    },
+    {
+        "en": "Reference concentration (annual ug/m3)",
+        "fr": "Concentration de référence (annuelle ug/m3)"
+    },
+    {
+	"en": "Health Canada 2016a",
+	"fr": "Santé Canada 2016a"
+    },
+    {
+	"en": "Health Canada 2016b",
+	"fr": "Santé Canada 2016b"
+    },
+
+    {
+        "en": "Other parameters",
+        "fr": "Autres paramètres"
+    },
+    {
+	"en": "This section lists the:",
+	"fr": "Cette section répertorie :"
+    },
+    {
+	"en": "prevalence of asthma for those aged < 20 years (default is 17.7%)",
+	"fr": "la prévalence de l'asthme pour les personnes de moins de 20 ans (la valeur par défaut est de 17,7 %)"
+    },
+    {
+	"en": "numbers of iterations to be used for Monte Carlo simulations (default is 10,000 for simulation iterations)",
+	"fr": "le nombre d’itérations à utiliser pour les simulations de Monte Carlo (la valeur par défaut est de 10 000 pour les itérations de simulation)"
+    },
+    {
+	"en": "You may edit and use your own values.",
+	"fr": "Vous pouvez modifier et utiliser vos propres valeurs."
+    },
+    {
+        "en": "Prevalence of asthma (age < 20 years)",
+        "fr": "Prévalence d’asthme (âge < 20 ans)"
+    },
+    {
+        "en": "Iterations",
+        "fr": "Itérations"
+    },
+
+
+    {
+        "en": "Valuation",
+        "fr": "Évaluation économique"
+    },
+
+    {
+        "en": "Review the economic valuation estimates. The default values provided below are Health Canada-endorsed economic valuation estimates to support the health impact assessment of air pollution. Change them as needed for your scenario by entering your desired values.",
+        "fr": "Examinez les estimations de l’évaluation économique. Les valeurs par défaut fournies ci-dessous sont des estimations de l’évaluation économique approuvées par Santé Canada pour soutenir l’estimation des impacts sur la santé de la pollution de l'air. Modifiez-les selon vos besoins en entrant les valeurs souhaitées."
+    },
+    {
+	"en": "About valuation estimates",
+	"fr": "À propos des estimations de l’évaluation économique"
+    },
+    {
+        "en": "These values are economic welfare values. AQBAT provides economic valuation estimates that consider the potential welfare impacts associated with treatment costs, lost productivity, pain and suffering, and the impacts of increased mortality risk. The page displays corresponding economic values associated with health risks identified by AQBAT.",
+        "fr": "Ces valeurs sont des valeurs de bien-être économique. L’OEBQA fournit des estimations de valeurs économiques qui prennent en compte les impacts potentiels sur le bien-être associés aux coûts de traitement, à la perte de productivité, à la douleur et à la souffrance, ainsi que les impacts de l’augmentation du risque de mortalité. La page affiche les valeurs économiques correspondantes associées aux risques pour la santé identifiés par l'OEBQA."
+    },
+    {
+        "en": "Currency year ranges from 2010 to 2023. To learn more about the sources included in this page, please refer to the <a id='references-link' class='internal-link' data-target='references' href='javascript:void(0)'>references</a>.",
+        "fr": "Les années de devises vont de 2010 à 2023. Pour en savoir plus à propos des sources incluses dans cette page, veuillez consulter <a id='references-link' class='internal-link' data-target='références' href='javascript:void(0)'>les références</a>."
+    },
+    {
+        "en": "Currency year",
+        "fr": "Année de devise"
+    },
+    {
+        "en": "Base year",
+        "fr": "Année de base"
+    },
+    {
+        "en": "Discount rate (%)",
+        "fr": "Taux d’actualisation (%)"
+    },
+
+    {
+        "en": "Mortality valuation",
+        "fr": "Évaluation économique de la mortalité"
+    },
+    {
+        "en": "Chestnut and DeCivita 2009",
+        "fr": "Chestnut et DeCivita 2009"
+    },
+    {
+        "en": "Source year",
+        "fr": "Année source"
+    },
+    {
+        "en": "Estimate form",
+        "fr": "Forme de l’estimation"
+    },
+    {
+        "en": "Discrete",
+        "fr": "Discrète"
+    },
+    {
+        "en": "Central ($million)",
+        "fr": "Centrale ($million)"
+    },
+    {
+        "en": "Low ($million)",
+        "fr": "Basse ($million)"
+    },
+    {
+        "en": "High ($million)",
+        "fr": "Élevée ($million)"
+    },
+    {
+        "en": "Probability central",
+        "fr": "Probabilité centrale"
+    },
+    {
+        "en": "Probability low",
+        "fr": "Probabilité basse"
+    },
+    {
+        "en": "Acute respiratory symptom days valuation",
+        "fr": "Évaluation économique des jours de symptômes respiratoires aigus"
+    },
+    {
+	"en": "Stieb et al. 2002",
+	"fr": "Stieb et coll. 2002"
+    },
+    {
+	"en": "Normal",
+	"fr": "Normale"
+    },
+    {
+        "en": "Mean ($)",
+        "fr": "Moyenne ($)"
+    },
+    {
+        "en": "Standard error",
+        "fr": "Erreur-type"
+    },
+    {
+        "en": "Error",
+        "fr": "Erreur"
+    },
+    {
+        "en": "An error occurred. Please refresh the page and start again.",
+        "fr": "Une erreur s'est produite. Veuillez actualiser la page et recommencer."
+    },
+    {
+	"en": "Adult chronic bronchitis cases valuation",
+	"fr": "Évaluation économique des cas de bronchite chronique chez les adultes"
+    },
+    {
+	"en": "Krupnick and Cropper 1992; Viscusi et al. 1991",
+	"fr": "Krupnick et Cropper 1992; Viscusi et coll. 1991"
+    },
+    {
+	"en": "Central ($1000)",
+	"fr": "Centrale ($1000)"
+    },
+    {
+	"en": "Low ($1000)",
+	"fr": "Basse ($1000)"
+    },
+    {
+	"en": "High ($1000)",
+	"fr": "Élevée ($1000)"
+    },
+    {
+	"en": "Asthma symptom days valuation",
+	"fr": "Évaluation économique des jours de symptômes d'asthme"
+    },
+    {
+        "en": "Triangular",
+        "fr": "Triangulaire"
+    },
+    {
+	"en": "Likely ($)",
+	"fr": "Probable ($)"
+    },
+    {
+	"en": "Cardiac emergency room visits valuation",
+	"fr": "Évaluation économique des visites à l’urgence pour des problèmes cardiaques"
+    },
+    {
+	"en": "Child acute bronchitis episodes valuation",
+	"fr": "Évaluation économique des épisodes de bronchite aiguë chez les enfants"
+    },
+    {
+	"en": "Krupnick and Cropper 1989",
+	"fr": "Krupnick et Cropper 1989"
+    },
+    {
+	"en": "Central ($)",
+	"fr": "Centrale ($)"
+    },
+    {
+	"en": "Low ($)",
+	"fr": "Basse ($)"
+    },
+    {
+	"en": "High ($)",
+	"fr": "Élevée ($)"
+    },
+    {
+	"en": "Elderly cardiac hospital admissions valuation",
+	"fr": "Évaluation économique des admissions à l’hôpital pour des problèmes cardiaques chez des ainés"
+    },
+    {
+	"en": "Minor restricted activity days valuation",
+	"fr": "Évaluation économique des jours d'activité restreinte mineure"
+    },
+    {
+	"en": "Respiratory emergency room visits valuation",
+	"fr": "Évaluation économique des visites à l’urgence pour des problèmes respiratoires"
+    },
+    {
+	"en": "Restricted activity days valuation",
+	"fr": "Évaluation économique des jours d'activité restreinte"
+    },
+
+
+    {
+        "en": "Pollutant data upload",
+        "fr": "Téléchargement des données sur les polluants"
+    },
+    {
+	"en": "Upload your pollutant data by clicking \"Upload\" to browse your file system and select files. A preview of your upload will appear below.",
+	"fr": "Téléchargez vos données sur les polluants en cliquant sur « Télécharger » pour parcourir votre système de fichiers et sélectionner les fichiers. Un aperçu de votre téléchargement apparaîtra ci-dessous."
+    },
+    {
+	"en": "Your uploaded data is temporary and will not be saved for future visits or stored on your device.",
+	"fr": "Vos données téléchargées sont temporaires et ne seront pas conservées pour les visites futures ni stockées sur votre appareil."
+    },
+    {
+        "en": "Data has been uploaded",
+        "fr": "Les données ont été téléchargées."
+    },
+    {
+        "en": "To upload new data, please click \"Clear all data and restart\".",
+        "fr": "Pour télécharger de nouvelles données, veuillez cliquer sur « Effacer toutes les données et recommencer »."
+    },
+
+    {
+	"en": "Preview of the uploaded data",
+	"fr": "Aperçu des données téléchargées"
+    },
+    {
+	"en": "If you have previously uploaded data (including the sample data), please clear all data and restart the app before uploading new pollutant data. You will return to the \"CRFs\" tab of the website. Data in all tabs in and results will be reset to defaults.",
+	"fr": "Si vous avez précédemment téléchargé des données (y compris les données d'exemple), veuillez effacer toutes les données et redémarrer l'application avant de télécharger de nouvelles données sur les polluants. Vous reviendrez à l'onglet « FCR » du site Web. Les données dans tous les onglets et les résultats seront réinitialisés aux valeurs par défaut."
+    },
+
+    {
+        "en": "Instructions for new users",
+        "fr": "Instructions pour les nouveaux utilisateurs"
+    },
+    {
+	"en": "Before using AQBAT, you need to prepare your pollutant data so you can upload it onto the tool. We provide a sample file you can use to help structure your data for upload. It includes sample air quality data for PM2.5, O3, and NO2 for 2016. These data were derived from multiple national sources and mapped to 293 census divisions in Canada. We use data from the sample file if you do not input your own data.",
+	"fr": "Avant d'utiliser l’OEBQA, vous devez préparer vos données sur les polluants afin de pouvoir les télécharger dans l'outil. Nous fournissons un fichier d'exemple que vous pouvez utiliser pour structurer vos données pour le téléchargement. Il comprend des données de qualité de l'air pour les PM2,5, l’O3 et le NO2 pour l'année 2016. Ces données proviennent de plusieurs sources nationales et sont cartographiées sur 293 divisions de recensement au Canada. Nous utiliserons les données du fichier d'exemple si vous ne saisissez pas vos propres données."
+    },
+    {
+        "en": "Download sample input file",
+        "fr": "Télécharger l'exemple de fichier d’entrée"
+    },
+    {
+	"en": "Please ensure that the formatting of your data matches the sample data provided. The following variables are included in the sample data:",
+	"fr": "Veuillez vous assurer que le formatage de vos données correspond à celui des données d'exemple fournies. Les variables suivantes sont incluses dans les données d'exemple :"
+    },
+    {
+	"en": "census division unique identifier (CDUID)",
+	"fr": "identificateur unique de la division de recensement (IDUDR)"
+    },
+    {
+	"en": "fine particulate matter (pm25_1 and pm25_2)",
+	"fr": "particules fines (pm25_1 et pm25_2)"
+    },
+    {
+	"en": "nitrogen dioxide (no2_1 and no2_2)",
+	"fr": "dioxyde d’azote (no2_1 et no2_2)"
+    },
+    {
+	"en": "ozone (o3_1 and o3_2)",
+	"fr": "ozone (o3_1 et o3_2)"
+    },
+    {
+	"en": "summer ozone (summero3_1 and summero3_2)",
+	"fr": "ozone en été (o3été_1 et o3été_2)"
+    },
+    {
+	"en": "24-hour carbon monoxide (co24h_1 and co24h_2)",
+	"fr": "monoxyde de carbone sur 24 heures (co24_1 et co24h_2)"
+    },
+    {
+	"en": "1-hour carbon monoxide (co1h_1 and co1h_2)",
+	"fr": "monoxyde de carbone sur 1 heure (co1h_1 et co1h_2)"
+    },
+    {
+	"en": "sulfur dioxide (so2_1 and so2_2)",
+	"fr": "dioxyde de soufre (so2_1 et so2_2)"
+    },
+    {
+	"en": "benzene (bz_1 and bz_2)",
+	"fr": "benzène (bz_1 et bz_2)"
+    },
+    {
+	"en": "1,3-butadiene (bt_1 and bt_2)",
+	"fr": "1,3-butadiène (bt_1 et bt_2)"
+    },
+    {
+	"en": "acetaldehyde (ac_1 and ac_2)",
+	"fr": "acétaldéhyde (ac_1 et ac_2)"
+    },
+    {
+	"en": "formaldehyde (fm_1 and fm_2)",
+	"fr": "formaldéhyde (fm_1 et fm_2)"
+    },
+    {
+	"en": "The \"year\", \"scenario\", and \"CDUID\" columns are mandatory, as well as a minimum of one type of pollutant (status quo and counterfactual concentrations). Both the \"year\" and \"scenario\" columns need to be numeric variables. There cannot be repetitive scenario years and numbers in combination. For example, if the year is 2016, each scenario must have a different number.",
+	"fr": "Les colonnes « année », « scénario » et « IDUDR » sont obligatoires, ainsi qu'un minimum d'un type de polluant (concentrations de statu quo et contre-factuelles). Les colonnes « année » et « scénario » doivent être des variables numériques. Il ne peut y avoir de répétitions des années et numéros de scénario combinés. Par exemple, si l'année est 2016, chaque scénario doit avoir un numéro différent."
+    },
+    {
+	"en": "AQBAT uses the difference between status quo and counterfactual concentrations to estimate health benefits or damages from air quality changes. In the sample file:",
+	"fr": "L’OEBQA utilise la différence entre les valeurs du statu quo et les valeurs contre-factuelles pour estimer les bienfaits ou les préjudices pour la santé résultant des changements de la qualité de l’air. Dans le fichier d'exemple :"
+    },
+    {
+	"en": "columns with \"_2\" in the header are status quo concentrations (for example, \"pm25_2\")",
+	"fr": "les colonnes avec « _2 » dans l'en-tête correspondent aux concentrations de statu quo (par exemple, « pm25_2 »)"
+    },
+    {
+	"en": "columns with \"_1\" in the header are counterfactual concentrations, like natural background concentrations (for example, \"pm25_1\")",
+	"fr": "les colonnes avec « _1 » dans l'en-tête correspondent aux concentrations contre-factuelles, comme les concentrations naturelles ou de référence (par exemple, « pm25_1 »)"
+    },
+
+
+    {
+        "en": "Results",
+        "fr": "Résultats"
+    },
+    {
+        "en": "View and download the results of your scenario. Details on the methodology for how AQBAT estimates human health effects and the associated economic value are provided in the AQBAT appendix.",
+        "fr": "Affichez et téléchargez les résultats de votre scénario. Des détails sur la méthodologie utilisée par l'OEBQA pour estimer les effets sur la santé humaine et la valeur économique associée sont fournis dans l'annexe d'OEBQA."
+    },    
+    {
+        "en": "You must specify a currency year in the \"Valuation\" tab and import pollutant data in the \"Pollutant data upload\" tab to get results. The default results based on sample pollutant data will be generated when no pollutant data is uploaded.",
+        "fr": "Vous devez spécifier une année monétaire dans l'onglet « Évaluation économique » et importer les données sur les polluants dans l'onglet « Téléchargement des données sur les polluants » pour obtenir des résultats. Les résultats par défaut basés sur les données d'exemple des polluants seront générés si aucune donnée sur les polluants n'est téléchargée."
+    },
+    {
+	"en": "Click \"Clear all data and restart\" to restart the app for a new scenario. You will return to the \"CRFs\" tab of the website. Data in all tabs and results will be reset to defaults.",
+	"fr": "Cliquez sur « Effacer toutes les données et recommencer » pour réinitialiser l'application pour un nouveau scénario. Vous reviendrez à l'onglet « FCR » du site Web. Les données dans tous les onglets et les résultats seront réinitialisées aux valeurs par défaut."
+    },
+
+    {
+        "en": "Overall results",
+        "fr": "Résultats globaux"
+    },
+    {
+        "en": "Results at census division, provincial and territorial levels along with national summaries. Please note that the table below is just a preview of the output. To see the full results, please select \"Download overall results\".",
+        "fr": "Les résultats aux niveaux des divisions de recensement, des provinces et des territoires, ainsi que des résumés nationaux. Veuillez noter que le tableau ci-dessous est seulement un aperçu des résultats. Pour voir les résultats complets, veuillez sélectionner « Télécharger les résultats globaux »."
+    },
+    {
+	"en": "\"CDUID\" refers to the census division unique identifier.",
+	"fr": "« IDUDR » fait référence à l’identificateur unique de la division de recensement."
+    },
+    {
+        "en": "Loading...",
+        "fr": "Chargement en cours..."
+    },
+    {
+        "en": "Year",
+        "fr": "Année"
+    },
+    {
+	"en": "Scenario",
+	"fr": "Scénario"
+    },
+    {
+        "en": "CDUID",
+        "fr": "IDUDR"
+    },
+    {
+        "en": "Pollutant",
+        "fr": "Polluant"
+    },
+    {
+	"en": "Endpoint",
+	"fr": "Paramètre"
+    },
+    {
+	"en": "Counts",
+	"fr": "Comptes"
+    },
+    {
+	"en": "L95CI Counts",
+	"fr": "Comptes ICI95"
+    },
+    {
+	"en": "U95CI Counts",
+	"fr": "Comptes ICS95"
+    },
+    {
+	"en": "L95CI Valuation",
+	"fr": "Évaluation économique ICI95"
+    },
+    {
+	"en": "U95CI Valuation",
+	"fr": "Évaluation économique ICS95"
+    },
+    {
+	"en": "Summer O3",
+	"fr": "O3 en été"
+    },
+    {
+        "en": "PM2.5",
+        "fr": "PM2,5"
+    },
+    {
+        "en": "Chronic Exposure Mortality",
+        "fr": "Mortalité liée à une exposition chronique"
+    },
+    {
+	"en": "Chronic Exposure Respiratory Mortality",
+	"fr": "Mortalité respiratoire liée à une exposition chronique"
+    },
+    {
+        "en": "Download overall results",
+        "fr": "Télécharger les résultats globaux"
+    },
+    {
+	"en": "AllResults.xlsx",
+	"fr": "Tousrésultats.xlsx"
+    },
+    {
+	"en": "Counts/100k",
+	"fr": "Comptes par 100 000"
+    },
+    {
+	"en": "Proportional Change",
+	"fr": "Variation proportionnelle"
+    },
+    {
+	"en": "L95CI Proportional Change",
+	"fr": "Variation proportionnelle ICI95"
+    },
+    {
+        "en": "U95CI Proportional Change",
+        "fr": "Variation proportionnelle ICS95"
+    },
+    {
+        "en": "Life Expectancy Change",
+        "fr": "Variation de l'espérance de vie"
+    },
+    {
+        "en": "L95CI Life Expectancy Change",
+        "fr": "Variation de l'espérance de vie ICI95"
+    },
+    {
+        "en": "U95CI Life Expectancy Change",
+        "fr": "Variation de l'espérance de vie ICS95"
+    },
+    {
+        "en": "Cardiac Hospital Admissions",
+        "fr": "Admissions à l’hôpital pour des problèmes cardiaques"
+    },
+    {
+        "en": "Elderly Cardiac Hospital Admissions",
+        "fr": "Admissions à l’hôpital pour des problèmes cardiaques chez des ainés"
+    },
+    {
+        "en": "Respiratory Hospital Admissions",
+        "fr": "Admissions à l’hôpital pour des problèmes respiratoires"
+    },
+    {
+        "en": "Adult Chronic Bronchitis Cases",
+        "fr": "Cas de bronchites chroniques chez des adultes"
+    },
+    {
+	"en": "Child Acute Bronchitis Episodes",
+	"fr": "Épisodes de bronchite aiguë chez l’enfant"
+    },
+    {
+        "en": "Asthma Symptom Days",
+        "fr": "Jours avec symptômes d’asthme"
+    },
+    {
+	"en": "Acute Respiratory Symptom Days",
+	"fr": "Jours avec symptômes respiratoires aigus"
+    },
+    {
+        "en": "Restricted Activity Days",
+        "fr": "Jours d’activité restreinte"
+    },
+    {
+        "en": "Minor Restricted Activity Days",
+        "fr": "Jours d’activité restreinte mineure"
+    },
+    {
+        "en": "Acute Exposure Mortality",
+        "fr": "Mortalité liée à une exposition aiguë"
+    },
+    {
+        "en": "Respiratory Emergency Room Visits",
+        "fr": "Visites à l’urgence pour des problèmes respiratoires"
+    },
+    {
+        "en": "Cardiac Emergency Room Visits",
+        "fr": "Visites à l’urgence pour des problèmes cardiaques"
+    },
+    {
+	"en": "morbidity",
+	"fr": "morbidité"
+    },
+    {
+	"en": "mortality",
+	"fr": "mortalité"
+    },
+    {
+	"en": "allendpoints",
+	"fr": "tousparamètres"
+    },
+
+    {
+        "en": "Population-weighted exposure",
+        "fr": "Exposition pondérée selon la population"
+    },
+    {
+        "en": "An estimate of population-weighted average air pollutant exposure nationally and by province. Please note that the table below is just a preview of the output. To see the full results, please select \"Download population-weighted exposure results\".",
+        "fr": "Une estimation de l’exposition moyenne aux polluants atmosphériques pondérée selon la population à l’échelle nationale et par province. Veuillez noter que le tableau ci-dessous est seulement un aperçu des résultats. Pour voir les résultats complets, veuillez sélectionner « Télécharger les résultats d'exposition pondérée par la population »."
+    },
+    {
+	"en": "Benzene",
+	"fr": "Benzène"
+    },
+    {
+	"en": "Acetaldehyde",
+	"fr": "Acétaldéhyde"
+    },
+    {
+	"en": "Formaldehyde",
+	"fr": "Formaldéhyde"
+    },
+    {
+        "en": "Download population-weighted exposure results",
+        "fr": "Télécharger les résultats d'exposition pondérée par la population"
+    },
+    {
+	"en": "Weighted_exposure.xlsx",
+	"fr": "Exposition_pondérée.xlsx"
+    },
+    {
+        "en": "Region",
+        "fr": "Région"
+    },
+    {
+	"en": "1,3-Butadiene",
+	"fr": "1,3-butadiène"
+    },
+
+    {
+        "en": "Cause-specific mortality",
+        "fr": "Mortalité par cause"
+    },
+    {
+        "en": "The results for four cause-specific chronic exposure type mortalities, including chronic exposure cerebrovascular mortality, chronic exposure COPD mortality, chronic exposure ischemic heart disease mortality, and chronic exposure lung cancer mortality. Please note that the table below is just a preview of the output. To see the full results, please select \"Download cause-specific mortality results\".",
+        "fr": "Les résultats pour quatre causes de mortalités spécifiques liées à l'exposition chronique, y compris la mortalité cérébrovasculaire liée à une exposition chronique, la mortalité par MPOC liée à une exposition chronique, la mortalité par cardiopathie ischémique liée à une exposition chronique et la mortalité par cancer du poumon liée à une exposition chronique. Veuillez noter que le tableau ci-dessous est seulement un aperçu des résultats. Pour voir les résultats complets, veuillez sélectionner « Télécharger les résultats de mortalité pour des causes spécifiques »."
+    },
+    {
+        "en": "Geocode",
+        "fr": "Géocode"
+    },
+    {
+        "en": "COPD",
+        "fr": "MPOC"
+    },
+    {
+        "en": "Lung Cancer",
+        "fr": "Cancer du poumon"
+    },
+    {
+        "en": "Ischemic Heart Disease",
+        "fr": "Cardiopathie ischémique"
+    },
+    {
+        "en": "Cerebrovascular",
+        "fr": "Cérébrovasculaire"
+    },
+    {
+        "en": "Download cause-specific mortality results",
+        "fr": "Télécharger les résultats de mortalité pour des causes spécifiques"
+    },
+    {
+        "en": "Mortality_Results.xlsx",
+        "fr": "Résultats_mortalités.xlsx"
+    },
+    {
+	"en": "Type of Geography",
+	"fr": "Type de géographie"
+    },
+    {
+	"en": "National",
+	"fr": "Nationale"
+    },
+    {
+	"en": "Territory",
+	"fr": "Territoire"
+    },
+    {
+	"en": "CD",
+	"fr": "DR"
+    },
+
+    {
+        "en": "Non-linear shape constrained health impact function (SCHIF)",
+        "fr": "Fonction d'impact sanitaire contrainte par une forme non linéaire (FISCF)"
+    },
+    {
+        "en": "The results for mortality related to long term exposure to PM2.5. Please note that the table below is just a preview of the output. To see the full results, please select \"Download non-linear shape constrained health impact function results\".",
+        "fr": "Les résultats pour la mortalité liée à l'exposition à long terme aux PM2,5. Veuillez noter que le tableau ci-dessous est seulement un aperçu des résultats. Pour voir les résultats complets, veuillez sélectionner « Télécharger les résultats de la fonction d'impact sanitaire contrainte par une forme non linéaire »."
+    },
+    {
+        "en": "Download non-linear shape constrained health impact function results",
+        "fr": "Télécharger les résultats de la fonction d'impact sanitaire contrainte par une forme non linéaire"
+    },
+    {
+        "en": "Mortality_SCHIF.xlsx",
+        "fr": "Mortalité_FISCF.xlsx"
+    },
+    {
+        "en": "Results for cancer and non-cancer outcomes of air toxics.",
+        "fr": "Des résultats sur les effets cancérigènes et non cancérigènes des substances toxiques dans l’air."
+    },
+    {
+        "en": "Please note that the table below is just a preview of the output. To see the full results, please select \"Download toxics results\". If you would like to view non-cancer outcomes, please click on the \"Non-cancer\" sheet within the downloaded table.",
+        "fr": "Veuillez noter que le tableau ci-dessous est seulement un aperçu des résultats. Pour voir les résultats complets, veuillez sélectionner « Télécharger les résultats des toxiques ». Si vous souhaitez voir les résultats des effets non cancéreux, veuillez cliquer sur l'onglet « Non-cancérigène » dans le tableau téléchargé."
+    },
+    {
+	"en": "Disability-Adjusted Life Years",
+	"fr": "Années de vie corrigées de l'incapacité"
+    },
+    {
+	"en": "Download toxics results",
+	"fr": "Télécharger les résultats des toxiques"
+    },
+    {
+	"en": "Toxics.xlsx",
+	"fr": "Toxiques.xlsx"
+    },
+    {
+	"en": "Non-cancer",
+	"fr": "Non-cancérigène"
+    },
+    {
+	"en": "Hazard Quotient",
+	"fr": "Quotient de risque"
+    },
+    {
+	"en": "Hematological",
+	"fr": "Hématologique"
+    },
+    {
+	"en": "Respiratory (asthma)",
+	"fr": "Respiratoire (asthme)"
+    },
+    {
+	"en": "Respiratory (histological)",
+	"fr": "Respiratoire (histologique)"
+    },
+
+    {
+        "en": "Input parameters",
+        "fr": "Paramètres d’entrée"
+    },
+    {
+        "en": "A list of all inputs defining your modelled scenario. Please note that the table below is just a preview of the output. To see the full results, please select \"Download input parameters\".",
+        "fr": "Une liste de tous les paramètres définissant votre scénario de modélisation. Veuillez noter que le tableau ci-dessous est seulement un aperçu des résultats. Pour voir les résultats complets, veuillez sélectionner « Télécharger les paramètres d'entrée »."
+    },
+    {
+        "en": "Item",
+        "fr": "Élément"
+    },
+    {
+        "en": "Scenario year",
+        "fr": "Année du scénario"
+    },
+        {
+        "en": "Currency",
+        "fr": "Devise"
+    },
+        {
+        "en": "currency year =",
+        "fr": "année de devise ="
+    },
+    {
+        "en": ", base year for discounting =",
+        "fr": ", année de base pour l’actualisation ="
+    },
+    {
+        "en": ", discounting rate =",
+        "fr": ", taux d’actualisation ="
+    },
+    {
+        "en": "Simulation iterations",
+        "fr": "Itérations de la simulation"
+    },
+    {
+        "en": "iterations =",
+        "fr": "itérations ="
+    },
+    {
+        "en": "asthma prevalence (%) =",
+        "fr": "prévalence de d’asthme (%) ="
+    },
+    {
+        "en": "Download input parameters",
+        "fr": "Télécharger les paramètres d'entrée"
+    },
+    {
+	"en": "input_parameters.xlsx",
+	"fr": "paramètres_entrées.xlsx"
+    },
+    {
+        "en": "Concentration response function",
+        "fr": "Fonction concentration-réponse"
+    },
+    {
+        "en": "PM2.5 - Chronic exposure mortality:",
+        "fr": "pm2,5 - Mortalité liée à une exposition chronique:"
+    },
+    {
+        "en": "reg type =",
+        "fr": "de type rég ="
+    },
+    {
+	"en": "log-linear",
+	"fr": "linéaire log"
+    },
+    {
+        "en": ", RR/OR =",
+        "fr": ", RR/RC ="
+    },
+    {
+        "en": "Increment (ug/m3) = ",
+        "fr": "Accroissement (ug/m3) = "
+    },
+    {
+        "en": ", Increment (ug/m3) = ",
+        "fr": ", Accroissement (ug/m3) = "
+    },
+    {
+        "en": "PM2.5 - Acute respiratory symptom days:",
+        "fr": "pm2,5 - Jours de symptômes respiratoires aigus:"
+    },
+    {
+	"en": "linear",
+	"fr": "linéaire"
+    },
+    {
+        "en": "PM2.5 - Adult chronic bronchitis cases:",
+        "fr": "pm2,5 - Cas de bronchites chroniques chez des adultes:"
+    },
+    {
+        "en": "PM2.5 - Asthma symptom days:",
+        "fr": "pm2,5 - Jours avec symptômes d’asthme:"
+    },
+    {
+        "en": "PM2.5 - Cardiac emergency room visits:",
+        "fr": "pm2,5 - Visites à l’urgence pour des problèmes cardiaques:"
+    },
+    {
+        "en": "PM2.5 - Cardiac hospital admissions:",
+        "fr": "pm2,5 - Admissions à l’hôpital pour des problèmes cardiaques:"
+    },
+    {
+        "en": "PM2.5 - Child acute bronchitis episodes:",
+        "fr": "pm2,5 - Épisodes de bronchite aiguë chez l’enfant:"
+    },
+    {
+        "en": "PM2.5 - Respiratory emergency room visits:",
+        "fr": "pm2,5 - Visites à l’urgence pour des problèmes respiratoires:"
+    },
+    {
+        "en": "PM2.5 - Respiratory Hospital Admissions:",
+        "fr": "pm2,5 - Admissions à l’hôpital pour des problèmes respiratoires:"
+    },
+    {
+        "en": "PM2.5 - Restricted Activity Days:",
+        "fr": "pm2,5 - Jours d’activité restreinte:"
+    },
+    {
+        "en": "PM2.5 - Chronic Exposure Cerebrovascular Mortality:",
+        "fr": "pm2,5 - Mortalité cérébrovasculaire liée à une exposition chronique:"
+    },
+    {
+        "en": "PM2.5 - Chronic Exposure COPD Mortality:",
+        "fr": "pm2,5 - Mortalité par MPOC liée à une exposition chronique:"
+    },
+    {
+        "en": "PM2.5 - Chronic Exposure Ischemic Heart Disease Mortality:",
+        "fr": "pm2,5 - Mortalité par cardiopathie ischémique liée à une exposition chronique:"
+    },
+    {
+        "en": "PM2.5 - Chronic Exposure Lung Cancer Mortality:",
+        "fr": "pm2,5 - Mortalité par cancer du poumon liée à une exposition chronique :"
+    },
+    {
+        "en": "O3 - Acute Exposure Mortality:",
+        "fr": "O3 - Mortalité liée à une exposition aiguë:"
+    },
+    {
+        "en": "Summer O3 - Chronic Exposure Respiratory Mortality:",
+        "fr": "O3 en été - Mortalité respiratoire liée à une exposition chronique:"
+    },
+    {
+        "en": "Summer O3 - Acute respiratory symptom days:",
+        "fr": "O3 en été - Jours avec symptômes respiratoires aigus:"
+    },
+    {
+        "en": "Summer O3 - Asthma symptom days:",
+        "fr": "O3 en été - Jours avec symptômes d’asthme:"
+    },
+    {
+        "en": "Summer O3 - Minor Restricted Activity Days:",
+        "fr": "O3 en été - Jours d’activité restreinte mineure:"
+    },
+    {
+        "en": "Summer O3 - Respiratory emergency room visits:",
+        "fr": "O3 en été - Visites à l’urgence pour des problèmes respiratoires:"
+    },
+    {
+        "en": "Summer O3 - Respiratory Hospital Admissions:",
+        "fr": "O3 en été - Admissions à l’hôpital pour des problèmes respiratoires:"
+    },
+    {
+        "en": "NO2 - Acute Exposure Mortality:",
+        "fr": "NO2 - Mortalité liée à une exposition aiguë:"
+    },
+    {
+        "en": "SO2 - Acute Exposure Mortality:",
+        "fr": "SO2 - Mortalité liée à une exposition aiguë:"
+    },
+    {
+        "en": "CO (24h) - Acute Exposure Mortality:",
+        "fr": "CO (24h) - Mortalité liée à une exposition aiguë:"
+    },
+    {
+        "en": "CO (1h) - Elderly cardiac hospital admissions:",
+        "fr": "CO (1h) - Admissions à l’hôpital pour des problèmes cardiaques chez des ainés:"
+    },
+    {
+        "en": "PM2.5 threshold concentration (ug/m3)",
+        "fr": "PM2,5 concentration seuil (ug/m3)"
+    },
+    {
+        "en": "O3 threshold concentration (ppb)",
+        "fr": "O3 concentration seuil (ppb)"
+    },
+    {
+        "en": "Summer O3 threshold concentration (ppb)",
+        "fr": "Concentration seuil d'O3 en été (ppb)"
+    },
+    {
+        "en": "NO2 threshold concentration (ppb)",
+        "fr": "NO2 concentration seuil (ppb)"
+    },
+    {
+        "en": "SO2 threshold concentration (ppb)",
+        "fr": "SO2 concentration seuil (ppb)"
+    },
+    {
+        "en": "CO threshold concentration (ppm)",
+        "fr": "CO concentration seuil (ppm)"
+    },
+    {
+        "en": "threshold =",
+        "fr": "seuil ="
+    },
+    {
+        "en": ", shape =",
+        "fr": ", forme ="
+    },
+    {
+        "en": ", scale =",
+        "fr": ", échelle ="
+    },
+    {
+        "en": "reg type = Non-linear SCHIF, thr conc = 2.4 ug/m3, Normal (mean = 0.0813, se = 0.01773, theta = 3.639, mu = 0.763, pi = 1.896)",
+        "fr": "de type rég = Non-linéaire SCHIF, conc seu = 2.4 ug/m3, Normale (moyenne = 0.0813, et = 0.01773, theta = 3.639, mu = 0.763, pi = 1.896)"
+    },
+    {
+        "en": "Increment (ppb) = ",
+        "fr": "Accroissement (ppb) = "
+    },
+    {
+        "en": "Increment (ppb)",
+        "fr": "Accroissement (ppb)"
+    },
+    {
+        "en": "Increment (ppm) = ",
+        "fr": "Accroissement (ppm) = "
+    },
+    {
+        "en": "Increment (ppm)",
+        "fr": "Accroissement (ppm)"
+    },
+    {
+        "en": "endpoint valuations($)",
+        "fr": "évaluations économiques des impacts sur la santé($)"
+    },
+    {
+        "en": "Mortality: source year =",
+        "fr": "Mortalité: année de référence ="
+    },
+    {
+        "en": ", distribution form =",
+        "fr": ", forme de distribution ="
+    },
+    {
+        "en": "(low =",
+        "fr": "(basse ="
+    },
+    {
+        "en": "million, central =",
+        "fr": "million, centrale ="
+    },
+    {
+        "en": "million, high =",
+        "fr": "million, élevée ="
+    },
+    {
+        "en": "million, low value probability =",
+        "fr": "million, probabilité de valeur basse ="
+    },
+    {
+        "en": ", central value probability =",
+        "fr": ", probabilité de valeur centrale ="
+    },
+    {
+        "en": "Acute respiratory symptom days: source year =",
+        "fr": "Jours avec symptômes respiratoires aigus: année de référence ="
+    },
+    {
+        "en": "normal",
+        "fr": "normale"
+    },
+    {
+        "en": "( mean =",
+        "fr": "( moyenne ="
+    },
+    {
+        "en": ", se =",
+        "fr": ", et ="
+    },
+    {
+        "en": "Adult Chronic Bronchitis Cases: source year =",
+        "fr": "Cas de bronchites chroniques chez des adultes: année de référence ="
+    },
+    {
+        "en": "discrete",
+        "fr": "discrète"
+    },
+    {
+        "en": ", central =",
+        "fr": ", centrale ="
+    },
+    {
+        "en": ", high =",
+        "fr": ", élevée ="
+    },
+    {
+        "en": ", low value probability =",
+        "fr": ", probabilité de valeur basse ="
+    },
+    {
+        "en": "Asthma symptom days: source year =",
+        "fr": "Jours avec symptômes d’asthme: année de référence ="
+    },
+    {
+	"en": "triangular",
+	"fr": "triangulaire"
+    },
+    {
+        "en": "Cardiac emergency room visits: source year =",
+        "fr": "Visites à l’urgence pour des problèmes cardiaques: année de référence ="
+    },
+    {
+        "en": "Child acute bronchitis episodes: source year =",
+        "fr": "Épisodes de bronchite aiguë chez l’enfant: année de référence ="
+    },
+    {
+        "en": "Elderly cardiac hospital admissions: source year =",
+        "fr": "Admissions à l’hôpital pour des problèmes cardiaques chez des ainés: année de référence ="
+    },
+    {
+        "en": "Minor Restricted Activity Days: source year =",
+        "fr": "Jours d’activité restreinte mineure: année de référence ="
+    },
+    {
+        "en": "Respiratory emergency room visits: source year =",
+        "fr": "Visites à l’urgence pour des problèmes respiratoires: année de référence ="
+    },
+    {
+        "en": "Restricted Activity Days: source year =",
+        "fr": "Jours d’activité restreinte: année de référence ="
+    },
+
+    {
+        "en": "Baseline data",
+        "fr": "Données de référence"
+    },
+    {
+        "en": "Annual baseline rates for health outcomes (per million). Please note that the table below is just a preview of the output. To see the full results, including population sizes, please select \"Download baseline data\".",
+        "fr": "Taux de référence annuels pour les résultats de santé (par million). Veuillez noter que le tableau ci-dessous est seulement un aperçu des résultats. Pour voir les résultats complets, y compris les tailles de population, veuillez sélectionner « Télécharger les données de base »."
+    },
+    {
+        "en": "Respiratory Mortality",
+        "fr": "Mortalité respiratoire"
+    },
+    {
+        "en": "Cardiovascular Mortality",
+        "fr": "Mortalité cardiovasculaire"
+    },
+    {
+        "en": "Cerebrovascular Mortality",
+        "fr": "Mortalité cérébrovasculaire"
+    },
+    {
+        "en": "COPD Mortality",
+        "fr": "Mortalité par MPOC"
+    },
+    {
+        "en": "Download baseline data",
+        "fr": "Télécharger les données de base"
+    },
+    {
+        "en": "basedata.xlsx",
+        "fr": "donnéesdebases.xlsx"
+    },
+    {
+	"en": "Ischemic Heart Disease Mortality",
+	"fr": "Mortalité par cardiopathie ischémique"
+    },
+    {
+	"en": "Lung Cancer Mortality",
+	"fr": "Mortalité par cancer du poumon"
+    },
+    {
+        "en": "Child Acute Bronchitis",
+        "fr": "Bronchite aiguë chez l’enfant"
+    },
+    {
+        "en": "Aged 5 to 19",
+        "fr": "Âgés de 5 à 19 ans"
+    },
+    {
+        "en": "Aged 5 to 19 non-asthma",
+        "fr": "Âgés de 5 à 19 ans sans asthme"
+    },
+    {
+        "en": "Aged 20 plus",
+        "fr": "Âgés de 20 ans et plus"
+    },
+    {
+        "en": "Aged 25 plus",
+        "fr": "Âgés de 25 ans et plus"
+    },
+    {
+        "en": "Aged 30 plus",
+        "fr": "Âgés de 30 ans et plus"
+    },
+    {
+        "en": "Aged 65 plus",
+        "fr": "Âgés de 65 ans et plus"
+    },
+    {
+        "en": "All Ages",
+        "fr": "Tous les âges"
+    },
+
+
+    {
+        "en": "References",
+        "fr": "Références"
+    },
+    {
+        "en": "These selected references are cited as key sources within the \"CRFs\" and \"Valuation\" tabs. Select any of the links for more information on that specific reference. Please note that selected links will open in the same window and you will not be able to return to your scenario. If you wish to avoid this, please open links in a new window or tab.",
+        "fr": "Ces références sélectionnées sont citées comme sources clés dans les onglets « FCR » et « Évaluation économique ». Sélectionnez l'un des liens pour obtenir plus d'informations sur cette référence spécifique. Veuillez noter que les liens sélectionnés s'ouvriront dans la même fenêtre et vous ne pourrez pas revenir à votre scénario. Si vous souhaitez éviter cela, veuillez ouvrir les liens dans une nouvelle fenêtre ou un nouvel onglet."
+    },
+    {
+        "en": "Other CRFs",
+        "fr": "Autres FCR"
+    },
+
+    {
+        "en": "Valuation estimates",
+        "fr": "Estimations d'évaluations économiques"
+    },
+
+
+    {
+	"en": "Warning",
+	"fr": "Avertissement"
+    },
+    {
+	"en": "You are about to reset this application, along with all of its data. To proceed, click \"Continue\". To go back, click \"Cancel\".",
+	"fr": "Vous êtes sur le point de réinitialiser cette application, ainsi que toutes ses données. Pour continuer, cliquez sur « Continuer ». Pour revenir en arrière, cliquez sur « Annuler »."
+    },
+    {
+	"en": "Continue",
+	"fr": "Continuer"
+    },
+    {
+	"en": "Cancel",
+	"fr": "Annuler"
+    },
+    {
+	"en": "Upload complete",
+	"fr": "Téléchargement terminé"
+    },
+    {
+        "en": "Click \"Restore default values\" to restore the values of each cell back to its preset (the values that show up automatically when the website first loads). Default values are restored in this tab only.",
+        "fr": "Cliquez sur « Restaurer les valeurs par défaut » pour rétablir les valeurs de chaque cellule à leur paramètre d'origine (les valeurs qui apparaissent automatiquement lorsque le site Web se charge pour la première fois). Les valeurs par défaut sont restaurées uniquement dans cet onglet."
+    },
+    {
+        "en": "Note on interpretation of valuation estimates",
+        "fr": "Note on interpretation of valuation estimates"
+    },
+        {
+        "en": "Reset all",
+        "fr": "Reset all"
+    },
+    {
+        "en": "This button restarts the application with all data cleared.",
+        "fr": "This button restarts the application with all data cleared."
+    },
+    {
+        "en": "Maps",
+        "fr": "Cartes"
+    },
+    {
+        "en": "Interactive and static maps of baseline health outcome rates, status quo pollutant concentrations and selected results.",
+        "fr": "Les cartes interactives et statiques des taux de résultats de santé de référence, des concentrations de polluants selon le statu quo et de certains résultats."
+    },
+    {
+        "en": "The image below is an example of output that would be generated when a dataset is uploaded to the \"Pollutant data upload\" tab. The image shows the counts for chronic exposure mortality per 100,000 for the pollutant PM2.5 in 2016 with scenario set as \"1\". The census division for 'Toronto' in Ontario is selected as an example.",
+        "fr": "L'image ci-dessous est un exemple de sortie générée lorsqu'un ensemble de données est téléchargé dans l'onglet « Téléchargement des données sur les polluants ». L'image montre les comptes pour la mortalité liée à une exposition chronique par 100 000 habitants pour le polluant PM2,5 en 2016 avec le scénario défini sur « 1 ». La division de recensement pour « Toronto » en Ontario est sélectionnée à titre d'exemple."
+    },
+    {
+        "en": "These are static images.",
+        "fr": "Ce sont des images statiques."
+    },
+    {
+        "en": "They cannot be interacted with.",
+        "fr": "Elles ne peuvent pas être interactives."
+    },
+    {
+        "en": "Interaction, customization, and more visualization options will be presented once data has been uploaded.",
+        "fr": "Plus options d'interaction, de personnalisation et de visualisation seront présentées une fois les données téléchargées."
+    },
+    {
+        "en": "Note:",
+        "fr": "Remarque :"
+    },
+	{
+	"en": "year",
+	"fr": "année"
+	},
+    {
+        "en": "A demo map showing pollutant concentration levels across Canada.",
+        "fr": "Une carte de démonstration montrant les niveaux de concentration des polluants à travers le Canada."
+    },
+{
+        "en": "Upload pollutant data, by scenario, year, and census division unique ID (CDUID) in this tab.",
+        "fr": "Upload pollutant data, by scenario, year, and census division unique ID (CDUID) in this tab."
+    },
+    {
+	"en": "Instructions for maps",
+	"fr": "Instructions pour les cartes"
+    },
+    {
+	"en": "Select year, scenario, pollutant, endpoint and metric, then click \"Generate map\".",
+	"fr": "Sélectionner l’année, le scénario, le polluant, le paramètre et la mesure, puis cliquer sur \"Générer la carte\"."
+    },
+    {
+	"en": "To map the baseline mortality rate, set the scenario and pollutant to \"None\".",
+	"fr": "Pour cartographier le taux de mortalité de référence, définir le scénario et le polluant sur « Aucun »."
+    },
+    {
+	"en": "To map status quo pollutant concentration, select a year, scenario and pollutant, and set endpoint to \"None\".",
+	"fr": "Pour cartographier la concentration de polluants du statu quo, sélectionner une année, un scénario et un polluant, et régler le résultat sur « Aucun »."
+    },
+    {
+	"en": "sample_inputs",
+	"fr": "exemple_entrée"
+    },
+    {
+	"en": "Counts per 100,000",
+	"fr": "Comptes par 100 000"
+    },
+    {
+	"en": "scenario",
+	"fr": "scénario"
+    },
+    {
+	"en": "pollutant",
+	"fr": "polluant"
+    },
+    {
+	"en": "endpoint",
+	"fr": "paramètre"
+    },
+    {
+        "en": "Air Quality Benefits Assessment Tool",
+        "fr": "Outil d’évaluation des bénéfices liés à la qualité de l’air"
+    },
+    {
+        "en": "Health Canada",
+        "fr": "Santé Canada"
+    },
+    {
+        "en": "Infobase",
+        "fr": "Infobase"
+    },
+    {
+	"en": "O3 Summer",
+	"fr": "O3 en été"
+    },
+    {
+	"en": "None",
+	"fr": "Aucun"
+    },
+    {
+	"en": "All (CO, NO2, O3, PM2.5, SO2)",
+	"fr": "Tous (CO, NO2, O3, PM2,5, SO2)"
+    },
+    {
+	"en": "All Toxics (cancer)",
+	"fr": "Toutes toxiques (cancer)"
+    },
+    {
+	"en": "All Toxics (non-cancer)",
+	"fr": "Toutes toxiques (non-cancérigène)"
+    },
+    {
+	"en": "Total Mortality",
+	"fr": "Total du nombre de mortalités"
+    },
+    {
+	"en": "Total Valuation",
+	"fr": "Évaluation économique totale"
+    },
+    {
+	"en": "Non-accidental mortality",
+	"fr": "Mortalité non accidentel"
+    },
+    {
+	"en": "Metric",
+	"fr": "Mesure"
+    },
+    {
+	"en": "Pollutant concentration",
+	"fr": "Concentration de polluants"
+    },
+    {
+	"en": "Per capita valuation",
+	"fr": "Évaluation économique par habitant"
+    },
+    {
+	"en": "Change in life expectancy",
+	"fr": "Changement de l’espérance de vie"
+    },
+    {
+	"en": "DALYs/100k",
+	"fr": "AVCI par 100 000"
+    },
+    {
+	"en": "Valuation/100k",
+	"fr": "Évaluation économique par 100 000"
+    },
+    {
+	"en": "Baseline rate/100k",
+	"fr": "Taux de base par 100 000"
+    },
+    {
+	"en": "NL",
+	"fr": "T.-N.-L."
+    },
+    {
+	"en": "PE",
+	"fr": "Î.-P.-É."
+    },
+    {
+	"en": "NS",
+	"fr": "N.-É."
+    },
+    {
+	"en": "NB",
+	"fr": "N.-B."
+    },
+    {
+	"en": "QC",
+	"fr": "Qc"
+    },
+    {
+	"en": "ON",
+	"fr": "Ont."
+    },
+    {
+	"en": "MB",
+	"fr": "Man."
+    },
+    {
+	"en": "SK",
+	"fr": "Sask."
+    },
+    {
+	"en": "AB",
+	"fr": "Alb."
+    },
+    {
+	"en": "BC",
+	"fr": "C.-B."
+    },
+    {
+	"en": "YK",
+	"fr": "Yn"
+    },
+    {
+	"en": "NT",
+	"fr": "T.N.-O."
+    },
+    {
+	"en": "NU",
+	"fr": "Nt"
+    },
+    {
+	"en": "Generate map",
+	"fr": "Générer la carte"
+    },
+    {
+	"en": "Download static national map",
+	"fr": "Télécharger la carte nationale statique"
+    },
+    {
+	"en": "Download map",
+	"fr": "Télécharger la carte"
+    },
+    {
+	"en": "Select province",
+	"fr": "Sélectionner province"
+    },
+    {
+	"en": "Download static provincial map",
+	"fr": "Télécharger la carte provinciale statique"
+    },
+    {
+	"en": "metric",
+	"fr": "mesure"
+    },
+    {
+	"en": "value",
+	"fr": "valeur"
+    },
+    {
+	"en": "CDNAME",
+	"fr": "NOMDR"
+    },
+    {
+	"en": "map",
+	"fr": "la_carte"
+    },
+    {
+    "en": "You are about to reset this application, along with all of its data.",
+    "fr": "Vous êtes sur le point de réinitialiser cette application, ainsi que toutes ses données."
+    },
+    {
+        "en": "On this page",
+	    "fr": "Sur cette page"
+    },
+    {
+        "en": "summary",
+	    "fr": "sommaire"
+    },
+    {
+        "en": "crfs",
+	    "fr": "fcr"
+    },
+    {
+        "en": "valuation",
+	    "fr": "évaluation-économique"
+    },
+    {
+        "en": "pollutant-data-upload",
+	    "fr": "téléchargement-des-données-sur-les-polluants"
+    },
+    {
+        "en": "results",
+	    "fr": "résultats"
+    },
+    {
+        "en": "references",
+	    "fr": "références"
+    },
+    {
+        "en": "Sample data has been uploaded",
+        "fr": "Les données d'échantillon ont été téléchargées"
+    },
+    {
+        "en": "To upload new data, please click 'Clear all data and restart'.",
+        "fr": "Pour télécharger de nouvelles données, veuillez cliquer sur 'Effacer toutes les données et redémarrer'."
+    },
+    {
+        "en": "Session has timed out due to inactivity. All data has been lost. Please reload the page.",
+        "fr": "La session a expiré en raison de l'inactivité. Toutes les données ont été perdues. Veuillez recharger la page."
+    },
+    {
+        "en": "Error: Invalid file type.",
+        "fr": "Erreur : type de fichier invalide."
+    },
+    {
+        "en": "Please restart the application and upload a valid CSV file.",
+        "fr": "Veuillez redémarrer l'application et télécharger un fichier CSV valide."
+    },
+    {
+        "en": "To upload your own data, please click \"Clear all data and restart\", and then upload your data at the \"Pollutant data upload\" tab before visiting this page",
+        "fr": "Pour télécharger vos propres données, veuillez cliquer sur « Effacer toutes les données et recommencer », puis téléchargez vos données dans l'onglet « Téléchargement des données de polluants » avant de visiter cette page."
+    },
+    {
+        "en": "Your data has been uploaded",
+        "fr": "Vos données ont été téléchargées"
+    },
+    {
+        "en": "Please wait...",
+        "fr": "Veuillez patienter..."
+    },
+    {
+        "en": "Pollutant concentrations are annual averages of daily values (24 hours), except for O3 and summer O3 (May to September), which use daily 1-hour maximum averages for the annual and summer periods, respectively. CO includes both annual daily averages and daily 1-hour maximum averages.",
+        "fr": "Les concentrations de polluants sont des moyennes annuelles des valeurs journalières (24 heures), sauf pour l'O3 et l'O3 estival (mai à septembre), qui utilisent respectivement les moyennes des maximums journaliers sur 1 heure pour les périodes annuelles et estivales. Le CO inclut à la fois les moyennes annuelles des valeurs journalières et les moyennes des maximums journaliers sur 1 heure."
+    },
+    {
+        "en": "year (2001-2063)",
+        "fr": "année (2001-2063)"
+    },
+    {
+        "en": "Please note that the CRFs for acute exposure mortality associated with SO2 and CO are still considered 'suggestive' rather than ‘causal’ or ‘likely causal’. We will continue to monitor and incorporate any new scientific evidence.",
+        "fr": "Veuillez noter que les CRF pour la mortalité liée à une exposition aiguë au SO2 et au CO sont toujours considérées comme « suggestives » plutôt que « causales » ou « probablement causales ». Nous continuerons à surveiller et à intégrer toute nouvelle preuve scientifique."
+    },
+    {
+        "en": "Judek S, Stieb D, Xi G, Jovic B, Edwards B. 2019. Air Quality Benefits Assessment Tool (AQBAT) – User Guide – Version 3. Healthy Environments and Consumer Safety Branch, Health Canada.",
+        "fr": "Judek, S., Stieb, D., Xi, G., Jovic, B. et Edwards, B. (2019). Air Quality Benefits Assessment Tool (AQBAT) – User Guide – Version 3, Direction générale de la santé environnementale et de la sécurité des consommateurs, Santé Canada."
+    },
+    {
+        "en": "Download AQBAT appendix",
+        "fr": "Télécharger l'annexe d'OEBQA"
+    },
+    {
+        "en": "The application will time out shortly. To prevent the session from timing out, click \"Extend session\".",
+        "fr": "L'application va expirer dans quelques secondes. Pour éviter que la session ne soit interrompue, cliquez sur \"Prolonger la session\"."
+    },
+    {
+        "en": "Timeout Warning",
+        "fr": "Avertissement de délai"
+    },
+    {
+        "en": "Extend session",
+        "fr": "Prolonger la session"
+    },
+    {
+        "en": "You have been disconnected from the server. All data has been lost. This can happen for the following reasons: exceeding 3 hours of inactivity or the application has been updated on the server. Please refresh the page to restart the app. You may press F5 to refresh.",
+        "fr": "Vous avez été déconnecté du serveur. Toutes les données ont été perdues. Cela peut se produire pour les raisons suivantes : dépassement de 3 heures d'inactivité ou l'application a été mise à jour sur le serveur. Veuillez recharger la page pour redémarrer l'application. Vous pouvez presser F5 pour recharger."
+    },
+    {
+        "en": "Restart application",
+        "fr": "Redémarrer l'application"
+    },
+    {
+        "en": "Disconnection Notice",
+        "fr": "Avertissement de déconnexion"
+    },
+    {
+        "en": "You have been disconnected from the server.",
+        "fr": "Vous avez été déconnecté du serveur."
+    },
+    {
+        "en": "You may still navigate through the application, but it will not work properly. You may not download data, nor add new data. Please refresh the application and start again. You may press F5 to refresh the application.",
+        "fr": "Vous pouvez encore naviguer dans l'application, mais elle ne fonctionnera pas correctement. Vous ne pouvez pas télécharger de données, ni ajouter de nouvelles données. Veuillez recharger l'application et la redémarrer. Vous pouvez presser F5 pour recharger l'application."
+    },
+    {
+        "en": "Only CSV files are supported.",
+        "fr": "Seuls les fichiers CSV sont supportés."
+    },
+    {
+        "en": "Please note that this tool works best on desktops and laptops. It is not optimized for tablets or mobile devices.",
+        "fr": "Veuillez noter que cet outil fonctionne mieux sur des ordinateurs de bureau et des ordinateurs portables. Il n’est pas optimisé pour les tablettes ou les mobiles."
+    },
+    {    
+        "en": "Only CSV files are supported. UTF-8 encoding is recommended.",
+        "fr": "Seuls les fichiers CSV sont pris en charge. L'encodage UTF-8 est requis."
+    }
+  ]
+}

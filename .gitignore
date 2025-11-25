@@ -1,0 +1,21 @@
+# R specific files
+.Rproj.user
+.Rhistory
+.RData
+.Ruserdata
+.Renviron
+
+# renv specific files
+aqbat/renv/library/
+aqbat/renv/staging/
+aqbat/renv/python/
+aqbat/renv/local/
+aqbat/renv/settings.json
+
+# IDE specific files
+.vscode/
+.idea/
+
+# OS specific files
+.DS_Store
+Thumbs.db

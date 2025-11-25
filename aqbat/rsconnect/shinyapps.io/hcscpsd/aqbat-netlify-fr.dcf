@@ -1,0 +1,12 @@
+name: aqbat-netlify-fr
+title: aqbat-netlify-fr
+username: hcscpsd
+account: hcscpsd
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 12648323
+bundleId: 9890303
+url: https://hcscpsd.shinyapps.io/aqbat-netlify-fr/
+version: 1
+asMultiple: FALSE
+asStatic: FALSE
