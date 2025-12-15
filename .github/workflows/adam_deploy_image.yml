@@ -20,17 +20,42 @@ jobs:
     runs-on: [ lz-client-hecsb-psd-aqbatwe-dt ]
     # Use needs to cancel job if createRunner is not successful
     needs: createRunner
+    # Set these environment variables appropriately for your ACR and image
+    env:
+      # Replace with your ACR login server, e.g. myacr.azurecr.io
+      ACR_LOGIN_SERVER: hcsccrrc.azurecr.io
+      # Replace with your image name (no registry), e.g. myapp/web
+      IMAGE_NAME: dtb/hcweb/aqbat
+      # Replace with desired tag, e.g. latest or ${{ github.sha }}
+      IMAGE_TAG: latest
+      # Dockerfile path and build context
+      DOCKERFILE_PATH: ./Dockerfile
+      BUILD_CONTEXT: .
+      # The repository secret that contains the Azure service principal JSON
+      AZURE_CREDENTIALS_SECRET: HECSB_PSD_AQBATWE_CICDLZSP_DT
     steps:
-      - name: Dump repo variables (non-secret)
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          echo "Repository: $GITHUB_REPOSITORY"
-          # Try pretty-print with jq, fallback to raw JSON
-          curl -s -H "Authorization: Bearer $GITHUB_TOKEN" -H "Accept: application/vnd.github+json" "https://api.github.com/repos/$GITHUB_REPOSITORY/actions/variables" | jq . || curl -s -H "Authorization: Bearer $GITHUB_TOKEN" -H "Accept: application/vnd.github+json" "https://api.github.com/repos/$GITHUB_REPOSITORY/actions/variables"
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - uses: actions/checkout@v4
 
-      - name: Test
-        run: |
-          echo "hello test"
+      # Login to Azure using the existing service principal secret
+      - name: Azure Login
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.HECSB_PSD_AQBATWE_CICDLZSP_DT }}
+
+      # Login Docker to ACR using the service principal credentials
+      - name: Docker login to ACR
+        uses: docker/login-action@v2
+        with:
+          registry: ${{ env.ACR_LOGIN_SERVER }}
+          username: ${{ fromJSON(secrets.HECSB_PSD_AQBATWE_CICDLZSP_DT).clientId }}
+          password: ${{ fromJSON(secrets.HECSB_PSD_AQBATWE_CICDLZSP_DT).clientSecret }}
+
+      # Build and push the image to ACR
+      - name: Build and push image
+        uses: docker/build-push-action@v5
+        with:
+          context: ${{ env.BUILD_CONTEXT }}
+          file: ${{ env.DOCKERFILE_PATH }}
+          push: true
+          tags: ${{ env.ACR_LOGIN_SERVER }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
