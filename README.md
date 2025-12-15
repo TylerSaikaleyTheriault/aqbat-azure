@@ -260,6 +260,22 @@ The project uses `renv` for reproducible package management. Here's how to work 
    - Verify the `www` directory is properly copied
    - Check the resource paths in the app code
 
+## Workflows
+
+- **File:** [`.github/workflows/docker-image.yml`](.github/workflows/docker-image.yml) — Deploys the AQBAT Docker image to Azure Container Registry (ACR).
+- **Purpose:** Build the project Docker image, tag it with the run id and `latest`, and push both tags to ACR.
+- **Trigger:** Manual (`workflow_dispatch`).
+- **Jobs:**
+   - `createRunner`: calls the reusable runner workflow [`hs/createEphemeralUbuntuRunner/.github/workflows/createEphemeralUbuntuRunner.yml@main`](https://github.hc-sc.gc.ca/hs/createEphemeralUbuntuRunner/blob/main/.github/workflows/createEphemeralUbuntuRunner.yml) to provision an ephemeral Ubuntu runner.
+   - `build-and-push`: runs on the ephemeral runner, builds the image with `docker build`, tags, and pushes to the registry.
+- **Key actions & dependencies:** `actions/checkout@v4`, `docker/setup-docker-action@v4`, `azure/login@v2`, and the org-provided `hs/createEphemeralUbuntuRunner` reusable workflow.
+- **Required secrets / inputs:** The caller maps a repository secret to `AZURE_CREDENTIALS` (example secret name in this repo: `DTB-DEVOPS-LZ-CICDLZSP-DT`). That secret must contain valid Azure service principal JSON including a `subscriptionId` field.
+- **Troubleshooting notes:**
+   - The UI lists workflows from the repository default branch; to see the workflow in the Actions sidebar or use the manual "Run workflow" UI, ensure the file is present on the default branch (e.g., `main`).
+   - The reusable runner expects an input named `environment` (lowercase). The caller must use the same input name.
+   - The reusable workflow uses `fromJSON(secrets.AZURE_CREDENTIALS).subscriptionId` during evaluation — this will error if the secret is missing, empty, or not valid JSON (common when running PRs from forks where secrets are unavailable).
+   - Ensure the runner label produced by the reusable workflow matches the `runs-on` label used by `build-and-push`.
+
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 ```
