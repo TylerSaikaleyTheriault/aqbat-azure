@@ -21,12 +21,13 @@ jobs:
     # Use needs to cancel job if createRunner is not successful
     needs: createRunner
     steps:
-      - name: Debug infra vars
+      - name: Dump repo variables (non-secret)
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          echo "GHA_RESOURCE_GROUP=${{ vars.GHA_RESOURCE_GROUP }}"
-          echo "GHA_VNET=${{ vars.GHA_VNET }}"
-          echo "GHA_SUBNET=${{ vars.GHA_SUBNET }}"
-          echo "Runs-on label: lz-client-hecsb-psd-aqbatwe-dt"
+          echo "Repository: $GITHUB_REPOSITORY"
+          # Try pretty-print with jq, fallback to raw JSON
+          curl -s -H "Authorization: Bearer $GITHUB_TOKEN" -H "Accept: application/vnd.github+json" "https://api.github.com/repos/$GITHUB_REPOSITORY/actions/variables" | jq . || curl -s -H "Authorization: Bearer $GITHUB_TOKEN" -H "Accept: application/vnd.github+json" "https://api.github.com/repos/$GITHUB_REPOSITORY/actions/variables"
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - uses: actions/checkout@v4
 
