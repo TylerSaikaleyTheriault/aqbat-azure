@@ -10,7 +10,7 @@ jobs:
   createRunner:
    uses: hs/createEphemeralUbuntuRunner/.github/workflows/createEphemeralUbuntuRunner.yml@main
    with:
-     ENVIRONMENT: "lz-client-hecsb-psd-aqbatwe-dt"
+     environment: "lz-client-hecsb-psd-aqbatwe-dt"
    secrets:
      AZURE_CREDENTIALS: ${{ secrets.HECSB_PSD_AQBATWE_CICDLZSP_DT }}
 
@@ -21,6 +21,13 @@ jobs:
     # Use needs to cancel job if createRunner is not successful
     needs: createRunner
     steps:
+      - name: Debug infra vars
+        run: |
+          echo "GHA_RESOURCE_GROUP=${{ vars.GHA_RESOURCE_GROUP }}"
+          echo "GHA_VNET=${{ vars.GHA_VNET }}"
+          echo "GHA_SUBNET=${{ vars.GHA_SUBNET }}"
+          echo "Runs-on label: lz-client-hecsb-psd-aqbatwe-dt"
+
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - uses: actions/checkout@v4
 
