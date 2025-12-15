@@ -1,0 +1,29 @@
+name: minimal-workflow
+
+# Controls when the workflow will run
+on:
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+jobs:
+  # Creating an ephemeral runner
+  createRunner:
+   uses: hs/createEphemeralUbuntuRunner/.github/workflows/createEphemeralUbuntuRunner.yml@main
+   with:
+     ENVIRONMENT: "lz-client-hecsb-psd-aqbatwe-dt"
+   secrets:
+     AZURE_CREDENTIALS: ${{ secrets.HECSB_PSD_AQBATWE_CICDLZSP_DT }}
+
+  # The build job will wait until the ephemeral runner is set up
+  build:
+    # The ephemeral runner will have the ephemeral_runner label
+    runs-on: [ lz-client-hecsb-psd-aqbatwe-dt ]
+    # Use needs to cancel job if createRunner is not successful
+    needs: createRunner
+    steps:
+      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+      - uses: actions/checkout@v4
+
+      - name: Test
+        run: |
+          echo "hello test"

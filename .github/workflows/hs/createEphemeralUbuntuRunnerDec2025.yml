@@ -1,0 +1,101 @@
+name: Create Ephemeral Agent
+
+on:
+  workflow_call:
+    inputs:
+      environment:
+        required: true
+        type: string
+    secrets:
+      AZURE_CREDENTIALS:
+        required: true
+
+jobs:
+
+  scale:
+
+    runs-on: [ arc-runner-set ]
+    environment: ${{inputs.environment}}
+    env:
+      AZ_SUBSCRIPTION: ${{ fromJSON(secrets.AZURE_CREDENTIALS).subscriptionId }}
+      RESOURCE_GROUP: ${{ vars.GHA_RESOURCE_GROUP }}
+    steps:
+
+      - name: Checkout ephemeral repo
+        uses: actions/checkout@v4
+        with:
+          repository: hs/createEphemeralUbuntuRunner
+          ref: main
+   
+      - name: Azure Login
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Check for leaked resources
+        run: |
+          #Check if an ephemeral VM has been up for more than 6 hours, if so delete it
+          CUTOFF_TIME=$(date --date "6 hours ago" '+%Y-%m-%dT%H:%M:%S')
+          az vm list -g "${RESOURCE_GROUP}" --subscription "${AZ_SUBSCRIPTION}" --query "[?contains(name, 'actions-ephemeral') && tags.GH_TIME_CREATED < '${CUTOFF_TIME}'].name" |
+          jq -c -r '.[]' | while read vm; do
+              echo "$vm"
+              az vm delete -g "${RESOURCE_GROUP}" -n "${vm}" --yes --force-deletion --no-wait false --verbose
+          done
+
+      - name: Run a one-line script
+        env:
+          GH_SERVER_URL: ${{github.server_url}}
+          GH_REPOSITORY_OWNER: ${{github.repository_owner}}
+          GH_RUN_ID: ${{github.run_id}}
+          GH_RUN_ATTEMPT: ${{github.run_attempt}}
+          REPO_NAME: ${{ github.event.repository.name }}
+          SUBNET_ID: "/subscriptions/${{env.AZ_SUBSCRIPTION}}/resourceGroups/Utility/providers/Microsoft.Network/virtualNetworks/${{vars.GHA_VNET}}/subnets/${{vars.GHA_SUBNET}}"
+          LOCATION: 'Canada Central'
+          VM_SIZE: 'Standard_D2as_v4'
+          VM_IMAGE: 'Canonical:0001-com-ubuntu-server-jammy:22_04-lts-gen2:latest'
+          VM_NAME: "actions-ephemeral-${{ github.event.repository.name }}-${{ github.run_id }}-${{ github.run_attempt }}"
+          RUNNER_LABEL: ${{inputs.environment}}
+        run: |
+
+          #Get runner registration token
+          REG_TOKEN=$(curl -sX POST -H "Authorization: token ${GH_AKS_PAT}" "${GH_SERVER_URL}/api/v3/repos/${GH_REPOSITORY_OWNER}/${REPO_NAME}/actions/runners/registration-token" | jq .token --raw-output)
+          
+          echo "export REPO_NAME=$REPO_NAME REG_TOKEN=$REG_TOKEN GH_SERVER_URL=$GH_SERVER_URL GH_REPOSITORY_OWNER=$GH_REPOSITORY_OWNER RESOURCE_GROUP=$RESOURCE_GROUP RUNNER_LABEL=$RUNNER_LABEL" | cat - scripts/setup.sh > temp && mv temp scripts/setup.sh
+          echo '#!/bin/sh' | cat - scripts/setup.sh > temp && mv temp scripts/setup.sh
+
+          #Create VM, store VM system identity
+          ROLE_IDENTITY=$(az vm create \
+              --name "${VM_NAME}" \
+              --resource-group "${RESOURCE_GROUP}" \
+              --size "${VM_SIZE}" \
+              --location "${LOCATION}" \
+              --image "${VM_IMAGE}" \
+              --generate-ssh-keys \
+              --nic-delete-option delete \
+              --os-disk-delete-option delete \
+              --tags "GH_RUN_ID=${GH_RUN_ID}" "GH_RUN_ATTEMPT=${GH_RUN_ATTEMPT}" "GH_RESOURCE=ephemeral_runner" "GH_TIME_CREATED=$(date '+%Y-%m-%dT%H:%M:%S')" \
+              --subnet "${SUBNET_ID}" \
+              --public-ip-address "" \
+              --nsg "" \
+              --assign-identity "[system]" | jq '.identity.systemAssignedIdentity' --raw-output)
+          #Create role assignment to allow VM to delete itself
+          az role assignment create \
+              --assignee-object-id "${ROLE_IDENTITY}" \
+              --role "Virtual Machine Contributor" \
+              --scope "/subscriptions/${AZ_SUBSCRIPTION}/resourceGroups/${RESOURCE_GROUP}/providers/Microsoft.Compute/virtualMachines/${VM_NAME}"
+          #Run command on VM to set it up as a runner
+          az vm run-command invoke \
+              --resource-group "${RESOURCE_GROUP}" \
+              --name "${VM_NAME}" \
+              --scripts @scripts/setup.sh \
+              --no-wait \
+              --command-id RunShellScript
+
+      - name: Delete VM is Cancelled or Failed
+        if: ${{ failure() || cancelled() }}
+        env:
+          VM_NAME: "actions-ephemeral-${{ github.event.repository.name }}-${{ github.run_id }}-${{ github.run_attempt }}"
+        run: |
+          #Sleep in case VM creation is in process
+          sleep 30
+          az vm delete -g "${RESOURCE_GROUP}" -n ${VM_NAME} --yes --force-deletion
