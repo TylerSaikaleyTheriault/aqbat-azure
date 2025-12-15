@@ -11,7 +11,7 @@ jobs:
     with:
       ENVIRONMENT: "lz-client-dtb-devops-lz-dt"
     secrets:
-      AZURE_CREDENTIALS: ${{ secrets.DTB-DEVOPS-LZ-CICDLZSP-DT }}
+      AZURE_CREDENTIALS: ${{ secrets.HECSB_PSD_AQBATWE_CICDLZSP_DT }}
 
   # 2) Build and push image on that runner
   build-and-push:
