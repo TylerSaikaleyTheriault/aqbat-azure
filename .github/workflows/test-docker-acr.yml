@@ -1,0 +1,62 @@
+name: TEST deploy AQBAT image to ACR
+
+on:
+  # manual trigger for now
+  workflow_dispatch:
+
+jobs:
+  # 1) Create ephemeral runner using the org-standard workflow
+  createRunner:
+    uses: hs/createEphemeralUbuntuRunner/.github/workflows/createEphemeralUbuntuRunner.yml@main
+    with:
+      ENVIRONMENT: "lz-client-dtb-devops-lz-dt"
+    secrets:
+      AZURE_CREDENTIALS: ${{ secrets.DTB-DEVOPS-LZ-CICDLZSP-DT }}
+
+  # 2) Build and push image on that runner
+  build-and-push:
+    runs-on: [ephemeral_runner]
+    needs: createRunner
+
+    env:
+      ACR_NAME: "hcsccrrc"
+      ACR_LOGIN_SERVER: "hcsccrrc.azurecr.io"
+      # Choose a repository path INSIDE the registry – talk to DevOps if they want
+      # a specific convention. Example:
+      ACR_IMAGE_REPOSITORY: "dtb/aqbat/shiny"
+      AZ_SUBSCRIPTION_ID: "bee5b843-636e-44ec-9d05-8d8ef22e718f"
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Install Docker
+        uses: docker/setup-docker-action@v4
+
+      - name: Azure login (service principal)
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.DTB-DEVOPS-LZ-CICDLZSP-DT }}
+
+      - name: Build and push Docker image to ACR
+        run: |
+          # Set subscription just to be explicit
+          az account set --subscription "$AZ_SUBSCRIPTION_ID"
+
+          # Log in to ACR using the SP (which has AcrPush)
+          az acr login --name "$ACR_NAME"
+
+          IMAGE_TAG=${GITHUB_RUN_ID}
+          IMAGE_NAME="${ACR_LOGIN_SERVER}/${ACR_IMAGE_REPOSITORY}:${IMAGE_TAG}"
+          LATEST_NAME="${ACR_LOGIN_SERVER}/${ACR_IMAGE_REPOSITORY}:latest"
+
+          echo "Building AQBAT image: ${IMAGE_NAME}"
+          docker build -t "${IMAGE_NAME}" .
+
+          echo "Tagging as latest: ${LATEST_NAME}"
+          docker tag "${IMAGE_NAME}" "${LATEST_NAME}"
+
+          echo "Pushing both tags to ACR"
+          docker push "${IMAGE_NAME}"
+          docker push "${LATEST_NAME}"
+
