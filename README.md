@@ -26,6 +26,10 @@ The Air Quality Benefits Assessment Tool (AQBAT) is a computer application desig
 
 ## Getting Started
 
+### Onboarding
+
+When appropriate, new developers should be onboarded as maintainers on GitHub. This is done by sending a request to [devops@hc-sc.gc.ca](mailto:devops@hc-sc.gc.ca).
+
 ### Prerequisites
 
 Install R & RStudio for windows [here](https://posit.co/download/rstudio-desktop/)

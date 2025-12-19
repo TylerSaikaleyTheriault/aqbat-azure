@@ -44,12 +44,18 @@ COPY ./aqbat/cpi_fr.csv ./cpi_fr.csv
 COPY ./aqbat/pollutants_2016wtox.csv ./pollutants_2016wtox.csv
 COPY ./aqbat/pollutants_2016wtox_fr.csv ./pollutants_2016wtox_fr.csv
 
-# Add a command to verify the working directory and file structure
+# Verify the www directory exists and set proper permissions
+# This will fail the build if www directory is missing
 RUN ls -la /home/shiny-app && \
-    ls -la /home/shiny-app/www
+    test -d /home/shiny-app/www || (echo "ERROR: www directory is missing!" && exit 1) && \
+    ls -la /home/shiny-app/www && \
+    chmod -R 755 /home/shiny-app/www && \
+    echo "www directory verified and permissions set"
 
 # Expose Shiny default port
 EXPOSE 3838
 
-# Run the app with www directory explicitly set
-CMD ["R", "-e", "shiny::addResourcePath('www', '/home/shiny-app/www'); shiny::runApp('/home/shiny-app', port = 3838, host = '0.0.0.0')"]
+# Run the app
+# Shiny automatically serves the www directory when it's in the same directory as app.R
+# Port 3838 matches WEBSITES_PORT setting in Azure App Service
+CMD ["R", "-e", "shiny::runApp('/home/shiny-app', port = 3838, host = '0.0.0.0')"]
