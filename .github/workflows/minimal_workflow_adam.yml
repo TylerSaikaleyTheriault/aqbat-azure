@@ -50,11 +50,31 @@ jobs:
           IMAGE_NAME="${ACR_LOGIN_SERVER}/${ACR_IMAGE_REPOSITORY}:${IMAGE_TAG}"
           LATEST_NAME="${ACR_LOGIN_SERVER}/${ACR_IMAGE_REPOSITORY}:latest"
 
-          echo "Building AQBAT image: ${IMAGE_NAME}"
-          docker build -t "${IMAGE_NAME}" .
+          # Enable Docker BuildKit for advanced caching
+          export DOCKER_BUILDKIT=1
 
-          echo "Tagging as latest: ${LATEST_NAME}"
-          docker tag "${IMAGE_NAME}" "${LATEST_NAME}"
+          # Try to pull the latest image to use as cache (if it exists)
+          # This allows Docker to reuse layers, especially the expensive R package installation layer
+          # NOTE: Service principal needs AcrPull permission for this to work
+          echo "Pulling latest image for cache..."
+          if docker pull "${LATEST_NAME}" 2>/dev/null; then
+            echo "Successfully pulled latest image for cache"
+          else
+            echo "Warning: Could not pull latest image (may need AcrPull permission or image doesn't exist)"
+            echo "Building from scratch without cache..."
+          fi
+
+          echo "Building AQBAT image: ${IMAGE_NAME}"
+          # Build with cache from the latest image
+          # Docker automatically handles updates:
+          # - Base image updates: Docker checks image digest, pulls new version if changed
+          # - renv.lock changes: Docker detects file content change, rebuilds from that layer
+          # - App code changes: Only affected layers are rebuilt, R packages layer is reused
+          docker build \
+            --cache-from "${LATEST_NAME}" \
+            --tag "${IMAGE_NAME}" \
+            --tag "${LATEST_NAME}" \
+            .
 
           echo "Pushing both tags to ACR"
           docker push "${IMAGE_NAME}"

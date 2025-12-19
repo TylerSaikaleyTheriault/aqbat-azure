@@ -1,8 +1,7 @@
-aqbat/renv/library/windows
-aqbat/renv/staging
-.git
-.gitignore
-.Rproj.user
-.Rhistory
-.RData
-.Ruserdata 
+# Exclude other unnecessary files (renv files are copied explicitly first, then overwritten in bulk copy)
+aqbat/.Rproj
+aqbat/rsconnect/
+aqbat/deploy.R
+aqbat/manifest.json
+aqbat/French names.txt
+aqbat/empty.csv
