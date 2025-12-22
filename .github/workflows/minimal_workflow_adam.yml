@@ -16,10 +16,12 @@ jobs:
 
   # The build job will wait until the ephemeral runner is set up
   build:
-    # The ephemeral runner will have the ephemeral_runner label
+    # The ephemeral runner will have the label matching the environment name
     runs-on: [ lz-client-hecsb-psd-aqbatwe-dt ]
     # Use needs to cancel job if createRunner is not successful
     needs: createRunner
+    # Add timeout to prevent indefinite waiting (ephemeral runner setup can take 5-10 minutes)
+    timeout-minutes: 30
     env:
       ACR_NAME: "hcsccrrc"
       ACR_LOGIN_SERVER: "hcsccrrc.azurecr.io"
@@ -50,9 +52,6 @@ jobs:
           IMAGE_NAME="${ACR_LOGIN_SERVER}/${ACR_IMAGE_REPOSITORY}:${IMAGE_TAG}"
           LATEST_NAME="${ACR_LOGIN_SERVER}/${ACR_IMAGE_REPOSITORY}:latest"
 
-          # Enable Docker BuildKit for advanced caching
-          export DOCKER_BUILDKIT=1
-
           # Try to pull the latest image to use as cache (if it exists)
           # This allows Docker to reuse layers, especially the expensive R package installation layer
           # NOTE: Service principal needs AcrPull permission for this to work
@@ -70,6 +69,7 @@ jobs:
           # - Base image updates: Docker checks image digest, pulls new version if changed
           # - renv.lock changes: Docker detects file content change, rebuilds from that layer
           # - App code changes: Only affected layers are rebuilt, R packages layer is reused
+          # Using regular docker build (--cache-from works without BuildKit/buildx)
           docker build \
             --cache-from "${LATEST_NAME}" \
             --tag "${IMAGE_NAME}" \
