@@ -28,6 +28,7 @@ RUN R -e "renv::restore()"
 COPY ./aqbat/ ./
 
 # Sanity check: Verify files are in the right place
+# All commands are wrapped to prevent build failures - they'll show warnings but won't crash
 RUN echo "=== Sanity Check: Working Directory ===" && \
     pwd && \
     echo "=== Sanity Check: Files in /home/shiny-app ===" && \
@@ -35,7 +36,7 @@ RUN echo "=== Sanity Check: Working Directory ===" && \
     echo "=== Sanity Check: Looking for app.R ===" && \
     (ls -la /home/shiny-app/app.R 2>&1 || echo "app.R NOT FOUND") && \
     echo "=== Sanity Check: Directory structure ===" && \
-    find /home/shiny-app -maxdepth 2 -type f -name "*.R" && \
+    (find /home/shiny-app -maxdepth 2 -type f -name "*.R" 2>&1 || echo "No .R files found or find failed") && \
     echo "=== Sanity Check: www directory ===" && \
     (ls -la /home/shiny-app/www 2>&1 || echo "www directory NOT FOUND")
 
