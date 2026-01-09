@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Increment Every Second</title>
+<style>
+      body { font-family: system-ui, sans-serif; padding: 24px; }
+      #counter { font-size: 48px; font-weight: 700; }
+</style>
+</head>
+<body>
+<h1>Counter</h1>
+<div id="counter">0</div>
+ 
+    <script>
+      // starting value
+      let count = 0;
+ 
+      // grab the element once
+      const counterEl = document.getElementById("counter");
+ 
+      // keep DOM in sync with the value
+      counterEl.textContent = count;
+ 
+      // increment every second
+      setInterval(() => {
+        count += 1;
+        counterEl.textContent = count;
+      }, 1000);
+</script>
+</body>
+</html>
