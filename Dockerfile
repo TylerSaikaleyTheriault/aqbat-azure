@@ -38,4 +38,4 @@ EXPOSE 3838
 # Shiny automatically serves the www directory when it's in the same directory as app.R
 # Port 3838 matches WEBSITES_PORT setting in Azure App Service
 # WORKDIR is already set to /home/shiny-app, so we can use '.' for current directory
-CMD ["R", "-e", "shiny::runApp('.', port = 3838, host = '0.0.0.0')"]
+CMD ["R", "-e", "shiny::runApp('/home/shiny-app', port = 3838, host = '0.0.0.0')"]
