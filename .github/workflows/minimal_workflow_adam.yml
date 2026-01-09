@@ -64,17 +64,29 @@ jobs:
           fi
 
           echo "Building AQBAT image: ${IMAGE_NAME}"
-          # Build with cache from the latest image
-          # Docker automatically handles updates:
-          # - Base image updates: Docker checks image digest, pulls new version if changed
-          # - renv.lock changes: Docker detects file content change, rebuilds from that layer
-          # - App code changes: Only affected layers are rebuilt, R packages layer is reused
-          # Using regular docker build (--cache-from works without BuildKit/buildx)
-          docker build \
-            --cache-from "${LATEST_NAME}" \
-            --tag "${IMAGE_NAME}" \
-            --tag "${LATEST_NAME}" \
-            .
+          # Build with cache from the latest image (if available)
+          # Docker will use partial caching - it will reuse valid layers and rebuild invalid ones
+          # If cache is corrupted, Docker will skip that layer and rebuild it
+          if [ "$CACHE_AVAILABLE" = true ]; then
+            # Try with cache, but continue even if cache restoration fails
+            docker build \
+              --cache-from "${LATEST_NAME}" \
+              --tag "${IMAGE_NAME}" \
+              --tag "${LATEST_NAME}" \
+              . || {
+              echo "Warning: Build with cache failed, retrying without cache..."
+              docker build \
+                --tag "${IMAGE_NAME}" \
+                --tag "${LATEST_NAME}" \
+                .
+            }
+          else
+            # Build without cache
+            docker build \
+              --tag "${IMAGE_NAME}" \
+              --tag "${LATEST_NAME}" \
+              .
+          fi
 
           echo "Pushing both tags to ACR"
           docker push "${IMAGE_NAME}"
