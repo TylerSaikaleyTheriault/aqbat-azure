@@ -27,15 +27,27 @@ RUN R -e "renv::restore()"
 # .dockerignore excludes renv files since they're already copied above
 COPY ./aqbat/ ./
 
-# Set proper permissions for www directory (only if needed)
-# Remove this line if files already have correct permissions from source
-RUN chmod -R 755 /home/shiny-app/www
+# Sanity check: Verify files are in the right place
+RUN echo "=== Sanity Check: Working Directory ===" && \
+    pwd && \
+    echo "=== Sanity Check: Files in /home/shiny-app ===" && \
+    ls -la /home/shiny-app && \
+    echo "=== Sanity Check: Looking for app.R ===" && \
+    (ls -la /home/shiny-app/app.R 2>&1 || echo "app.R NOT FOUND") && \
+    echo "=== Sanity Check: Directory structure ===" && \
+    find /home/shiny-app -maxdepth 2 -type f -name "*.R" && \
+    echo "=== Sanity Check: www directory ===" && \
+    (ls -la /home/shiny-app/www 2>&1 || echo "www directory NOT FOUND")
 
 # Expose Shiny default port
 EXPOSE 3838
 
-# Run the app
+# Keep container running for debugging/SSH access
+# This allows you to SSH into the container in Azure to inspect files and troubleshoot
+# To run the app, uncomment the CMD below and comment out this one
+CMD ["tail", "-f", "/dev/null"]
+
+# Run the app (commented out for debugging)
 # Shiny automatically serves the www directory when it's in the same directory as app.R
 # Port 3838 matches WEBSITES_PORT setting in Azure App Service
-# WORKDIR is already set to /home/shiny-app, so we can use '.' for current directory
-CMD ["R", "-e", "shiny::runApp('/home/shiny-app', port = 3838, host = '0.0.0.0')"]
+# CMD ["R", "-e", "shiny::runApp('/home/shiny-app', port = 3838, host = '0.0.0.0')"]
