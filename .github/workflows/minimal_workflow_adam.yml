@@ -41,8 +41,26 @@ jobs:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - uses: actions/checkout@v4
 
+      - name: Check Docker availability
+        id: check-docker
+        run: |
+          if command -v docker &> /dev/null && docker info &> /dev/null; then
+            echo "Docker is already available"
+            docker --version
+            echo "needs_setup=false" >> $GITHUB_OUTPUT
+          else
+            echo "Docker needs to be set up"
+            echo "needs_setup=true" >> $GITHUB_OUTPUT
+          fi
+      
       - name: Install Docker
+        if: steps.check-docker.outputs.needs_setup == 'true'
         uses: docker/setup-docker-action@v4
+      
+      - name: Verify Docker
+        run: |
+          docker --version
+          docker info
 
       - name: Azure Login
         uses: azure/login@v2
