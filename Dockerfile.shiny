@@ -27,6 +27,15 @@ RUN R -e "renv::restore()"
 # .dockerignore excludes renv files since they're already copied above
 COPY ./aqbat/ ./
 
+# Verify critical files were copied (fail build if missing)
+RUN if [ ! -f "/home/shiny-app/app.R" ]; then \
+      echo "ERROR: app.R was not copied!" && \
+      echo "Contents of /home/shiny-app:" && \
+      ls -la /home/shiny-app && \
+      exit 1; \
+    fi && \
+    echo "✓ app.R verified at /home/shiny-app/app.R"
+
 # Copy debug script for troubleshooting
 COPY debug-container.sh /debug-container.sh
 RUN chmod +x /debug-container.sh
@@ -76,7 +85,7 @@ echo "=== Current Working Directory ==="\n\
 pwd\n\
 echo ""\n\
 echo "=== Files in /home/shiny-app ==="\n\
-ls -la /home/shiny-app\n\
+ls -la /home/shiny-app 2>&1 || echo "Directory does not exist!"\n\
 echo ""\n\
 echo "=== Checking for app.R ==="\n\
 if [ -f "/home/shiny-app/app.R" ]; then\n\
@@ -85,7 +94,23 @@ if [ -f "/home/shiny-app/app.R" ]; then\n\
 else\n\
     echo "✗ ERROR: app.R NOT FOUND at /home/shiny-app/app.R"\n\
     echo "Searching for app.R in container..."\n\
-    find / -name "app.R" 2>/dev/null || echo "No app.R found anywhere"\n\
+    find / -name "app.R" 2>/dev/null | head -10 || echo "No app.R found anywhere"\n\
+    echo ""\n\
+    echo "=== Checking if /home/shiny-app exists ==="\n\
+    if [ -d "/home/shiny-app" ]; then\n\
+        echo "Directory exists but is empty or app.R missing"\n\
+        echo "Contents:"\n\
+        ls -la /home/shiny-app\n\
+    else\n\
+        echo "Directory /home/shiny-app does not exist!"\n\
+    fi\n\
+    echo ""\n\
+    echo "=== Checking mounted volumes ==="\n\
+    mount | grep -E "(shiny|home)" || echo "No relevant mounts found"\n\
+    echo ""\n\
+    echo "=== Environment variables ==="\n\
+    env | grep -E "(HOME|PWD|WORKDIR)" || echo "No relevant env vars"\n\
+    exit 1\n\
 fi\n\
 echo ""\n\
 echo "=== Directory structure ==="\n\
@@ -94,6 +119,7 @@ echo ""\n\
 echo "=== Starting Shiny app ==="\n\
 echo "Running: shiny::runApp(\"/home/shiny-app\", port = 3838, host = \"0.0.0.0\")"\n\
 echo ""\n\
+cd /home/shiny-app\n\
 exec R -e "shiny::runApp(\"/home/shiny-app\", port = 3838, host = \"0.0.0.0\")"\n\
 ' > /start.sh && chmod +x /start.sh
 
