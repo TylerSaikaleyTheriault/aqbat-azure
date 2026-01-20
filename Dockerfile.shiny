@@ -10,12 +10,13 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Create working directory
-WORKDIR /home/shiny-app
+# Using /app instead of /home/shiny-app to avoid Azure App Service volume mounts
+WORKDIR /app
 
 # Copy renv files first (for package installation cache)
-COPY ./aqbat/renv.lock ./renv.lock
-COPY ./aqbat/renv ./renv
-COPY ./aqbat/.Rprofile ./.Rprofile
+COPY ./aqbat/renv.lock /app/renv.lock
+COPY ./aqbat/renv /app/renv
+COPY ./aqbat/.Rprofile /app/.Rprofile
 
 # Install renv (cached separately from package restore for better cache reuse)
 RUN R -e "install.packages('renv', repos='https://cloud.r-project.org')"
@@ -25,16 +26,16 @@ RUN R -e "renv::restore()"
 
 # Copy all app files (after renv restore to preserve package cache)
 # .dockerignore excludes renv files since they're already copied above
-COPY ./aqbat/ ./
+COPY ./aqbat/ /app/
 
 # Verify critical files were copied (fail build if missing)
-RUN if [ ! -f "/home/shiny-app/app.R" ]; then \
+RUN if [ ! -f "/app/app.R" ]; then \
       echo "ERROR: app.R was not copied!" && \
-      echo "Contents of /home/shiny-app:" && \
-      ls -la /home/shiny-app && \
+      echo "Contents of /app:" && \
+      ls -la /app && \
       exit 1; \
     fi && \
-    echo "✓ app.R verified at /home/shiny-app/app.R"
+    echo "✓ app.R verified at /app/app.R"
 
 # Copy debug script for troubleshooting
 COPY debug-container.sh /debug-container.sh
@@ -48,26 +49,26 @@ RUN echo "========================================" && \
     echo "=== Current Working Directory ===" && \
     pwd && \
     echo "" && \
-    echo "=== Files in /home/shiny-app (root) ===" && \
-    ls -la /home/shiny-app && \
+    echo "=== Files in /app (root) ===" && \
+    ls -la /app && \
     echo "" && \
     echo "=== Looking for app.R ===" && \
-    (ls -la /home/shiny-app/app.R 2>&1 || echo "ERROR: app.R NOT FOUND") && \
+    (ls -la /app/app.R 2>&1 || echo "ERROR: app.R NOT FOUND") && \
     echo "" && \
     echo "=== Directory structure (top 3 levels) ===" && \
-    find /home/shiny-app -maxdepth 3 -type d | head -20 && \
+    find /app -maxdepth 3 -type d | head -20 && \
     echo "" && \
     echo "=== All .R files found ===" && \
-    find /home/shiny-app -type f -name "*.R" | head -10 && \
+    find /app -type f -name "*.R" | head -10 && \
     echo "" && \
     echo "=== www directory contents ===" && \
-    (ls -la /home/shiny-app/www 2>&1 || echo "ERROR: www directory NOT FOUND") && \
+    (ls -la /app/www 2>&1 || echo "ERROR: www directory NOT FOUND") && \
     echo "" && \
     echo "=== data directory contents ===" && \
-    (ls -la /home/shiny-app/data 2>&1 || echo "ERROR: data directory NOT FOUND") && \
+    (ls -la /app/data 2>&1 || echo "ERROR: data directory NOT FOUND") && \
     echo "" && \
     echo "=== Full directory tree (limited) ===" && \
-    (tree -L 3 /home/shiny-app 2>&1 || find /home/shiny-app -maxdepth 3 -print | sed 's|[^/]*/| |g') && \
+    (tree -L 3 /app 2>&1 || find /app -maxdepth 3 -print | sed 's|[^/]*/| |g') && \
     echo "" && \
     echo "========================================"
 
@@ -84,29 +85,29 @@ echo ""\n\
 echo "=== Current Working Directory ==="\n\
 pwd\n\
 echo ""\n\
-echo "=== Files in /home/shiny-app ==="\n\
-ls -la /home/shiny-app 2>&1 || echo "Directory does not exist!"\n\
+echo "=== Files in /app ==="\n\
+ls -la /app 2>&1 || echo "Directory does not exist!"\n\
 echo ""\n\
 echo "=== Checking for app.R ==="\n\
-if [ -f "/home/shiny-app/app.R" ]; then\n\
-    echo "✓ app.R found at /home/shiny-app/app.R"\n\
-    echo "File size: $(stat -c%s /home/shiny-app/app.R) bytes"\n\
+if [ -f "/app/app.R" ]; then\n\
+    echo "✓ app.R found at /app/app.R"\n\
+    echo "File size: $(stat -c%s /app/app.R) bytes"\n\
 else\n\
-    echo "✗ ERROR: app.R NOT FOUND at /home/shiny-app/app.R"\n\
+    echo "✗ ERROR: app.R NOT FOUND at /app/app.R"\n\
     echo "Searching for app.R in container..."\n\
     find / -name "app.R" 2>/dev/null | head -10 || echo "No app.R found anywhere"\n\
     echo ""\n\
-    echo "=== Checking if /home/shiny-app exists ==="\n\
-    if [ -d "/home/shiny-app" ]; then\n\
+    echo "=== Checking if /app exists ==="\n\
+    if [ -d "/app" ]; then\n\
         echo "Directory exists but is empty or app.R missing"\n\
         echo "Contents:"\n\
-        ls -la /home/shiny-app\n\
+        ls -la /app\n\
     else\n\
-        echo "Directory /home/shiny-app does not exist!"\n\
+        echo "Directory /app does not exist!"\n\
     fi\n\
     echo ""\n\
     echo "=== Checking mounted volumes ==="\n\
-    mount | grep -E "(shiny|home)" || echo "No relevant mounts found"\n\
+    mount | grep -E "(app|home)" || echo "No relevant mounts found"\n\
     echo ""\n\
     echo "=== Environment variables ==="\n\
     env | grep -E "(HOME|PWD|WORKDIR)" || echo "No relevant env vars"\n\
@@ -114,14 +115,14 @@ else\n\
 fi\n\
 echo ""\n\
 echo "=== Directory structure ==="\n\
-find /home/shiny-app -maxdepth 2 -type d\n\
+find /app -maxdepth 2 -type d\n\
 echo ""\n\
 echo "=== Starting Shiny app ==="\n\
-echo "Running: shiny::runApp(\"/home/shiny-app\", port = 3838, host = \"0.0.0.0\")"\n\
+echo "Running: shiny::runApp(\"/app\", port = 3838, host = \"0.0.0.0\")"\n\
 echo ""\n\
-cd /home/shiny-app\n\
-exec R -e "shiny::runApp(\"/home/shiny-app\", port = 3838, host = \"0.0.0.0\")"\n\
+cd /app\n\
+exec R -e "shiny::runApp(\"/app\", port = 3838, host = \"0.0.0.0\")"\n\
 ' > /start.sh && chmod +x /start.sh
 
 # Use the startup script that includes debugging
-CMD ["/start.sh"]
+CMD ["/bin/bash", "/start.sh"]
