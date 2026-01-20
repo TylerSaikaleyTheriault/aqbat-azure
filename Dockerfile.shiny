@@ -1,0 +1,101 @@
+# Use official Shiny base image
+FROM rocker/shiny:4.4.1
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    libudunits2-dev \
+    libgdal-dev \
+    libgeos-dev \
+    libproj-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create working directory
+WORKDIR /home/shiny-app
+
+# Copy renv files first (for package installation cache)
+COPY ./aqbat/renv.lock ./renv.lock
+COPY ./aqbat/renv ./renv
+COPY ./aqbat/.Rprofile ./.Rprofile
+
+# Install renv (cached separately from package restore for better cache reuse)
+RUN R -e "install.packages('renv', repos='https://cloud.r-project.org')"
+
+# Restore packages (this layer will be cached if renv.lock hasn't changed)
+RUN R -e "renv::restore()"
+
+# Copy all app files (after renv restore to preserve package cache)
+# .dockerignore excludes renv files since they're already copied above
+COPY ./aqbat/ ./
+
+# Copy debug script for troubleshooting
+COPY debug-container.sh /debug-container.sh
+RUN chmod +x /debug-container.sh
+
+# Enhanced debugging: Verify files are in the right place
+RUN echo "========================================" && \
+    echo "=== BUILD-TIME FILE STRUCTURE CHECK ===" && \
+    echo "========================================" && \
+    echo "" && \
+    echo "=== Current Working Directory ===" && \
+    pwd && \
+    echo "" && \
+    echo "=== Files in /home/shiny-app (root) ===" && \
+    ls -la /home/shiny-app && \
+    echo "" && \
+    echo "=== Looking for app.R ===" && \
+    (ls -la /home/shiny-app/app.R 2>&1 || echo "ERROR: app.R NOT FOUND") && \
+    echo "" && \
+    echo "=== Directory structure (top 3 levels) ===" && \
+    find /home/shiny-app -maxdepth 3 -type d | head -20 && \
+    echo "" && \
+    echo "=== All .R files found ===" && \
+    find /home/shiny-app -type f -name "*.R" | head -10 && \
+    echo "" && \
+    echo "=== www directory contents ===" && \
+    (ls -la /home/shiny-app/www 2>&1 || echo "ERROR: www directory NOT FOUND") && \
+    echo "" && \
+    echo "=== data directory contents ===" && \
+    (ls -la /home/shiny-app/data 2>&1 || echo "ERROR: data directory NOT FOUND") && \
+    echo "" && \
+    echo "=== Full directory tree (limited) ===" && \
+    (tree -L 3 /home/shiny-app 2>&1 || find /home/shiny-app -maxdepth 3 -print | sed 's|[^/]*/| |g') && \
+    echo "" && \
+    echo "========================================"
+
+# Expose Shiny default port
+EXPOSE 3838
+
+# Create a startup script that includes runtime debugging
+RUN echo '#!/bin/bash\n\
+set -e\n\
+echo "========================================"\n\
+echo "=== RUNTIME FILE STRUCTURE CHECK ==="\n\
+echo "========================================"\n\
+echo ""\n\
+echo "=== Current Working Directory ==="\n\
+pwd\n\
+echo ""\n\
+echo "=== Files in /home/shiny-app ==="\n\
+ls -la /home/shiny-app\n\
+echo ""\n\
+echo "=== Checking for app.R ==="\n\
+if [ -f "/home/shiny-app/app.R" ]; then\n\
+    echo "✓ app.R found at /home/shiny-app/app.R"\n\
+    echo "File size: $(stat -c%s /home/shiny-app/app.R) bytes"\n\
+else\n\
+    echo "✗ ERROR: app.R NOT FOUND at /home/shiny-app/app.R"\n\
+    echo "Searching for app.R in container..."\n\
+    find / -name "app.R" 2>/dev/null || echo "No app.R found anywhere"\n\
+fi\n\
+echo ""\n\
+echo "=== Directory structure ==="\n\
+find /home/shiny-app -maxdepth 2 -type d\n\
+echo ""\n\
+echo "=== Starting Shiny app ==="\n\
+echo "Running: shiny::runApp(\"/home/shiny-app\", port = 3838, host = \"0.0.0.0\")"\n\
+echo ""\n\
+exec R -e "shiny::runApp(\"/home/shiny-app\", port = 3838, host = \"0.0.0.0\")"\n\
+' > /start.sh && chmod +x /start.sh
+
+# Use the startup script that includes debugging
+CMD ["/start.sh"]
