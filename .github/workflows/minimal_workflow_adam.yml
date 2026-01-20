@@ -41,26 +41,35 @@ jobs:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - uses: actions/checkout@v4
 
-      - name: Check Docker availability
-        id: check-docker
+      - name: Check Docker
         run: |
-          if command -v docker &> /dev/null && docker info &> /dev/null; then
-            echo "Docker is already available"
+          echo "Checking if Docker is available..."
+          if command -v docker &> /dev/null; then
             docker --version
-            echo "needs_setup=false" >> $GITHUB_OUTPUT
+            if docker info &> /dev/null 2>&1; then
+              echo "✓ Docker is already working"
+            else
+              echo "Docker command exists but daemon not running"
+            fi
           else
-            echo "Docker needs to be set up"
-            echo "needs_setup=true" >> $GITHUB_OUTPUT
+            echo "Docker command not found"
           fi
       
-      - name: Install Docker
-        if: steps.check-docker.outputs.needs_setup == 'true'
+      - name: Setup Docker
         uses: docker/setup-docker-action@v4
+        continue-on-error: true
       
-      - name: Verify Docker
+      - name: Verify Docker works
         run: |
-          docker --version
-          docker info
+          echo "Verifying Docker is working..."
+          docker --version || (echo "ERROR: Docker not available" && exit 1)
+          if ! docker info &> /dev/null 2>&1; then
+            echo "ERROR: Docker daemon is not accessible"
+            echo "This may indicate a problem with the ephemeral runner setup"
+            exit 1
+          fi
+          echo "✓ Docker is working correctly"
+          docker info | head -3
 
       - name: Azure Login
         uses: azure/login@v2
