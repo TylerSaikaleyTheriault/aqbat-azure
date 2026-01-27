@@ -16,17 +16,7 @@ $(document).ready(function() {
 
     wb.init(document);
     wb.init(document);
-    // Get language from attribute, or detect from URL if not set yet (handles race condition)
-    // Check multiple possible locations for lang attribute
-    let currentLang = $('#aqbat').attr('lang') || 
-                      $('html').attr('lang') || 
-                      document.documentElement.lang ||
-                      document.documentElement.getAttribute('lang');
-    if (!currentLang || currentLang === '') {
-      // If lang attribute not set, check URL for language indicators
-      const url = window.location.href;
-      currentLang = (url.includes("sante") || url.includes("/fr") || url.includes("lang=fr")) ? 'fr' : 'en';
-    }
+    const currentLang = $('#aqbat').attr('lang') || 'en'; // Default to 'en' if not set
     
     // Add this code right here
     $(document).on('wb-ready.wb', function() {
@@ -55,82 +45,11 @@ $(document).ready(function() {
     // Call the function to execute it
     removeAriaLabel();
 
-    // Function to update button text
-    function updateButtonText() {
-      // Re-check language each time to handle cases where it's set later
-      const aqbatLang = $('#aqbat').attr('lang');
-      const htmlLang = $('html').attr('lang');
-      const docLang = document.documentElement.lang;
-      const docAttrLang = document.documentElement.getAttribute('lang');
-      
-      let lang = aqbatLang || htmlLang || docLang || docAttrLang;
-      
-      console.log('[Button Text Debug] Language detection:', {
-        aqbatLang: aqbatLang,
-        htmlLang: htmlLang,
-        docLang: docLang,
-        docAttrLang: docAttrLang,
-        initialLang: lang,
-        url: window.location.href
-      });
-      
-      // If still not found, check URL
-      if (!lang || lang === '' || lang === null || lang === undefined) {
-        const url = window.location.href.toLowerCase();
-        // Only set to French if we have clear French indicators
-        if (url.includes("sante") || url.includes("/fr") || url.includes("lang=fr") || url.includes("?fr")) {
-          lang = 'fr';
-          console.log('[Button Text Debug] Detected French from URL');
-        } else {
-          // Default to English if no clear French indicators
-          lang = 'en';
-          console.log('[Button Text Debug] Defaulting to English (no French indicators in URL)');
-        }
-      }
-      
-      // Ensure we have a valid language value
-      lang = (lang === 'fr') ? 'fr' : 'en';
-      
-      const buttonText = lang === "en" ? 'Upload' : "Télécharger";
-      
-      console.log('[Button Text Debug] Final language:', lang, 'Button text:', buttonText);
-      
-      $('.btn-file').each(function() {
-        const $btn = $(this);
-        const originalText = $btn.text().trim();
-        
-        // Try to find and replace the text node
-        const textNodes = $btn.contents().filter(function() {
-          return this.nodeType === 3; // Text nodes only
-        });
-        
-        if (textNodes.length > 0) {
-          // Replace the first text node
-          textNodes.first().replaceWith(buttonText);
-          console.log('[Button Text Debug] Replaced text node. Original:', originalText, 'New:', buttonText);
-        } else {
-          // If no text node found, try to set text content of first child or prepend
-          const firstChild = $btn.children().first();
-          if (firstChild.length) {
-            firstChild.text(buttonText);
-            console.log('[Button Text Debug] Set first child text. Original:', originalText, 'New:', buttonText);
-          } else {
-            $btn.prepend(buttonText);
-            console.log('[Button Text Debug] Prepended text. Original:', originalText, 'New:', buttonText);
-          }
-        }
-      });
-    }
-    
-    // CHANGE BROWSE TO UPLOAD - Initial attempt
-    updateButtonText();
-    
-    // Retry after a short delay in case lang attribute is set later
-    setTimeout(updateButtonText, 100);
-    setTimeout(updateButtonText, 500);
-    
-    // Add focus event listeners to buttons
+    // CHANGE BROWSE TO UPLOAD
     $('.btn-file').each(function() {
+      $(this).contents().first().replaceWith(currentLang === "en" ? 'Upload' : "Télécharger");
+      
+      // Add a focus event listener to prevent scrolling when focused
       $(this).on('focus', function(event) {
         event.target.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: 'smooth' });
       });
