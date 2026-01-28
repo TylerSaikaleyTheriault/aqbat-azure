@@ -4,6 +4,15 @@ name: minimal-workflow-adam
 on:
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
+    inputs:
+      dockerfile:
+        description: 'Dockerfile to use (default: Dockerfile for test HTML, or Dockerfile.shiny for Shiny app)'
+        required: false
+        default: 'Dockerfile'
+        type: choice
+        options:
+          - Dockerfile
+          - Dockerfile.shiny
 
 jobs:
   # Creating an ephemeral runner
@@ -32,8 +41,35 @@ jobs:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - uses: actions/checkout@v4
 
-      - name: Install Docker
+      - name: Check Docker
+        run: |
+          echo "Checking if Docker is available..."
+          if command -v docker &> /dev/null; then
+            docker --version
+            if docker info &> /dev/null 2>&1; then
+              echo "✓ Docker is already working"
+            else
+              echo "Docker command exists but daemon not running"
+            fi
+          else
+            echo "Docker command not found"
+          fi
+      
+      - name: Setup Docker
         uses: docker/setup-docker-action@v4
+        continue-on-error: true
+      
+      - name: Verify Docker works
+        run: |
+          echo "Verifying Docker is working..."
+          docker --version || (echo "ERROR: Docker not available" && exit 1)
+          if ! docker info &> /dev/null 2>&1; then
+            echo "ERROR: Docker daemon is not accessible"
+            echo "This may indicate a problem with the ephemeral runner setup"
+            exit 1
+          fi
+          echo "✓ Docker is working correctly"
+          docker info | head -3
 
       - name: Azure Login
         uses: azure/login@v2
@@ -63,29 +99,56 @@ jobs:
             echo "Building from scratch without cache..."
           fi
 
-          echo "Building AQBAT image: ${IMAGE_NAME}"
+          # Determine which Dockerfile to use
+          DOCKERFILE="${{ inputs.dockerfile || 'Dockerfile' }}"
+          echo "Building AQBAT image: ${IMAGE_NAME} using ${DOCKERFILE}"
+          
           # Build with cache from the latest image (if available)
           # Docker will use partial caching - it will reuse valid layers and rebuild invalid ones
           # If cache is corrupted, Docker will skip that layer and rebuild it
           if [ "$CACHE_AVAILABLE" = true ]; then
             # Try with cache, but continue even if cache restoration fails
-            docker build \
-              --cache-from "${LATEST_NAME}" \
-              --tag "${IMAGE_NAME}" \
-              --tag "${LATEST_NAME}" \
-              . || {
-              echo "Warning: Build with cache failed, retrying without cache..."
+            if [ "$DOCKERFILE" = "Dockerfile.shiny" ]; then
+              docker build \
+                --cache-from "${LATEST_NAME}" \
+                --file Dockerfile.shiny \
+                --tag "${IMAGE_NAME}" \
+                --tag "${LATEST_NAME}" \
+                . || {
+                echo "Warning: Build with cache failed, retrying without cache..."
+                docker build \
+                  --file Dockerfile.shiny \
+                  --tag "${IMAGE_NAME}" \
+                  --tag "${LATEST_NAME}" \
+                  .
+              }
+            else
+              docker build \
+                --cache-from "${LATEST_NAME}" \
+                --tag "${IMAGE_NAME}" \
+                --tag "${LATEST_NAME}" \
+                . || {
+                echo "Warning: Build with cache failed, retrying without cache..."
+                docker build \
+                  --tag "${IMAGE_NAME}" \
+                  --tag "${LATEST_NAME}" \
+                  .
+              }
+            fi
+          else
+            # Build without cache
+            if [ "$DOCKERFILE" = "Dockerfile.shiny" ]; then
+              docker build \
+                --file Dockerfile.shiny \
+                --tag "${IMAGE_NAME}" \
+                --tag "${LATEST_NAME}" \
+                .
+            else
               docker build \
                 --tag "${IMAGE_NAME}" \
                 --tag "${LATEST_NAME}" \
                 .
-            }
-          else
-            # Build without cache
-            docker build \
-              --tag "${IMAGE_NAME}" \
-              --tag "${LATEST_NAME}" \
-              .
+            fi
           fi
 
           echo "Pushing both tags to ACR"

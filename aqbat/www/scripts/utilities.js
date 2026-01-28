@@ -16,7 +16,7 @@ $(document).ready(function() {
 
     wb.init(document);
     wb.init(document);
-    const currentLang = $('#aqbat').attr('lang');
+    const currentLang = $('#aqbat').attr('lang') || 'en'; // Default to 'en' if not set
     
     // Add this code right here
     $(document).on('wb-ready.wb', function() {

@@ -3,6 +3,15 @@ name: Deploy AQBAT image to ACR
 on:
   # manual trigger for now
   workflow_dispatch:
+    inputs:
+      dockerfile:
+        description: 'Dockerfile to use (default: Dockerfile for test HTML, or Dockerfile.shiny for Shiny app)'
+        required: false
+        default: 'Dockerfile'
+        type: choice
+        options:
+          - Dockerfile
+          - Dockerfile.shiny
 
 jobs:
   # 1) Create ephemeral runner using the org-standard workflow
@@ -50,8 +59,16 @@ jobs:
           IMAGE_NAME="${ACR_LOGIN_SERVER}/${ACR_IMAGE_REPOSITORY}:${IMAGE_TAG}"
           LATEST_NAME="${ACR_LOGIN_SERVER}/${ACR_IMAGE_REPOSITORY}:latest"
 
-          echo "Building AQBAT image: ${IMAGE_NAME}"
-          docker build -t "${IMAGE_NAME}" .
+          # Determine which Dockerfile to use
+          DOCKERFILE="${{ inputs.dockerfile || 'Dockerfile' }}"
+          echo "Building AQBAT image: ${IMAGE_NAME} using ${DOCKERFILE}"
+          
+          # Build with specified Dockerfile (defaults to Dockerfile if not specified)
+          if [ "$DOCKERFILE" = "Dockerfile.shiny" ]; then
+            docker build -f Dockerfile.shiny -t "${IMAGE_NAME}" .
+          else
+            docker build -t "${IMAGE_NAME}" .
+          fi
 
           echo "Tagging as latest: ${LATEST_NAME}"
           docker tag "${IMAGE_NAME}" "${LATEST_NAME}"
