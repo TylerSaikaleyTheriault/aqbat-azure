@@ -54,10 +54,6 @@ createDisconnectMessage <- function(i18n) {
   htmlTemplate("templates/disconnect-message.html", i18n = i18n)
 }
 
-createTimeoutWarningModal <- function(message, type, i18n) {
-  htmlTemplate("templates/timeout-warning.html", message = message, type = type, i18n = i18n)
-}
-
 createDisconnectNoticeModal <- function(message, type, i18n) {
   htmlTemplate("templates/disconnect-notice.html", message = message, type = type, i18n = i18n)
 }
@@ -498,9 +494,8 @@ ui <- function(request = NULL) {
   tags$head(
     tags$style(HTML("hr {border-top: 1px solid #000000;}"))
   ),
-  createDisconnectNoticeModal(i18n$t("You have been disconnected from the server. All data has been lost. This can happen for the following reasons: exceeding 3 hours of inactivity or the application has been updated on the server. Please refresh the page to restart the app. You may press F5 to refresh."), "disconnect-warning", i18n),
+  createDisconnectNoticeModal(i18n$t("You have been disconnected from the server. All data has been lost. This can happen if the application has been updated on the server. Please refresh the page to restart the app. You may press F5 to refresh."), "disconnect-warning", i18n),
   createWarningModal(i18n$t("You are about to reset this application, along with all of its data."), "data-warning", i18n),
-  createTimeoutWarningModal(i18n$t("The application will time out shortly. To prevent the session from timing out, click \"Extend session\"."), "timeout-warning", i18n),
   tags$nav(
     class = "btn-tabs",
     tabsetPanel(
@@ -2665,22 +2660,7 @@ server <- function(input, output, session) {
     }
   })
 
-  # SERVER TIMEOUT MEASURES
-
-  timeout_reactive <- reactiveVal(Sys.time())
-
   session$allowReconnect(TRUE)
-
-  observeEvent(input$keepAlive, {
-    timeout_reactive(Sys.time())
-    cat("Automatic delay ping received at: ", Sys.time(), "\n")
-  })
-
-  observeEvent(input$reset_timeout, {
-    timeout_reactive(Sys.time())
-    # Do something to handle the timeout reset, e.g., logging
-    message("Timeout reset by user at: ", Sys.time(), "\n")
-  })
 
   # Remove hidden class after initialization to ensure a flicker-free experience
   shinyjs::removeClass(selector = "body", class = "hidden")

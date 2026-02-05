@@ -16,7 +16,8 @@ $(document).ready(function() {
 
     wb.init(document);
     wb.init(document);
-    const currentLang = $('#aqbat').attr('lang') || 'en'; // Default to 'en' if not set
+    // Get language from #aqbat, or fall back to URL (sante/fr = French) if not set yet
+    const currentLang = $('#aqbat').attr('lang') || (window.location.href.includes('sante') || window.location.toString().includes('fr') ? 'fr' : 'en');
     
     // Add this code right here
     $(document).on('wb-ready.wb', function() {

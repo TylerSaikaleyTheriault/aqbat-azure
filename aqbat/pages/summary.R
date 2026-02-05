@@ -8,7 +8,7 @@ summary_ui <- function(i18n) {
             style = "",
             class = "alert alert-info",
             # h2(i18n$t("Inactivity notice")),
-            p(i18n$t("This application will timeout after 3 hours of inactivity. When that happens, all data will be lost. This tool works best on desktops and laptops. It is not optimized for tablets or mobile devices.")),
+            p(i18n$t("This tool works best on desktops and laptops. It is not optimized for tablets or mobile devices.")),
           ),
         ),
         h2(i18n$t("About the tool"), style = "margin-top: 0"),
