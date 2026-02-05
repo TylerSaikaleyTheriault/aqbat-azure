@@ -15,8 +15,8 @@
         "fr": "Avis d'inactivité"
     },
     {
-        "en": "This application will timeout after 3 hours of inactivity. When that happens, all data will be lost. This tool works best on desktops and laptops. It is not optimized for tablets or mobile devices.",
-        "fr": "Cette application se déconnectera après 3 heures d'inactivité. Lorsque cela se produira, toutes les données seront perdues. Cet outil fonctionne mieux sur les ordinateurs de bureau et les ordinateurs portables. Il n'est pas optimisé pour les tablettes ou les appareils mobiles."
+        "en": "This tool works best on desktops and laptops. It is not optimized for tablets or mobile devices.",
+        "fr": "Cet outil fonctionne mieux sur les ordinateurs de bureau et les ordinateurs portables. Il n'est pas optimisé pour les tablettes ou les appareils mobiles."
     },
     {
         "en": "About the tool",
