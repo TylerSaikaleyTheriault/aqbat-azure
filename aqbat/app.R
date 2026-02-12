@@ -2590,9 +2590,13 @@ server <- function(input, output, session) {
   # Pass URL query string to ui(request) so ?lang=fr works for French
   enableBookmarking(store = "url")
 
-  # Session-specific language from URL (globals get overwritten by other sessions)
-  query <- parseQueryString(session$clientData$url_search)
-  session$userData$lang <- if (!is.null(query$lang) && query$lang %in% c("en", "fr")) query$lang else "en"
+  # Session language from URL (must read inside reactive context; clientData is reactive)
+  session_lang <- reactive({
+    url_search <- session$clientData$url_search
+    if (is.null(url_search)) return("en")
+    query <- parseQueryString(url_search)
+    if (!is.null(query$lang) && query$lang %in% c("en", "fr")) query$lang else "en"
+  })
 
   # understand whether the user uploaded data, or we uploaded sample data
 
@@ -3667,7 +3671,7 @@ server <- function(input, output, session) {
       session$sendCustomMessage("toggleFileInput", FALSE)
       shinyjs::removeClass(selector = "#sampleDataUploadedInfo", class = "hidden")
       # Use session language so other users don't overwrite the global xsample1
-      return(if (session$userData$lang == "fr") xsample1_fr else xsample1_en)
+      return(if (session_lang() == "fr") xsample1_fr else xsample1_en)
     } else {
       return(pollutantdata0()) # Avoid circular dependency
     }
@@ -3675,7 +3679,7 @@ server <- function(input, output, session) {
 
 
   pollutantdata1 <- reactive({
-    one_session <- if (session$userData$lang == "fr") one_fr else one_en
+    one_session <- if (session_lang() == "fr") one_fr else one_en
     left_join(xpollutantdata0(), one_session)
   })
 
@@ -9467,7 +9471,8 @@ server <- function(input, output, session) {
     },
     content = function(file) {
       # Use session language so other users don't overwrite the global xsample1
-      xsample_session <- if (session$userData$lang == "fr") xsample1_fr else xsample1_en
+      lang <- session_lang()
+      xsample_session <- if (lang == "fr") xsample1_fr else xsample1_en
       write.csv(xsample_session, file, row.names = FALSE)
     }
   )
