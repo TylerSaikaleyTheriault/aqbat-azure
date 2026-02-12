@@ -2259,8 +2259,14 @@ ui <- function(request = NULL) {
         h3(i18n$t("Instructions for new users")),
         p(i18n$t("Pollutant concentrations are annual averages of daily values (24 hours), except for O3 and summer O3 (May to September), which use daily 1-hour maximum averages for the annual and summer periods, respectively. CO includes both annual daily averages and daily 1-hour maximum averages."), class = ""),
         p(i18n$t("Before using AQBAT, you need to prepare your pollutant data so you can upload it onto the tool. We provide a sample file you can use to help structure your data for upload. It includes sample air quality data for PM2.5, O3, and NO2 for 2016. These data were derived from multiple national sources and mapped to 293 census divisions in Canada. We use data from the sample file if you do not input your own data."), class = ""),
-        tags$div(style = if (lang == "en") "" else "display: none;", downloadButton("xsample_en", i18n$t("Download sample input file"), class = "btn-primary")),
-        tags$div(style = if (lang == "fr") "" else "display: none;", downloadButton("xsample_fr", i18n$t("Download sample input file"), class = "btn-primary")),
+        conditionalPanel(
+          condition = "input.session_lang == 'en'",
+          downloadButton("xsample_en", i18n$t("Download sample input file"), class = "btn-primary")
+        ),
+        conditionalPanel(
+          condition = "input.session_lang == 'fr'",
+          downloadButton("xsample_fr", i18n$t("Download sample input file"), class = "btn-primary")
+        ),
         br(),
         br(),
         p(i18n$t("Please ensure that the formatting of your data matches the sample data provided. The following variables are included in the sample data:")),
