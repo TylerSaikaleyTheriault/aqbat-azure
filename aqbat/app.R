@@ -2646,7 +2646,7 @@ server <- function(input, output, session) {
     } else {
       shinyjs::addClass(selector = "#dataUploadedInfo", class = "alert-danger")
 
-      # Use i18n to translate the error messages
+      # Use i18n to translate the error messages (escape for safe use in JS double-quoted strings)
       error_header_message <- i18n$t("Error: Invalid file type.")
       error_instruction_message <- i18n$t("Please restart the application and upload a valid CSV file.")
 
@@ -2654,7 +2654,7 @@ server <- function(input, output, session) {
       shinyjs::runjs(sprintf('
       document.getElementById("dataUploadedHeader").innerHTML = "%s";
       document.getElementById("dataUploadedInstruction").innerHTML = "%s";
-    ', error_header_message, error_instruction_message))
+    ', escape_js(error_header_message), escape_js(error_instruction_message)))
 
       return() # Prevent further reactivity
     }

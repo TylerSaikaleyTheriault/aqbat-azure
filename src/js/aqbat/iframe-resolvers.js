@@ -23,7 +23,24 @@ window.addEventListener('message', function (event) {
   // Process the message based on its type
   const data = event.data;
 
-  if (data.type === 'scroll') {
+  if (data.type === 'request-viewport') {
+    const iframe = document.getElementById('shinyIframe');
+    if (iframe && event.source) {
+      const scrollY = window.scrollY || document.documentElement.scrollTop;
+      const innerHeight = window.innerHeight;
+      const iframeRect = iframe.getBoundingClientRect();
+      const iframeOffsetTop = iframeRect.top + scrollY;
+      event.source.postMessage(
+        {
+          type: 'viewport-data',
+          scrollY: scrollY,
+          innerHeight: innerHeight,
+          iframeOffsetTop: iframeOffsetTop
+        },
+        '*'
+      );
+    }
+  } else if (data.type === 'scroll') {
     if (typeof data.top === 'number') {
       const currentTop = window.scrollY || document.documentElement.scrollTop;
       const scrollThreshold = 500;
