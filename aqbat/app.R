@@ -54,10 +54,6 @@ createDisconnectMessage <- function(i18n) {
   htmlTemplate("templates/disconnect-message.html", i18n = i18n)
 }
 
-createTimeoutWarningModal <- function(message, type, i18n) {
-  htmlTemplate("templates/timeout-warning.html", message = message, type = type, i18n = i18n)
-}
-
 createDisconnectNoticeModal <- function(message, type, i18n) {
   htmlTemplate("templates/disconnect-notice.html", message = message, type = type, i18n = i18n)
 }
@@ -85,10 +81,16 @@ createStepUI <- function(i18n, stepNumber, totalSteps, progressMax) {
   )
 }
 
-# load reference data
-pmReferences <- if (currentlanguage == "en") fromJSON("data/pmReferences.json") else fromJSON("data/pmReferences_fr.json")
-otherReferences <- if (currentlanguage == "en") fromJSON("data/otherReferences.json") else fromJSON("data/otherReferences_fr.json")
-valuationReferences <- if (currentlanguage == "en") fromJSON("data/valuationReferences.json") else fromJSON("data/valuationReferences_fr.json")
+# load reference data (both languages for URL-based lang= switch)
+pmReferences_en <- fromJSON("data/pmReferences.json")
+pmReferences_fr <- fromJSON("data/pmReferences_fr.json")
+pmReferences <- pmReferences_en
+otherReferences_en <- fromJSON("data/otherReferences.json")
+otherReferences_fr <- fromJSON("data/otherReferences_fr.json")
+otherReferences <- otherReferences_en
+valuationReferences_en <- fromJSON("data/valuationReferences.json")
+valuationReferences_fr <- fromJSON("data/valuationReferences_fr.json")
+valuationReferences <- valuationReferences_en
 
 # setup app reload
 jscode <- "shinyjs.reload = function() { location.reload(); }"
@@ -414,8 +416,37 @@ valdist <- function(y, n, a1, a2, a3, a4, a5) {
   }
 } # loop for valuation distribution
 
-# user interface
-ui <- fluidPage(
+# user interface (language from URL ?lang=fr for French; requires enableBookmarking("url") in server)
+ui <- function(request = NULL) {
+  lang <- "en"
+  if (!is.null(request)) {
+    qs <- if (is.environment(request)) request$QUERY_STRING else request[["QUERY_STRING"]]
+    if (!is.null(qs) && nzchar(qs)) {
+      query <- parseQueryString(qs)
+      if (!is.null(query$lang) && query$lang %in% c("en", "fr")) lang <- query$lang
+    }
+  }
+  currentlanguage <<- i18n$set_translation_language(lang)
+  pmReferences <<- if (lang == "en") pmReferences_en else pmReferences_fr
+  otherReferences <<- if (lang == "en") otherReferences_en else otherReferences_fr
+  valuationReferences <<- if (lang == "en") valuationReferences_en else valuationReferences_fr
+  pollnames <<- if (lang == "en") pollnames_en else pollnames_fr
+  prov <<- if (lang == "en") prov_en else prov_fr
+  xprov <<- if (lang == "en") xprov_en else xprov_fr
+  cdmap <<- if (lang == "en") cdmap_en else cdmap_fr
+  three <<- if (lang == "en") three_en else three_fr
+  cpi <<- if (lang == "en") cpi_en else cpi_fr
+  xsample1 <<- if (lang == "en") xsample1_en else xsample1_fr
+  geocode <<- data.frame(
+    Name = c(
+      "Canada", i18n$t("NL"), i18n$t("PE"), i18n$t("NS"), i18n$t("NB"), i18n$t("QC"), i18n$t("ON"), i18n$t("MB"), i18n$t("SK"),
+      i18n$t("AB"), i18n$t("BC"), i18n$t("YK"), i18n$t("NT"), i18n$t("NU")
+    ),
+    geocode = c(1, 10, 11, 12, 13, 24, 35, 46, 47, 48, 59, 60, 61, 62),
+    geotype = c(i18n$t("National"), "Province", "Province", "Province", "Province", "Province", "Province", "Province", "Province", "Province", "Province", i18n$t("Territory"), i18n$t("Territory"), i18n$t("Territory"))
+  )
+  one <<- if (lang == "en") one_en else one_fr
+  fluidPage(
   # add_loading_state(
   #   ".shiny-plot-output", # selector
   #   spinner = "circle",
@@ -463,9 +494,8 @@ ui <- fluidPage(
   tags$head(
     tags$style(HTML("hr {border-top: 1px solid #000000;}"))
   ),
-  createDisconnectNoticeModal(i18n$t("You have been disconnected from the server. All data has been lost. This can happen for the following reasons: exceeding 3 hours of inactivity or the application has been updated on the server. Please refresh the page to restart the app. You may press F5 to refresh."), "disconnect-warning", i18n),
+  createDisconnectNoticeModal(i18n$t("You have been disconnected from the server. All data has been lost. This can happen if the application has been updated on the server. Please refresh the page to restart the app. You may press F5 to refresh."), "disconnect-warning", i18n),
   createWarningModal(i18n$t("You are about to reset this application, along with all of its data."), "data-warning", i18n),
-  createTimeoutWarningModal(i18n$t("The application will time out shortly. To prevent the session from timing out, click \"Extend session\"."), "timeout-warning", i18n),
   tags$nav(
     class = "btn-tabs",
     tabsetPanel(
@@ -2499,6 +2529,7 @@ ui <- fluidPage(
   # Disconnect button for testing purposes only
   # actionButton("disconnect_button", "Disconnect")
 )
+}
 
 one_en <- data.frame(
   pm25_1 = 0, pm25_2 = 0, no2_1 = 0, no2_2 = 0, o3_1 = 0, o3_2 = 0, summero3_1 = 0, summero3_2 = 0, co24h_1 = 0, co24h_2 = 0, co1h_1 = 0, co1h_2 = 0, so2_1 = 0, so2_2 = 0,
@@ -2510,7 +2541,7 @@ one_fr <- data.frame(
   bz_1 = 0, bz_2 = 0, bt_1 = 0, bt_2 = 0, ac_1 = 0, ac_2 = 0, fm_1 = 0, fm_2 = 0
 ) # French version
 
-one <- if (currentlanguage == "en") one_en else one_fr
+# one is set in ui(request) from lang query param
 
 vec1pm25 <- c(
   0.1120230722, 0.1683667772, 0.201510133, 0.2267714622, 0.2490801878, 0.2690574301, 0.352166474, 0.4163465221, 0.4718658925, 0.5254892055, 0.5796142538, 0.6348618817,
@@ -2556,6 +2587,9 @@ wtnum <- c(0.005, 0.01, 0.01, 0.01, 0.01, 0.03, 0.05, 0.05, 0.05, 0.05, 0.05, 0.
 
 # server
 server <- function(input, output, session) {
+  # Pass URL query string to ui(request) so ?lang=fr works for French
+  enableBookmarking(store = "url")
+
   # understand whether the user uploaded data, or we uploaded sample data
 
   uploadStatus <- reactiveVal("none")
@@ -2626,22 +2660,7 @@ server <- function(input, output, session) {
     }
   })
 
-  # SERVER TIMEOUT MEASURES
-
-  timeout_reactive <- reactiveVal(Sys.time())
-
   session$allowReconnect(TRUE)
-
-  observeEvent(input$keepAlive, {
-    timeout_reactive(Sys.time())
-    cat("Automatic delay ping received at: ", Sys.time(), "\n")
-  })
-
-  observeEvent(input$reset_timeout, {
-    timeout_reactive(Sys.time())
-    # Do something to handle the timeout reset, e.g., logging
-    message("Timeout reset by user at: ", Sys.time(), "\n")
-  })
 
   # Remove hidden class after initialization to ensure a flicker-free experience
   shinyjs::removeClass(selector = "body", class = "hidden")

@@ -16,7 +16,8 @@ $(document).ready(function() {
 
     wb.init(document);
     wb.init(document);
-    const currentLang = $('#aqbat').attr('lang') || 'en'; // Default to 'en' if not set
+    // Get language from #aqbat, or fall back to URL (sante/fr = French) if not set yet
+    const currentLang = $('#aqbat').attr('lang') || (window.location.href.includes('sante') || window.location.toString().includes('fr') ? 'fr' : 'en');
     
     // Add this code right here
     $(document).on('wb-ready.wb', function() {
@@ -24,9 +25,6 @@ $(document).ready(function() {
     });
     
     // console.log(currentLang);
-    let timeExtensionIsValid = true;
-    
-    const TIMEOUT_WARNING_TIME = 9900000; // 2 hours 45 minutes 
 
     // Bind click events to elements with class 'internal-link'
     $(document).on('click', '.internal-link', function(e) {
@@ -91,13 +89,6 @@ $(document).ready(function() {
       }
     });
 
-    setInterval(() => {
-      // Show the timeout warning modal by triggering the Bootstrap modal
-      if(timeExtensionIsValid){
-        $('#timeout-warning-centred-popup-modal').modal('show');
-      }
-    }, TIMEOUT_WARNING_TIME); // subtracting 15 minutes 
-
     $(document).on('shiny:connected', function() {
       window.onerror = function(message, source, lineno, colno, error) {
         Shiny.onInputChange('jsError', {message: message, source: source});
@@ -114,9 +105,6 @@ $(document).ready(function() {
 
     // disconnection alert
     $(document).off('shiny:disconnected').on('shiny:disconnected', function(e) {
-      // hide timeout warning modal
-      timeExtensionIsValid = false;
-      $('#timeout-warning-centred-popup-modal').modal('hide');
       // show disconnection warning modal
       $('#disconnect-warning-centred-popup-modal').modal('show');
       $('#disconnect-message').removeClass('hidden'); 
