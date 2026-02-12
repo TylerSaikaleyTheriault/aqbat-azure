@@ -2590,6 +2590,10 @@ server <- function(input, output, session) {
   # Pass URL query string to ui(request) so ?lang=fr works for French
   enableBookmarking(store = "url")
 
+  # Session-specific language from URL (globals get overwritten by other sessions)
+  query <- parseQueryString(session$clientData$url_search)
+  session$userData$lang <- if (!is.null(query$lang) && query$lang %in% c("en", "fr")) query$lang else "en"
+
   # understand whether the user uploaded data, or we uploaded sample data
 
   uploadStatus <- reactiveVal("none")
@@ -3662,7 +3666,8 @@ server <- function(input, output, session) {
       shinyjs::addClass(selector = "#dataUploadedInfo", class = "alert-info")
       session$sendCustomMessage("toggleFileInput", FALSE)
       shinyjs::removeClass(selector = "#sampleDataUploadedInfo", class = "hidden")
-      return(xsample1) # Ensure xsample1 is defined
+      # Use session language so other users don't overwrite the global xsample1
+      return(if (session$userData$lang == "fr") xsample1_fr else xsample1_en)
     } else {
       return(pollutantdata0()) # Avoid circular dependency
     }
@@ -3670,7 +3675,8 @@ server <- function(input, output, session) {
 
 
   pollutantdata1 <- reactive({
-    left_join(xpollutantdata0(), one) # Ensure 'one' is defined
+    one_session <- if (session$userData$lang == "fr") one_fr else one_en
+    left_join(xpollutantdata0(), one_session)
   })
 
 
@@ -9460,7 +9466,9 @@ server <- function(input, output, session) {
       paste0(i18n$t("sample_inputs"), ".csv")
     },
     content = function(file) {
-      write.csv(xsample1, file, row.names = FALSE)
+      # Use session language so other users don't overwrite the global xsample1
+      xsample_session <- if (session$userData$lang == "fr") xsample1_fr else xsample1_en
+      write.csv(xsample_session, file, row.names = FALSE)
     }
   )
 
