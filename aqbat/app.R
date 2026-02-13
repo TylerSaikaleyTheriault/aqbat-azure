@@ -9529,7 +9529,7 @@ server <- function(input, output, session) {
     content = function(file) write.csv(xsample1_en, file, row.names = FALSE)
   )
   output$xsample_fr <- downloadHandler(
-    filename = function() "donnees_exemple.csv",
+    filename = function() "exemple_entrée.csv",
     content = function(file) write.csv(xsample1_fr, file, row.names = FALSE)
   )
 
