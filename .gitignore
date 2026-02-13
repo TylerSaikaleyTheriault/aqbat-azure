@@ -5,6 +5,9 @@
 .Ruserdata
 .Renviron
 
+# Files containing secrets (DO NOT COMMIT)
+aqbat/deploy.R
+
 # renv specific files
 aqbat/renv/library/
 aqbat/renv/staging/
