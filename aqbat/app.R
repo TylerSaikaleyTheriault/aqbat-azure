@@ -226,14 +226,23 @@ xsample1_fr <- read.csv("pollutants_2016wtox_fr.csv", stringsAsFactors = FALSE) 
 
 xsample1 <- if (currentlanguage == "en") xsample1_en else xsample1_fr
 
-geocode <- data.frame(
-  Name = c(
-    "Canada", i18n$t("NL"), i18n$t("PE"), i18n$t("NS"), i18n$t("NB"), i18n$t("QC"), i18n$t("ON"), i18n$t("MB"), i18n$t("SK"),
-    i18n$t("AB"), i18n$t("BC"), i18n$t("YK"), i18n$t("NT"), i18n$t("NU")
-  ),
-  geocode = c(1, 10, 11, 12, 13, 24, 35, 46, 47, 48, 59, 60, 61, 62),
-  geotype = c(i18n$t("National"), "Province", "Province", "Province", "Province", "Province", "Province", "Province", "Province", "Province", "Province", i18n$t("Territory"), i18n$t("Territory"), i18n$t("Territory"))
-) # prevent from missing province in results
+# Build geocode for both languages so server can use session-scoped version (cross-tab fix)
+.geocode_lang <- function(lang) {
+  old <- i18n$get_translation_language()
+  on.exit(i18n$set_translation_language(old))
+  i18n$set_translation_language(lang)
+  data.frame(
+    Name = c(
+      "Canada", i18n$t("NL"), i18n$t("PE"), i18n$t("NS"), i18n$t("NB"), i18n$t("QC"), i18n$t("ON"), i18n$t("MB"), i18n$t("SK"),
+      i18n$t("AB"), i18n$t("BC"), i18n$t("YK"), i18n$t("NT"), i18n$t("NU")
+    ),
+    geocode = c(1, 10, 11, 12, 13, 24, 35, 46, 47, 48, 59, 60, 61, 62),
+    geotype = c(i18n$t("National"), "Province", "Province", "Province", "Province", "Province", "Province", "Province", "Province", "Province", "Province", i18n$t("Territory"), i18n$t("Territory"), i18n$t("Territory"))
+  )
+}
+geocode_en <- .geocode_lang("en")
+geocode_fr <- .geocode_lang("fr")
+geocode <- geocode_en # default for source-time use
 
 # define functions
 beta <- function(rtype, rr, incr) {
@@ -2625,6 +2634,20 @@ server <- function(input, output, session) {
     "en"
   }
 
+  # Session-scoped data (cross-tab fix): use _en/_fr so other tabs cannot overwrite
+  get_session_xprov <- function() if (get_session_lang() == "en") xprov_en else xprov_fr
+  get_session_geocode <- function() if (get_session_lang() == "en") geocode_en else geocode_fr
+  get_session_three <- function() if (get_session_lang() == "en") three_en else three_fr
+  get_session_one <- function() if (get_session_lang() == "en") one_en else one_fr
+
+  # Translate for this session without changing global i18n (cross-tab fix)
+  get_session_t <- function(key) {
+    old <- i18n$get_translation_language()
+    on.exit(i18n$set_translation_language(old))
+    i18n$set_translation_language(get_session_lang())
+    i18n$t(key)
+  }
+
   # understand whether the user uploaded data, or we uploaded sample data
 
   uploadStatus <- reactiveVal("none")
@@ -2709,299 +2732,299 @@ server <- function(input, output, session) {
   session$sendCustomMessage("bindInternalLinks", list())
 
   canproresults1a_endpoint <- reactive({
-    if (currentlanguage == "en") canproresults1a()$endpoint else canproresults1a()$paramètre
+    if (get_session_lang() == "en") canproresults1a()$endpoint else canproresults1a()$paramètre
   })
 
   canprovsummary_endpoint <- reactive({
-    if (currentlanguage == "en") canprovsummary()$endpoint else canprovsummary()$paramètre
+    if (get_session_lang() == "en") canprovsummary()$endpoint else canprovsummary()$paramètre
   })
 
   Canprowexposure1_Acetaldehyde <- reactive({
-    if (currentlanguage == "en") Canprowexposure1()$Acetaldehyde else Canprowexposure1()$Acétaldéhyde
+    if (get_session_lang() == "en") Canprowexposure1()$Acetaldehyde else Canprowexposure1()$Acétaldéhyde
   })
 
   Canprowexposure1_Benzene <- reactive({
-    if (currentlanguage == "en") Canprowexposure1()$Benzene else Canprowexposure1()$Benzène
+    if (get_session_lang() == "en") Canprowexposure1()$Benzene else Canprowexposure1()$Benzène
   })
 
   Canprowexposure1_Formaldehyde <- reactive({
-    if (currentlanguage == "en") Canprowexposure1()$Formaldehyde else Canprowexposure1()$Formaldéhyde
+    if (get_session_lang() == "en") Canprowexposure1()$Formaldehyde else Canprowexposure1()$Formaldéhyde
   })
 
   cpi_year <- reactive({
-    if (currentlanguage == "en") cpi$year else cpi$année
+    if (get_session_lang() == "en") cpi_en$year else cpi_fr$année
   })
 
   four_age25plus <- reactive({
-    if (currentlanguage == "en") four()$age25plus else four()$ans25plus
+    if (get_session_lang() == "en") four()$age25plus else four()$ans25plus
   })
 
   four_age30plus <- reactive({
-    if (currentlanguage == "en") four()$age30plus else four()$ans30plus
+    if (get_session_lang() == "en") four()$age30plus else four()$ans30plus
   })
 
   four_Mort_cerebro <- reactive({
-    if (currentlanguage == "en") four()$Mort_cerebro else four()$Mort_cérébro
+    if (get_session_lang() == "en") four()$Mort_cerebro else four()$Mort_cérébro
   })
 
   four_Mort_chronic <- reactive({
-    if (currentlanguage == "en") four()$Mort_chronic else four()$Mort_chronique
+    if (get_session_lang() == "en") four()$Mort_chronic else four()$Mort_chronique
   })
 
   four_Mort_copd <- reactive({
-    if (currentlanguage == "en") four()$Mort_copd else four()$Mort_mpoc
+    if (get_session_lang() == "en") four()$Mort_copd else four()$Mort_mpoc
   })
 
   four_Mort_ischemic <- reactive({
-    if (currentlanguage == "en") four()$Mort_ischemic else four()$Mort_ischémique
+    if (get_session_lang() == "en") four()$Mort_ischemic else four()$Mort_ischémique
   })
 
   foura_age25plus <- reactive({
-    if (currentlanguage == "en") foura()$age25plus else foura()$ans25plus
+    if (get_session_lang() == "en") foura()$age25plus else foura()$ans25plus
   })
 
   foura_age5_19 <- reactive({
-    if (currentlanguage == "en") foura()$age5_19 else foura()$ans5_19
+    if (get_session_lang() == "en") foura()$age5_19 else foura()$ans5_19
   })
 
   foura_allages <- reactive({
-    if (currentlanguage == "en") foura()$allages else foura()$touslesâges
+    if (get_session_lang() == "en") foura()$allages else foura()$touslesâges
   })
 
   foura_scenario <- reactive({
-    if (currentlanguage == "en") foura()$scenario else foura()$scénario
+    if (get_session_lang() == "en") foura()$scenario else foura()$scénario
   })
 
   foura_summero3_1 <- reactive({
-    if (currentlanguage == "en") foura()$summero3_1 else foura()$o3été_1
+    if (get_session_lang() == "en") foura()$summero3_1 else foura()$o3été_1
   })
 
   foura_summero3_2 <- reactive({
-    if (currentlanguage == "en") foura()$summero3_2 else foura()$o3été_2
+    if (get_session_lang() == "en") foura()$summero3_2 else foura()$o3été_2
   })
 
   foura_year <- reactive({
-    if (currentlanguage == "en") foura()$year else foura()$année
+    if (get_session_lang() == "en") foura()$year else foura()$année
   })
 
   fouracbc_Adult_Chronic_Bronchitis_Cases <- reactive({
-    if (currentlanguage == "en") fouracbc()$Adult_Chronic_Bronchitis_Cases else fouracbc()$Cas_bronchites_chroniques_adultes
+    if (get_session_lang() == "en") fouracbc()$Adult_Chronic_Bronchitis_Cases else fouracbc()$Cas_bronchites_chroniques_adultes
   })
 
   fouracbc_age25plus <- reactive({
-    if (currentlanguage == "en") fouracbc()$age25plus else fouracbc()$ans25plus
+    if (get_session_lang() == "en") fouracbc()$age25plus else fouracbc()$ans25plus
   })
 
   fouraem_allages <- reactive({
-    if (currentlanguage == "en") fouraem()$allages else fouraem()$touslesâges
+    if (get_session_lang() == "en") fouraem()$allages else fouraem()$touslesâges
   })
 
   fouraem_Mort_acute <- reactive({
-    if (currentlanguage == "en") fouraem()$Mort_acute else fouraem()$Mort_aiguë
+    if (get_session_lang() == "en") fouraem()$Mort_acute else fouraem()$Mort_aiguë
   })
 
   fourarsd_Acute_Resp_Symptom_Days <- reactive({
-    if (currentlanguage == "en") fourarsd()$Acute_Resp_Symptom_Days else fourarsd()$Jours_symptômes_resp_aigus
+    if (get_session_lang() == "en") fourarsd()$Acute_Resp_Symptom_Days else fourarsd()$Jours_symptômes_resp_aigus
   })
 
   fourarsd_age20plus <- reactive({
-    if (currentlanguage == "en") fourarsd()$age20plus else fourarsd()$ans20plus
+    if (get_session_lang() == "en") fourarsd()$age20plus else fourarsd()$ans20plus
   })
 
   fourarsd_age5_19 <- reactive({
-    if (currentlanguage == "en") fourarsd()$age5_19 else fourarsd()$ans5_19
+    if (get_session_lang() == "en") fourarsd()$age5_19 else fourarsd()$ans5_19
   })
 
   fourasd_age5_19 <- reactive({
-    if (currentlanguage == "en") fourasd()$age5_19 else fourasd()$ans5_19
+    if (get_session_lang() == "en") fourasd()$age5_19 else fourasd()$ans5_19
   })
 
   fourasd_Asthma_Symptom_Days <- reactive({
-    if (currentlanguage == "en") fourasd()$Asthma_Symptom_Days else fourasd()$Jours_symptômes_asthme
+    if (get_session_lang() == "en") fourasd()$Asthma_Symptom_Days else fourasd()$Jours_symptômes_asthme
   })
 
   fourb_allages <- reactive({
-    if (currentlanguage == "en") fourb()$allages else fourb()$touslesâges
+    if (get_session_lang() == "en") fourb()$allages else fourb()$touslesâges
   })
 
   fourb_scenario <- reactive({
-    if (currentlanguage == "en") fourb()$scenario else fourb()$scénario
+    if (get_session_lang() == "en") fourb()$scenario else fourb()$scénario
   })
 
   fourb_year <- reactive({
-    if (currentlanguage == "en") fourb()$year else fourb()$année
+    if (get_session_lang() == "en") fourb()$year else fourb()$année
   })
 
   fourcabe_age5_19 <- reactive({
-    if (currentlanguage == "en") fourcabe()$age5_19 else fourcabe()$ans5_19
+    if (get_session_lang() == "en") fourcabe()$age5_19 else fourcabe()$ans5_19
   })
 
   fourcabe_Child_Acute_Bronchitis <- reactive({
-    if (currentlanguage == "en") fourcabe()$Child_Acute_Bronchitis else fourcabe()$Bronchite_aiguë_enfant
+    if (get_session_lang() == "en") fourcabe()$Child_Acute_Bronchitis else fourcabe()$Bronchite_aiguë_enfant
   })
 
   fourcerv_allages <- reactive({
-    if (currentlanguage == "en") fourcerv()$allages else fourcerv()$touslesâges
+    if (get_session_lang() == "en") fourcerv()$allages else fourcerv()$touslesâges
   })
 
   fourcerv_Cardiac_Emergency_Room <- reactive({
-    if (currentlanguage == "en") fourcerv()$Cardiac_Emergency_Room else fourcerv()$Visites_urgence_problèmes_cardiaques
+    if (get_session_lang() == "en") fourcerv()$Cardiac_Emergency_Room else fourcerv()$Visites_urgence_problèmes_cardiaques
   })
 
   fourcha_allages <- reactive({
-    if (currentlanguage == "en") fourcha()$allages else fourcha()$touslesâges
+    if (get_session_lang() == "en") fourcha()$allages else fourcha()$touslesâges
   })
 
   fourcha_Cardiac_Hospital <- reactive({
-    if (currentlanguage == "en") fourcha()$Cardiac_Hospital else fourcha()$Hôpital_problèmes_cardiaques
+    if (get_session_lang() == "en") fourcha()$Cardiac_Hospital else fourcha()$Hôpital_problèmes_cardiaques
   })
 
   fourco24aem_allages <- reactive({
-    if (currentlanguage == "en") fourco24aem()$allages else fourco24aem()$touslesâges
+    if (get_session_lang() == "en") fourco24aem()$allages else fourco24aem()$touslesâges
   })
 
   fourco24aem_Mort_acute <- reactive({
-    if (currentlanguage == "en") fourco24aem()$Mort_acute else fourco24aem()$Mort_aiguë
+    if (get_session_lang() == "en") fourco24aem()$Mort_acute else fourco24aem()$Mort_aiguë
   })
 
   fourecha_age65plus <- reactive({
-    if (currentlanguage == "en") fourecha()$age65plus else fourecha()$ans65plus
+    if (get_session_lang() == "en") fourecha()$age65plus else fourecha()$ans65plus
   })
 
   fourecha_Elderly_Cardiac_Hospital <- reactive({
-    if (currentlanguage == "en") fourecha()$Elderly_Cardiac_Hospital else fourecha()$Hôpital_problèmes_cardiaques_ainés
+    if (get_session_lang() == "en") fourecha()$Elderly_Cardiac_Hospital else fourecha()$Hôpital_problèmes_cardiaques_ainés
   })
 
   fourmrad_age20plus <- reactive({
-    if (currentlanguage == "en") fourmrad()$age20plus else fourmrad()$ans20plus
+    if (get_session_lang() == "en") fourmrad()$age20plus else fourmrad()$ans20plus
   })
 
   fourmrad_age5_19 <- reactive({
-    if (currentlanguage == "en") fourmrad()$age5_19 else fourmrad()$ans5_19
+    if (get_session_lang() == "en") fourmrad()$age5_19 else fourmrad()$ans5_19
   })
 
   fourmrad_Minor_Restricted_Activity <- reactive({
-    if (currentlanguage == "en") fourmrad()$Minor_Restricted_Activity else fourmrad()$Activité_restreinte_mineure
+    if (get_session_lang() == "en") fourmrad()$Minor_Restricted_Activity else fourmrad()$Activité_restreinte_mineure
   })
 
   fouro3aem_allages <- reactive({
-    if (currentlanguage == "en") fouro3aem()$allages else fouro3aem()$touslesâges
+    if (get_session_lang() == "en") fouro3aem()$allages else fouro3aem()$touslesâges
   })
 
   fouro3aem_Mort_acute <- reactive({
-    if (currentlanguage == "en") fouro3aem()$Mort_acute else fouro3aem()$Mort_aiguë
+    if (get_session_lang() == "en") fouro3aem()$Mort_acute else fouro3aem()$Mort_aiguë
   })
 
   fouro3arsd_Acute_Resp_Symptom_Days <- reactive({
-    if (currentlanguage == "en") fouro3arsd()$Acute_Resp_Symptom_Days else fouro3arsd()$Jours_symptômes_resp_aigus
+    if (get_session_lang() == "en") fouro3arsd()$Acute_Resp_Symptom_Days else fouro3arsd()$Jours_symptômes_resp_aigus
   })
 
   fouro3arsd_age20plus <- reactive({
-    if (currentlanguage == "en") fouro3arsd()$age20plus else fouro3arsd()$ans20plus
+    if (get_session_lang() == "en") fouro3arsd()$age20plus else fouro3arsd()$ans20plus
   })
 
   fouro3arsd_age5_19 <- reactive({
-    if (currentlanguage == "en") fouro3arsd()$age5_19 else fouro3arsd()$ans5_19
+    if (get_session_lang() == "en") fouro3arsd()$age5_19 else fouro3arsd()$ans5_19
   })
 
   fouro3asd_age5_19 <- reactive({
-    if (currentlanguage == "en") fouro3asd()$age5_19 else fouro3asd()$ans5_19
+    if (get_session_lang() == "en") fouro3asd()$age5_19 else fouro3asd()$ans5_19
   })
 
   fouro3asd_Asthma_Symptom_Days <- reactive({
-    if (currentlanguage == "en") fouro3asd()$Asthma_Symptom_Days else fouro3asd()$Jours_symptômes_asthme
+    if (get_session_lang() == "en") fouro3asd()$Asthma_Symptom_Days else fouro3asd()$Jours_symptômes_asthme
   })
 
   fouro3cerm_age30plus <- reactive({
-    if (currentlanguage == "en") fouro3cerm()$age30plus else fouro3cerm()$ans30plus
+    if (get_session_lang() == "en") fouro3cerm()$age30plus else fouro3cerm()$ans30plus
   })
 
   fouro3cerm_allages <- reactive({
-    if (currentlanguage == "en") fouro3cerm()$allages else fouro3cerm()$touslesâges
+    if (get_session_lang() == "en") fouro3cerm()$allages else fouro3cerm()$touslesâges
   })
 
   fouro3cerm_Mort_respiratory <- reactive({
-    if (currentlanguage == "en") fouro3cerm()$Mort_respiratory else fouro3cerm()$Mort_respiratoire
+    if (get_session_lang() == "en") fouro3cerm()$Mort_respiratory else fouro3cerm()$Mort_respiratoire
   })
 
   fouro3cerm_summero3_1 <- reactive({
-    if (currentlanguage == "en") fouro3cerm()$summero3_1 else fouro3cerm()$o3été_1
+    if (get_session_lang() == "en") fouro3cerm()$summero3_1 else fouro3cerm()$o3été_1
   })
 
   fouro3cerm_summero3_2 <- reactive({
-    if (currentlanguage == "en") fouro3cerm()$summero3_2 else fouro3cerm()$o3été_2
+    if (get_session_lang() == "en") fouro3cerm()$summero3_2 else fouro3cerm()$o3été_2
   })
 
   fouro3rerv_allages <- reactive({
-    if (currentlanguage == "en") fouro3rerv()$allages else fouro3rerv()$touslesâges
+    if (get_session_lang() == "en") fouro3rerv()$allages else fouro3rerv()$touslesâges
   })
 
   fouro3rerv_Respiratory_Emergency_Room <- reactive({
-    if (currentlanguage == "en") fouro3rerv()$Respiratory_Emergency_Room else fouro3rerv()$Visites_urgence_problèmes_respiratoires
+    if (get_session_lang() == "en") fouro3rerv()$Respiratory_Emergency_Room else fouro3rerv()$Visites_urgence_problèmes_respiratoires
   })
 
   fouro3rha_allages <- reactive({
-    if (currentlanguage == "en") fouro3rha()$allages else fouro3rha()$touslesâges
+    if (get_session_lang() == "en") fouro3rha()$allages else fouro3rha()$touslesâges
   })
 
   fouro3rha_Respiratory_Hospital <- reactive({
-    if (currentlanguage == "en") fouro3rha()$Respiratory_Hospital else fouro3rha()$Hôpital_problèmes_respiratoires
+    if (get_session_lang() == "en") fouro3rha()$Respiratory_Hospital else fouro3rha()$Hôpital_problèmes_respiratoires
   })
 
   fourrad_age20plus <- reactive({
-    if (currentlanguage == "en") fourrad()$age20plus else fourrad()$ans20plus
+    if (get_session_lang() == "en") fourrad()$age20plus else fourrad()$ans20plus
   })
 
   fourrad_Restricted_Activity_Days <- reactive({
-    if (currentlanguage == "en") fourrad()$Restricted_Activity_Days else fourrad()$Jours_activité_restreinte
+    if (get_session_lang() == "en") fourrad()$Restricted_Activity_Days else fourrad()$Jours_activité_restreinte
   })
 
   fourrerv_allages <- reactive({
-    if (currentlanguage == "en") fourrerv()$allages else fourrerv()$touslesâges
+    if (get_session_lang() == "en") fourrerv()$allages else fourrerv()$touslesâges
   })
 
   fourrerv_Respiratory_Emergency_Room <- reactive({
-    if (currentlanguage == "en") fourrerv()$Respiratory_Emergency_Room else fourrerv()$Visites_urgence_problèmes_respiratoires
+    if (get_session_lang() == "en") fourrerv()$Respiratory_Emergency_Room else fourrerv()$Visites_urgence_problèmes_respiratoires
   })
 
   fourrha_allages <- reactive({
-    if (currentlanguage == "en") fourrha()$allages else fourrha()$touslesâges
+    if (get_session_lang() == "en") fourrha()$allages else fourrha()$touslesâges
   })
 
   fourrha_Respiratory_Hospital <- reactive({
-    if (currentlanguage == "en") fourrha()$Respiratory_Hospital else fourrha()$Hôpital_problèmes_respiratoires
+    if (get_session_lang() == "en") fourrha()$Respiratory_Hospital else fourrha()$Hôpital_problèmes_respiratoires
   })
 
   fourso2aem_allages <- reactive({
-    if (currentlanguage == "en") fourso2aem()$allages else fourso2aem()$touslesâges
+    if (get_session_lang() == "en") fourso2aem()$allages else fourso2aem()$touslesâges
   })
 
   fourso2aem_Mort_acute <- reactive({
-    if (currentlanguage == "en") fourso2aem()$Mort_acute else fourso2aem()$Mort_aiguë
+    if (get_session_lang() == "en") fourso2aem()$Mort_acute else fourso2aem()$Mort_aiguë
   })
 
   pnamemortfinal_Geocode <- reactive({
-    if (currentlanguage == "en") pnamemortfinal()$Geocode else pnamemortfinal()$Géocode
+    if (get_session_lang() == "en") pnamemortfinal()$Geocode else pnamemortfinal()$Géocode
   })
 
   pnameschiff_Geocode <- reactive({
-    if (currentlanguage == "en") pnameschiff()$Geocode else pnameschiff()$Géocode
+    if (get_session_lang() == "en") pnameschiff()$Geocode else pnameschiff()$Géocode
   })
 
   pnametoxic_Geocode <- reactive({
-    if (currentlanguage == "en") pnametoxic()$Geocode else pnametoxic()$Géocode
+    if (get_session_lang() == "en") pnametoxic()$Geocode else pnametoxic()$Géocode
   })
 
   pwexposure1_allages <- reactive({
-    if (currentlanguage == "en") pwexposure1()$allages else pwexposure1()$touslesâges
+    if (get_session_lang() == "en") pwexposure1()$allages else pwexposure1()$touslesâges
   })
 
   twelveb_endpoint <- reactive({
-    if (currentlanguage == "en") twelveb()$endpoint else twelveb()$paramètre
+    if (get_session_lang() == "en") twelveb()$endpoint else twelveb()$paramètre
   })
 
   wexposure1_allages <- reactive({
-    if (currentlanguage == "en") wexposure1()$allages else wexposure1()$touslesâges
+    if (get_session_lang() == "en") wexposure1()$allages else wexposure1()$touslesâges
   })
 
   # output$xmap <- renderUI({
@@ -3058,7 +3081,7 @@ server <- function(input, output, session) {
   #   div(class="map-options",selectInput("mdp", i18n$t("Pollutant"), c("", i18n$t("None"), i18n$t("PM2.5"), "CO 24h", "NO2", "O3", i18n$t("O3 Summer"), "SO2", i18n$t("All (CO, NO2, O3, PM2.5, SO2)"), i18n$t("Benzene"), i18n$t("1,3-Butadiene"), i18n$t("Acetaldehyde"), i18n$t("Formaldehyde"), i18n$t("All Toxics (cancer)"), i18n$t("All Toxics (non-cancer)")))),
   #   div(class="map-options",
   #     conditionalPanel(
-  #       if (currentlanguage == "en") {
+  #       if (get_session_lang() == "en") {
   #         condition = "input.mdp == 'PM2.5'"
   #       } else {
   #         condition = "input.mdp == 'PM2,5'"
@@ -3077,7 +3100,7 @@ server <- function(input, output, session) {
   #     ),
   #
   #     conditionalPanel(
-  #       if (currentlanguage == "en") {
+  #       if (get_session_lang() == "en") {
   #         condition = "input.mdp == 'All (CO, NO2, O3, PM2.5, SO2)'"
   #       } else {
   #         condition = "input.mdp == 'Tous (CO, NO2, O3, PM2,5, SO2)'"
@@ -3086,7 +3109,7 @@ server <- function(input, output, session) {
   #     ),
   #
   #     conditionalPanel(
-  #       if (currentlanguage == "en") {
+  #       if (get_session_lang() == "en") {
   #         condition = "input.mdp == 'Benzene'"
   #       } else {
   #         condition = "input.mdp == 'Benzène'"
@@ -3095,7 +3118,7 @@ server <- function(input, output, session) {
   #     ),
   #
   #     conditionalPanel(
-  #       if (currentlanguage == "en") {
+  #       if (get_session_lang() == "en") {
   #         condition = "input.mdp == '1,3-Butadiene'"
   #       } else {
   #         condition = "input.mdp == '1,3-butadiène'"
@@ -3104,7 +3127,7 @@ server <- function(input, output, session) {
   #     ),
   #
   #     conditionalPanel(
-  #       if (currentlanguage == "en") {
+  #       if (get_session_lang() == "en") {
   #         condition = "input.mdp == 'Formaldehyde'"
   #       } else {
   #         condition = "input.mdp == 'Formaldéhyde'"
@@ -3113,7 +3136,7 @@ server <- function(input, output, session) {
   #     ),
   #
   #     conditionalPanel(
-  #       if (currentlanguage == "en") {
+  #       if (get_session_lang() == "en") {
   #         condition = "input.mdp == 'Acetaldehyde'"
   #       } else {
   #         condition = "input.mdp == 'Acétaldéhyde'"
@@ -3122,7 +3145,7 @@ server <- function(input, output, session) {
   #     ),
   #
   #     conditionalPanel(
-  #       if (currentlanguage == "en") {
+  #       if (get_session_lang() == "en") {
   #         condition = "input.mdp == 'All Toxics (cancer)'"
   #       } else {
   #         condition = "input.mdp == 'Toutes toxiques (cancer)'"
@@ -3131,7 +3154,7 @@ server <- function(input, output, session) {
   #     ),
   #
   #     conditionalPanel(
-  #       if (currentlanguage == "en") {
+  #       if (get_session_lang() == "en") {
   #         condition = "input.mdp == 'All Toxics (non-cancer)'"
   #       } else {
   #         condition = "input.mdp == 'Toutes toxiques (non-cancérigène)'"
@@ -3150,7 +3173,7 @@ server <- function(input, output, session) {
   # ),
 
   # conditionalPanel(
-  #   if (currentlanguage == "en") {
+  #   if (get_session_lang() == "en") {
   #     condition = "input.mdp == 'O3 Summer'"
   #   } else {
   #     condition = "input.mdp == 'O3 en été'"
@@ -3159,7 +3182,7 @@ server <- function(input, output, session) {
   # ),
 
   # conditionalPanel(
-  #   if (currentlanguage == "en") {
+  #   if (get_session_lang() == "en") {
   #     condition = "input.mdp == 'Benzene'"
   #   } else {
   #     condition = "input.mdp == 'Benzène'"
@@ -3168,7 +3191,7 @@ server <- function(input, output, session) {
   # ),
 
   # conditionalPanel(
-  #   if (currentlanguage == "en") {
+  #   if (get_session_lang() == "en") {
   #     condition = "input.mdp == '1,3-Butadiene'"
   #   } else {
   #     condition = "input.mdp == '1,3-butadiène'"
@@ -3177,7 +3200,7 @@ server <- function(input, output, session) {
   # ),
 
   # conditionalPanel(
-  #   if (currentlanguage == "en") {
+  #   if (get_session_lang() == "en") {
   #     condition = "input.mde7 == 'None' & input.mdp=='Formaldehyde'"
   #   } else {
   #     condition = "input.mde7 == 'Aucun' & input.mdp=='Formaldéhyde'"
@@ -3186,7 +3209,7 @@ server <- function(input, output, session) {
   # ),
   #
   # conditionalPanel(
-  #   if (currentlanguage == "en") {
+  #   if (get_session_lang() == "en") {
   #     condition = "input.mde3 == 'None' & input.mdp=='CO 24h'"
   #   } else {
   #     condition = "input.mde3 == 'Aucun' & input.mdp=='CO 24h'"
@@ -3195,7 +3218,7 @@ server <- function(input, output, session) {
   # ),
   #
   # conditionalPanel(
-  #   if (currentlanguage == "en") {
+  #   if (get_session_lang() == "en") {
   #     condition = "input.mde11 == 'None' & input.mdp=='SO2'"
   #   } else {
   #     condition = "input.mde11 == 'Aucun' & input.mdp=='SO2'"
@@ -3204,7 +3227,7 @@ server <- function(input, output, session) {
   # ),
   #
   # conditionalPanel(
-  #   if (currentlanguage == "en") {
+  #   if (get_session_lang() == "en") {
   #     condition = "input.mde12 == 'None' & input.mdp=='O3'"
   #   } else {
   #     condition = "input.mde12 == 'Aucun' & input.mdp=='O3'"
@@ -3213,7 +3236,7 @@ server <- function(input, output, session) {
   # ),
 
   # conditionalPanel(
-  #   if (currentlanguage == "en") {
+  #   if (get_session_lang() == "en") {
   #     condition = "input.mde13 == 'None' & input.mdp=='O3 Summer'"
   #   } else {
   #     condition = "input.mde13 == 'Aucun' & input.mdp=='O3 en été'"
@@ -3222,7 +3245,7 @@ server <- function(input, output, session) {
   # ),
   #
   # conditionalPanel(
-  #   if (currentlanguage == "en") {
+  #   if (get_session_lang() == "en") {
   #     condition = "input.mde1 == 'Chronic Exposure Mortality' & input.mdp=='PM2.5'"
   #   } else {
   #     condition = "input.mde1 == 'Mortalité liée à une exposition chronique' & input.mdp=='PM2,5'"
@@ -3231,7 +3254,7 @@ server <- function(input, output, session) {
   # ),
   #
   # conditionalPanel(
-  #   if (currentlanguage == "en") {
+  #   if (get_session_lang() == "en") {
   #     condition = "input.mde2 == 'Acute Exposure Mortality' & input.mdp=='NO2'"
   #   } else {
   #     condition = "input.mde2 == 'Mortalité liée à une exposition aiguë' & input.mdp=='NO2'"
@@ -3240,7 +3263,7 @@ server <- function(input, output, session) {
   # ),
 
   # conditionalPanel(
-  #   if (currentlanguage == "en") {
+  #   if (get_session_lang() == "en") {
   #     condition = "input.mdp == 'All Toxics (cancer)'"
   #   } else {
   #     condition = "input.mdp == 'Toutes toxiques (cancer)'"
@@ -3249,7 +3272,7 @@ server <- function(input, output, session) {
   # ),
 
   # conditionalPanel(
-  #   if (currentlanguage == "en") {
+  #   if (get_session_lang() == "en") {
   #     condition = "input.mde5 == 'Hematological' & input.mdp=='Benzene'"
   #   } else {
   #     condition = "input.mde5 == 'Hématologique' & input.mdp=='Benzène'"
@@ -3258,7 +3281,7 @@ server <- function(input, output, session) {
   # ),
   #
   # conditionalPanel(
-  #   if (currentlanguage == "en") {
+  #   if (get_session_lang() == "en") {
   #     condition = "input.mde6 == 'Cancer' & input.mdp=='1,3-Butadiene'"
   #   } else {
   #     condition = "input.mde6 == 'Cancer' & input.mdp=='1,3-butadiène'"
@@ -3267,7 +3290,7 @@ server <- function(input, output, session) {
   # ),
   #
   # conditionalPanel(
-  #   if (currentlanguage == "en") {
+  #   if (get_session_lang() == "en") {
   #     condition = "input.mde8 == 'Respiratory (histological)' & input.mdp=='Acetaldehyde'"
   #   } else {
   #     condition = "input.mde8 == 'Respiratoire (histologique)' & input.mdp=='Acétaldéhyde'"
@@ -3276,7 +3299,7 @@ server <- function(input, output, session) {
   # ),
   #
   # conditionalPanel(
-  #   if (currentlanguage == "en") {
+  #   if (get_session_lang() == "en") {
   #     condition = "input.mde7 == 'Respiratory (asthma)' & input.mdp=='Formaldehyde'"
   #   } else {
   #     condition = "input.mde7 == 'Respiratoire (asthme)' & input.mdp=='Formaldéhyde'"
@@ -3285,7 +3308,7 @@ server <- function(input, output, session) {
   # ),
   #
   # conditionalPanel(
-  #   if (currentlanguage == "en") {
+  #   if (get_session_lang() == "en") {
   #     condition = "input.mde9 == 'Cancer' & input.mdp=='All Toxics (cancer)'"
   #   } else {
   #     condition = "input.mde9 == 'Cancer' & input.mdp=='Toutes toxiques (cancer)'"
@@ -3294,7 +3317,7 @@ server <- function(input, output, session) {
   # ),
   #
   # conditionalPanel(
-  #   if (currentlanguage == "en") {
+  #   if (get_session_lang() == "en") {
   #     condition = "input.mde10 == 'Non-cancer' & input.mdp=='All Toxics (non-cancer)'"
   #   } else {
   #     condition = "input.mde10 == 'Non-cancérigène' & input.mdp=='Toutes toxiques (non-cancérigène)'"
@@ -3303,7 +3326,7 @@ server <- function(input, output, session) {
   # ),
   #
   # conditionalPanel(
-  #   if (currentlanguage == "en") {
+  #   if (get_session_lang() == "en") {
   #     condition = "input.mde13 == 'Chronic Exposure Respiratory Mortality' & input.mdp=='O3 Summer'"
   #   } else {
   #     condition = "input.mde13 == 'Mortalité respiratoire liée à une exposition chronique' & input.mdp=='O3 en été'"
@@ -3312,7 +3335,7 @@ server <- function(input, output, session) {
   # ),
   #
   # conditionalPanel(
-  #   if (currentlanguage == "en") {
+  #   if (get_session_lang() == "en") {
   #     condition = "input.mde3 == 'Acute Exposure Mortality' & input.mdp=='CO 24h'"
   #   } else {
   #     condition = "input.mde3 == 'Mortalité liée à une exposition aiguë' & input.mdp=='CO 24h'"
@@ -3321,7 +3344,7 @@ server <- function(input, output, session) {
   # ),
   #
   #     conditionalPanel(
-  #       if (currentlanguage == "en") {
+  #       if (get_session_lang() == "en") {
   #         condition = "input.mde11 == 'Acute Exposure Mortality' & input.mdp=='SO2'"
   #       } else {
   #         condition = "input.mde11 == 'Mortalité liée à une exposition aiguë' & input.mdp=='SO2'"
@@ -3330,7 +3353,7 @@ server <- function(input, output, session) {
   #     ),
   #
   #     conditionalPanel(
-  #       if (currentlanguage == "en") {
+  #       if (get_session_lang() == "en") {
   #         condition = "input.mde12 == 'Acute Exposure Mortality' & input.mdp=='O3'"
   #       } else {
   #         condition = "input.mde12 == 'Mortalité liée à une exposition aiguë' & input.mdp=='O3'"
@@ -3339,7 +3362,7 @@ server <- function(input, output, session) {
   #     ),
   #
   #     conditionalPanel(
-  #       if (currentlanguage == "en") {
+  #       if (get_session_lang() == "en") {
   #         condition = "input.mde14 == 'Non-accidental mortality' & input.mdp=='None'"
   #       } else {
   #         condition = "input.mde14 == 'Mortalité non accidentel' & input.mdp=='Aucun'"
@@ -3725,10 +3748,10 @@ s     } else {
 
   # merge file with population and mortality by CD with user input pollutant concentration data by CD
   foura0 <- reactive({
-    right_join(three, pollutantdata(), by = c(i18n$t("year"), i18n$t("CDUID")))
+    right_join(get_session_three(), pollutantdata(), by = c(get_session_t("year"), get_session_t("CDUID")))
   })
   xfoura <- reactive({
-    left_join(foura0(), one)
+    left_join(foura0(), get_session_one())
   })
   foura <- reactive({
     na_replace(xfoura(), 0)
@@ -3765,7 +3788,7 @@ s     } else {
   }) # fourb:  used for population-weighted exposure and toxics calculation
 
   wexposure1 <- reactive({
-    if (currentlanguage == "en") {
+    if (get_session_lang() == "en") {
       aggregate(cbind(
         allages * chg(pm25_2, pm25_1, input$pmthr), allages * chg(summero3_2, summero3_1, input$summero3thr), allages * chg(o3_2, o3_1, input$o3thr), allages * chg(no2_2, no2_1, input$no2thr),
         allages * chg(so2_2, so2_1, input$so2thr), allages * chg(co1h_2, co1h_1, input$cothr), allages * chg(co24h_2, co24h_1, input$cothr),
@@ -3799,7 +3822,7 @@ s     } else {
   })
 
   pwexposure1 <- reactive({
-    if (currentlanguage == "en") {
+    if (get_session_lang() == "en") {
       aggregate(cbind(
         allages * chg(pm25_2, pm25_1, input$pmthr), allages * chg(summero3_2, summero3_1, input$summero3thr), allages * chg(o3_2, o3_1, input$o3thr), allages * chg(no2_2, no2_1, input$no2thr), allages * chg(so2_2, so2_1, input$so2thr),
         allages * chg(co1h_2, co1h_1, input$cothr), allages * chg(co24h_2, co24h_1, input$cothr),
@@ -3834,7 +3857,7 @@ s     } else {
   })
 
   Canprowexposure1 <- reactive({
-    if (currentlanguage == "en") {
+    if (get_session_lang() == "en") {
       xCanprowexposure1()[with(xCanprowexposure1(), order(year, scenario)), ]
     } else {
       xCanprowexposure1()[with(xCanprowexposure1(), order(année, scénario)), ]
@@ -3851,7 +3874,7 @@ s     } else {
   })
 
   xxxCanprowexposure1 <- reactive({
-    if (currentlanguage == "en") {
+    if (get_session_lang() == "en") {
       cbind(xxCanprowexposure1()[c(1, 2, 3)], as.data.frame(sapply((xxCanprowexposure1()[c(4:14)]), format_numbers, simplify = FALSE)))
     } else {
       cbind(xxCanprowexposure1()[c(1, 2, 3)], as.data.frame(sapply((xxCanprowexposure1()[c(4:14)]), format_numbers2, simplify = FALSE)))
@@ -3869,7 +3892,7 @@ s     } else {
   })
 
   pnameexposure <- reactive({
-    merge_data(xxxCanprowexposure1(), xprov, by.x = i18n$t("Region"), by.y = "Province")
+    merge_data(xxxCanprowexposure1(), get_session_xprov(), by.x = get_session_t("Region"), by.y = "Province")
   })
   xpnameexposure <- reactive({
     pnameexposure()[c(1, 2, 4:6), c(2, 3, 16, 4:8, 11, 13, 14)]
@@ -3878,14 +3901,14 @@ s     } else {
   xxpnameexposure <- reactive({
     xxphh2 <- xpnameexposure()
     colnames(xxphh2) <- c(
-      i18n$t("Year"), i18n$t("Scenario"), "Province", i18n$t("PM2.5"), i18n$t("Summer O3"), "O3", "NO2", "SO2",
-      i18n$t("Benzene"), i18n$t("Acetaldehyde"), i18n$t("Formaldehyde")
+      get_session_t("Year"), get_session_t("Scenario"), "Province", get_session_t("PM2.5"), get_session_t("Summer O3"), "O3", "NO2", "SO2",
+      get_session_t("Benzene"), get_session_t("Acetaldehyde"), get_session_t("Formaldehyde")
     )
     xxphh2
   })
 
   x1Canprowexposure1 <- reactive({
-    merge_data(Canprowexposure1(), xprov, by.x = "region", by.y = "Province")
+    merge_data(Canprowexposure1(), get_session_xprov(), by.x = "region", by.y = "Province")
   })
   x2Canprowexposure1 <- reactive({
     x1Canprowexposure1()[, c(2, 3, 16, 4:14)]
@@ -3894,14 +3917,14 @@ s     } else {
   x3Canprowexposure1 <- reactive({
     x3expo <- x2Canprowexposure1()
     colnames(x3expo) <- c(
-      i18n$t("Year"), i18n$t("Scenario"), i18n$t("Region"), i18n$t("PM2.5"), i18n$t("Summer O3"), "O3", "NO2", "SO2", "CO 1h",
-      "CO 24h", i18n$t("Benzene"), i18n$t("1,3-Butadiene"), i18n$t("Acetaldehyde"), i18n$t("Formaldehyde")
+      get_session_t("Year"), get_session_t("Scenario"), get_session_t("Region"), get_session_t("PM2.5"), get_session_t("Summer O3"), "O3", "NO2", "SO2", "CO 1h",
+      "CO 24h", get_session_t("Benzene"), get_session_t("1,3-Butadiene"), get_session_t("Acetaldehyde"), get_session_t("Formaldehyde")
     )
     x3expo
   })
 
   x4Canprowexposure1 <- reactive({
-    if (currentlanguage == "en") {
+    if (get_session_lang() == "en") {
       x3Canprowexposure1()[with(x3Canprowexposure1(), order(Year, Scenario, Region)), ]
     } else {
       x3Canprowexposure1()[with(x3Canprowexposure1(), order(Année, Scénario, Région)), ]
@@ -3911,7 +3934,7 @@ s     } else {
 
   output$d5 <- downloadHandler(
     filename = function() {
-      i18n$t("Weighted_exposure.xlsx")
+      get_session_t("Weighted_exposure.xlsx")
     },
     content = function(file) {
       write_xlsx(x4Canprowexposure1(), path = file)
@@ -4086,9 +4109,9 @@ s     } else {
 
   eleven_mortschif <- reactive({
     cbind(
-      foura_year(), foura_scenario(), foura()[c(1, 2)], i18n$t("CD"), i18n$t("PM2.5"), i18n$t("Chronic Exposure Mortality"),
+      foura_year(), foura_scenario(), foura()[c(1, 2)], get_session_t("CD"), get_session_t("PM2.5"), get_session_t("Chronic Exposure Mortality"),
       fiveschif(), sixschif(), sevenschif(), eightschif(), nineschif(), tenschif(), tenaschif(), pctxsschif(), pctxsschifl95(),
-      pctxsschifu95(), leyrschif(), leyrschifl95(), leyrschifu95(), i18n$t("mortality"), four_age25plus()
+      pctxsschifu95(), leyrschif(), leyrschifl95(), leyrschifu95(), get_session_t("mortality"), four_age25plus()
     )
   })
 
@@ -4097,7 +4120,7 @@ s     } else {
   cdmortschif0 <- reactive({
     s1 <- eleven_mortschif()
     colnames(s1) <- c(
-      i18n$t("year"), i18n$t("scenario"), "geocode", "region", "geotype", i18n$t("pollutant"), i18n$t("endpoint"), "counts",
+      get_session_t("year"), get_session_t("scenario"), "geocode", "region", "geotype", get_session_t("pollutant"), get_session_t("endpoint"), "counts",
       "L95CI_counts", "U95CI_counts", "valuation", "L95CI_val", "U95CI_val", "counts_per_100K",
       "proportional_change", "L95CI_p", "U95CI_p", "life_year", "L95CI_le", "U95CI_le", "mort", "pop"
     )
@@ -4105,7 +4128,7 @@ s     } else {
   })
 
   cdmortschif1 <- reactive({
-    if (currentlanguage == "en") {
+    if (get_session_lang() == "en") {
       cdmortschif0()[with(cdmortschif0(), order(year, scenario, region, pollutant)), ]
     } else {
       cdmortschif0()[with(cdmortschif0(), order(année, scénario, region, polluant)), ]
@@ -4116,7 +4139,7 @@ s     } else {
   # aggregate non-linear SCHIF at nationally
 
   Canaggschif1 <- reactive({
-    if (currentlanguage == "en") {
+    if (get_session_lang() == "en") {
       aggregate(cbind(
         counts, L95CI_counts, U95CI_counts, valuation, L95CI_val, U95CI_val, chg7(counts, proportional_change),
         chg7(L95CI_counts, L95CI_p), chg7(U95CI_counts, U95CI_p), pop
@@ -4155,7 +4178,7 @@ s     } else {
   })
 
   Canaggschifle1 <- reactive({
-    if (currentlanguage == "en") {
+    if (get_session_lang() == "en") {
       aggregate(cbind(life_year * pop, L95CI_le * pop, U95CI_le * pop, pop) ~ year + scenario + pollutant + endpoint, cdmortschif1(), sum, na.action = NULL)
     } else {
       aggregate(cbind(life_year * pop, L95CI_le * pop, U95CI_le * pop, pop) ~ année + scénario + polluant + paramètre, cdmortschif1(), sum, na.action = NULL)
@@ -4163,7 +4186,7 @@ s     } else {
   })
 
   Canaggschifle2 <- reactive({
-    if (currentlanguage == "en") {
+    if (get_session_lang() == "en") {
       cbind.data.frame(
         Canaggschifle1()$year, Canaggschifle1()$scenario, "Canada", Canaggschifle1()$pollutant, Canaggschifle1()$endpoint,
         as.data.frame(chg7(Canaggschifle1()$V1, Canaggschifle1()$pop)), as.data.frame(chg7(Canaggschifle1()$V2, Canaggschifle1()$pop)), as.data.frame(chg7(Canaggschifle1()$V3, Canaggschifle1()$pop))
@@ -4191,7 +4214,7 @@ s     } else {
   })
 
   Canaggschifle5 <- reactive({
-    if (currentlanguage == "en") {
+    if (get_session_lang() == "en") {
       cbind(as.integer(Canaggschifle4()$year), as.integer(Canaggschifle4()$scenario), Canaggschifle4()[c(3:8)])
     } else {
       cbind(as.integer(Canaggschifle4()$année), as.integer(Canaggschifle4()$scénario), Canaggschifle4()[c(3:8)])
@@ -4214,7 +4237,7 @@ s     } else {
 
   # aggregated SCHIF mortality by province
   paggschif1 <- reactive({
-    if (currentlanguage == "en") {
+    if (get_session_lang() == "en") {
       aggregate(cbind(
         counts, L95CI_counts, U95CI_counts, valuation, L95CI_val, U95CI_val, chg7(counts, proportional_change),
         chg7(L95CI_counts, L95CI_p), chg7(U95CI_counts, U95CI_p), pop
@@ -4246,7 +4269,7 @@ s     } else {
   })
 
   Proaggschifle1 <- reactive({
-    if (currentlanguage == "en") {
+    if (get_session_lang() == "en") {
       aggregate(cbind(life_year * pop, L95CI_le * pop, U95CI_le * pop, pop) ~ year + +scenario + region + pollutant + endpoint, cdmortschif1(), sum, na.action = NULL)
     } else {
       aggregate(cbind(life_year * pop, L95CI_le * pop, U95CI_le * pop, pop) ~ année + +scénario + region + polluant + paramètre, cdmortschif1(), sum, na.action = NULL)
@@ -4280,7 +4303,7 @@ s     } else {
   })
 
   CanProaggschiffinal2 <- reactive({
-    merge(CanProaggschiffinal1(), geocode, by.x = "region", by.y = "Name", all.x = TRUE)
+    merge(CanProaggschiffinal1(), get_session_geocode(), by.x = "region", by.y = "Name", all.x = TRUE)
   })
 
   CanProaggschiffinal3 <- reactive({
@@ -4288,7 +4311,7 @@ s     } else {
   })
 
   CanProaggschiffinal4 <- reactive({
-    if (currentlanguage == "en") {
+    if (get_session_lang() == "en") {
       CanProaggschiffinal3()[with(CanProaggschiffinal3(), order(CanProaggschiffinal3()$year, CanProaggschiffinal3()$scenario, CanProaggschiffinal3()$geocode)), ]
     } else {
       CanProaggschiffinal3()[with(CanProaggschiffinal3(), order(CanProaggschiffinal3()$année, CanProaggschiffinal3()$scénario, CanProaggschiffinal3()$geocode)), ]
@@ -4300,7 +4323,7 @@ s     } else {
   })
 
   cdmortschif3 <- reactive({
-    if (currentlanguage == "en") {
+    if (get_session_lang() == "en") {
       cdmortschif2()[with(cdmortschif2(), order(cdmortschif2()$year, cdmortschif2()$scenario, cdmortschif2()$geocode)), ]
     } else {
       cdmortschif2()[with(cdmortschif2(), order(cdmortschif2()$année, cdmortschif2()$scénario, cdmortschif2()$geocode)), ]
@@ -4315,7 +4338,7 @@ s     } else {
   allschiffinal3i <- reactive({
     fs1 <- allschiffinal1()
     colnames(fs1) <- c(
-      i18n$t("year"), i18n$t("scenario"), "geocode", "region", "geotype", i18n$t("pollutant"), i18n$t("endpoint"), "counts",
+      get_session_t("year"), get_session_t("scenario"), "geocode", "region", "geotype", get_session_t("pollutant"), get_session_t("endpoint"), "counts",
       "L95CI_counts", "U95CI_counts", "valuation", "L95CI_val", "U95CI_val", "counts_per_100K",
       "proportional_change", "L95CI_p", "U95CI_p", "life_expectancy_chg", "L95CI_le", "U95CI_le"
     )
@@ -4323,7 +4346,7 @@ s     } else {
   })
 
   allschiffinal3 <- reactive({
-    if (currentlanguage == "en") {
+    if (get_session_lang() == "en") {
       allschiffinal3i()[with(allschiffinal3i(), order(year, scenario, geocode, geotype, region, pollutant, endpoint)), ]
     } else {
       allschiffinal3i()[with(allschiffinal3i(), order(année, scénario, geocode, geotype, region, polluant, paramètre)), ]
@@ -4343,7 +4366,7 @@ s     } else {
   })
 
   xxallschiffinal3 <- reactive({
-    if (currentlanguage == "en") {
+    if (get_session_lang() == "en") {
       cbind(xallschiffinal3()[c(1:7)], as.data.frame(sapply((xallschiffinal3()[c(8:14)]), format_numbers, simplify = FALSE)))
     } else {
       cbind(xallschiffinal3()[c(1:7)], as.data.frame(sapply((xallschiffinal3()[c(8:14)]), format_numbers2, simplify = FALSE)))
@@ -4361,7 +4384,7 @@ s     } else {
   })
 
   pnameschiff <- reactive({
-    merge_data(xxallschiffinal3(), xprov, by.x = i18n$t("Region"), by.y = "Province")
+    merge_data(xxallschiffinal3(), get_session_xprov(), by.x = get_session_t("Region"), by.y = "Province")
   })
   xpnameschiff <- reactive({
     cbind(pnameschiff()[c(2, 3)], as.integer(pnameschiff_Geocode()), pnameschiff()[c(16, 6:13)])
@@ -4378,7 +4401,7 @@ s     } else {
   })
 
   x1xallschiffinal3 <- reactive({
-    merge_data(xallschiffinal3(), xprov, by.x = i18n$t("Region"), by.y = "Province")
+    merge_data(xallschiffinal3(), get_session_xprov(), by.x = get_session_t("Region"), by.y = "Province")
   })
   x2xallschiffinal3 <- reactive({
     x1xallschiffinal3()[, c(2, 3, 4, 5, 22, 6:20)]
@@ -4397,7 +4420,7 @@ s     } else {
   })
 
   x4xallschiffinal3 <- reactive({
-    if (currentlanguage == "en") {
+    if (get_session_lang() == "en") {
       x3xallschiffinal3()[with(x3xallschiffinal3(), order(Year, Scenario, Geocode, Region)), ]
     } else {
       x3xallschiffinal3()[with(x3xallschiffinal3(), order(Année, Scénario, Géocode, Région)), ]
@@ -4697,7 +4720,7 @@ s     } else {
   })
 
   Mortlung <- reactive({
-    if (currentlanguage == "en") {
+    if (get_session_lang() == "en") {
       (four()$Mort_lung)
     } else {
       (four()$Mort_poumon)
@@ -4793,14 +4816,14 @@ s     } else {
     na_replace(allx4mort3()[c(1:21)], 0)
   })
   xmortreqvars <- reactive({
-    cbind(xmortreqvars0()[c(1, 2, 3)], i18n$t("CD"), xmortreqvars0()[c(4:21)])
+    cbind(xmortreqvars0()[c(1, 2, 3)], get_session_t("CD"), xmortreqvars0()[c(4:21)])
   })
 
 
   rxmort0 <- reactive({
     mm <- xmortreqvars()
     colnames(mm) <- c(
-      i18n$t("year"), i18n$t("scenario"), "geocode", "geotype", "region", i18n$t("pollutant"), i18n$t("endpoint"), "counts",
+      get_session_t("year"), get_session_t("scenario"), "geocode", "geotype", "region", get_session_t("pollutant"), get_session_t("endpoint"), "counts",
       "L95CI_counts", "U95CI_counts", "valuation", "L95CI_val", "U95CI_val", "counts_per_100K", "proportional_change", "L95CI_p",
       "U95CI_p", "life_year", "L95CI_le", "U95CI_le", "mort", "pop"
     )
@@ -4808,7 +4831,7 @@ s     } else {
   })
 
   rxmort1 <- reactive({
-    if (currentlanguage == "en") {
+    if (get_session_lang() == "en") {
       rxmort0()[with(rxmort0(), order(rxmort0()$year, rxmort0()$scenario, rxmort0()$geocode, rxmort0()$pollutant)), ]
     } else {
       rxmort0()[with(rxmort0(), order(rxmort0()$année, rxmort0()$scénario, rxmort0()$geocode, rxmort0()$polluant)), ]
@@ -4816,7 +4839,7 @@ s     } else {
   })
 
   Canaggxmort1 <- reactive({
-    if (currentlanguage == "en") {
+    if (get_session_lang() == "en") {
       aggregate(cbind(
         counts, L95CI_counts, U95CI_counts, valuation, L95CI_val, U95CI_val, chg7(counts, proportional_change),
         chg7(L95CI_counts, L95CI_p), chg7(U95CI_counts, U95CI_p), pop
@@ -4853,7 +4876,7 @@ s     } else {
   })
 
   Canaggxmortle1 <- reactive({
-    if (currentlanguage == "en") {
+    if (get_session_lang() == "en") {
       aggregate(cbind(life_year * pop, L95CI_le * pop, U95CI_le * pop, pop) ~ year + scenario + pollutant + endpoint, rxmort1(), sum, na.action = NULL)
     } else {
       aggregate(cbind(life_year * pop, L95CI_le * pop, U95CI_le * pop, pop) ~ année + scénario + polluant + paramètre, rxmort1(), sum, na.action = NULL)
@@ -4861,7 +4884,7 @@ s     } else {
   })
 
   Canaggxmortle2 <- reactive({
-    if (currentlanguage == "en") {
+    if (get_session_lang() == "en") {
       cbind.data.frame(
         Canaggxmortle1()$year, Canaggxmortle1()$scenario, "Canada", Canaggxmortle1()$pollutant, Canaggxmortle1()$endpoint,
         as.data.frame(chg7(Canaggxmortle1()$V1, Canaggxmortle1()$pop)), as.data.frame(chg7(Canaggxmortle1()$V2, Canaggxmortle1()$pop)), as.data.frame(chg7(Canaggxmortle1()$V3, Canaggxmortle1()$pop))
@@ -4891,7 +4914,7 @@ s     } else {
 
   # aggregated cause-specific mortality by province
   paggxmort1 <- reactive({
-    if (currentlanguage == "en") {
+    if (get_session_lang() == "en") {
       aggregate(cbind(
         counts, L95CI_counts, U95CI_counts, valuation, L95CI_val, U95CI_val, chg7(counts, proportional_change),
         chg7(L95CI_counts, L95CI_p), chg7(U95CI_counts, U95CI_p), pop
@@ -4926,7 +4949,7 @@ s     } else {
 
   # Proaggxmortle1<- reactive({subset(twelveb(),twelveb_endpoint()=='Mortality'|twelveb_endpoint()=='Chronic Exposure Respiratory Mortality', select=c(1:5,16:20)) })
   Proaggxmortle1 <- reactive({
-    if (currentlanguage == "en") {
+    if (get_session_lang() == "en") {
       aggregate(cbind(life_year * pop, L95CI_le * pop, U95CI_le * pop, pop) ~ year + scenario + region + pollutant + endpoint, rxmort1(), sum, na.action = NULL)
     } else {
       aggregate(cbind(life_year * pop, L95CI_le * pop, U95CI_le * pop, pop) ~ année + scénario + region + polluant + paramètre, rxmort1(), sum, na.action = NULL)
@@ -4955,7 +4978,7 @@ s     } else {
   })
 
   CanProaggxmortfinal2 <- reactive({
-    merge(CanProaggxmortfinal1(), geocode, by.x = "region", by.y = "Name", all.x = TRUE)
+    merge(CanProaggxmortfinal1(), get_session_geocode(), by.x = "region", by.y = "Name", all.x = TRUE)
   })
 
   CanProaggxmortfinal3 <- reactive({
@@ -4963,7 +4986,7 @@ s     } else {
   })
 
   CanProaggxmortfinal4 <- reactive({
-    if (currentlanguage == "en") {
+    if (get_session_lang() == "en") {
       CanProaggxmortfinal3()[with(CanProaggxmortfinal3(), order(
         CanProaggxmortfinal3()$year, CanProaggxmortfinal3()$scenario,
         CanProaggxmortfinal3()$geocode, CanProaggxmortfinal3()$pollutant
@@ -4981,7 +5004,7 @@ s     } else {
   })
 
   cdxmortfinal1 <- reactive({
-    if (currentlanguage == "en") {
+    if (get_session_lang() == "en") {
       cdxmortfinal0()[with(cdxmortfinal0(), order(cdxmortfinal0()$year, cdxmortfinal0()$scenario, cdxmortfinal0()$geocode, cdxmortfinal0()$pollutant)), ]
     } else {
       cdxmortfinal0()[with(cdxmortfinal0(), order(cdxmortfinal0()$année, cdxmortfinal0()$scénario, cdxmortfinal0()$geocode, cdxmortfinal0()$polluant)), ]
@@ -4997,7 +5020,7 @@ s     } else {
   allxmortfinal3i <- reactive({
     hh5 <- allxmortfinal1()
     colnames(hh5) <- c(
-      i18n$t("year"), i18n$t("scenario"), "geocode", "geotype", "region", i18n$t("pollutant"), i18n$t("endpoint"), "counts",
+      get_session_t("year"), get_session_t("scenario"), "geocode", "geotype", "region", get_session_t("pollutant"), get_session_t("endpoint"), "counts",
       "L95CI_counts", "U95CI_counts", "valuation", "L95CI_val", "U95CI_val", "counts_per_100K", "proportional_change", "L95CI_p",
       "U95CI_p", "life_expectancy_chg", "L95CI_le", "U95CI_le"
     )
@@ -5005,7 +5028,7 @@ s     } else {
   })
 
   allxmortfinal3 <- reactive({
-    if (currentlanguage == "en") {
+    if (get_session_lang() == "en") {
       allxmortfinal3i()[with(allxmortfinal3i(), order(year, scenario, geocode, geotype, region, pollutant, endpoint)), ]
     } else {
       allxmortfinal3i()[with(allxmortfinal3i(), order(année, scénario, geocode, geotype, region, polluant, paramètre)), ]
@@ -5023,7 +5046,7 @@ s     } else {
   })
 
   xxallxmortfinal3 <- reactive({
-    if (currentlanguage == "en") {
+    if (get_session_lang() == "en") {
       cbind(xallxmortfinal3()[c(1:7)], as.data.frame(sapply((xallxmortfinal3()[c(8:13)]), format_numbers, simplify = FALSE)))
     } else {
       cbind(xallxmortfinal3()[c(1:7)], as.data.frame(sapply((xallxmortfinal3()[c(8:13)]), format_numbers2, simplify = FALSE)))
@@ -5031,7 +5054,7 @@ s     } else {
   })
 
   pnamemortfinal <- reactive({
-    merge_data(xxallxmortfinal3(), xprov, by.x = i18n$t("Region"), by.y = "Province")
+    merge_data(xxallxmortfinal3(), get_session_xprov(), by.x = get_session_t("Region"), by.y = "Province")
   })
   xpnamemortfinal <- reactive({
     cbind(pnamemortfinal()[c(2, 3)], as.integer(pnamemortfinal_Geocode()), pnamemortfinal()[c(15, 6, 7, 8:13)])
@@ -5059,7 +5082,7 @@ s     } else {
   })
 
   x1xallxmortfinal3 <- reactive({
-    merge_data(xallxmortfinal3(), xprov, by.x = i18n$t("Region"), by.y = "Province")
+    merge_data(xallxmortfinal3(), get_session_xprov(), by.x = get_session_t("Region"), by.y = "Province")
   })
   x2xallxmortfinal3 <- reactive({
     x1xallxmortfinal3()[, c(2, 3, 4, 5, 22, 6:20)]
@@ -5078,7 +5101,7 @@ s     } else {
   })
 
   x4xallxmortfinal3 <- reactive({
-    if (currentlanguage == "en") {
+    if (get_session_lang() == "en") {
       x3xallxmortfinal3()[with(x3xallxmortfinal3(), order(Year, Scenario, Geocode)), ]
     } else {
       x3xallxmortfinal3()[with(x3xallxmortfinal3(), order(Année, Scénario, Géocode)), ]
@@ -6266,7 +6289,7 @@ s     } else {
 
 
   fiverad <- reactive({
-    if (currentlanguage == "en") {
+    if (get_session_lang() == "en") {
       (popnonasthma(input$asprev, fourrad()$age5_19, fourrad_age20plus()) / 1000000) * fourrad_Restricted_Activity_Days() * xxpctxsrad()$radaa
     } else {
       (popnonasthma(input$asprev, fourrad()$ans5_19, fourrad_age20plus()) / 1000000) * fourrad_Restricted_Activity_Days() * xxpctxsrad()$radaa
@@ -6274,7 +6297,7 @@ s     } else {
   })
 
   sixrad <- reactive({
-    if (currentlanguage == "en") {
+    if (get_session_lang() == "en") {
       (popnonasthma(input$asprev, fourrad()$age5_19, fourrad_age20plus()) / 1000000) * fourrad_Restricted_Activity_Days() * xxpctxsrad()$radbb
     } else {
       (popnonasthma(input$asprev, fourrad()$ans5_19, fourrad_age20plus()) / 1000000) * fourrad_Restricted_Activity_Days() * xxpctxsrad()$radbb
@@ -6282,7 +6305,7 @@ s     } else {
   })
 
   sevenrad <- reactive({
-    if (currentlanguage == "en") {
+    if (get_session_lang() == "en") {
       (popnonasthma(input$asprev, fourrad()$age5_19, fourrad_age20plus()) / 1000000) * fourrad_Restricted_Activity_Days() * xxpctxsrad()$radcc
     } else {
       (popnonasthma(input$asprev, fourrad()$ans5_19, fourrad_age20plus()) / 1000000) * fourrad_Restricted_Activity_Days() * xxpctxsrad()$radcc
@@ -6317,7 +6340,7 @@ s     } else {
   })
 
   tenarad <- reactive({
-    if (currentlanguage == "en") {
+    if (get_session_lang() == "en") {
       100000 * fiverad() / popnonasthma(input$asprev, fourrad()$age5_19, fourrad_age20plus())
     } else {
       100000 * fiverad() / popnonasthma(input$asprev, fourrad()$ans5_19, fourrad_age20plus())
@@ -8217,7 +8240,7 @@ s     } else {
 
   # aggregate toxic on cancer nationally
   caneleventx_r1 <- reactive({
-    if (currentlanguage == "en") {
+    if (get_session_lang() == "en") {
       aggregate(cbind(counts, DALYs, pop) ~ year + scenario + pollutant + endpoint, eleventx_r2(), sum, na.action = NULL)
     } else {
       aggregate(cbind(counts, DALYs, pop) ~ année + scénario + polluant + paramètre, eleventx_r2(), sum, na.action = NULL)
@@ -8242,7 +8265,7 @@ s     } else {
 
   # aggregate toxic on cancer at provincial level
   proeleventx_r1 <- reactive({
-    if (currentlanguage == "en") {
+    if (get_session_lang() == "en") {
       aggregate(cbind(counts, DALYs, pop) ~ year + scenario + province + pollutant + endpoint, eleventx_r2(), sum, na.action = NULL)
     } else {
       aggregate(cbind(counts, DALYs, pop) ~ année + scénario + province + polluant + paramètre, eleventx_r2(), sum, na.action = NULL)
@@ -8267,7 +8290,7 @@ s     } else {
     rbind(proeleventx_r3(), caneleventx_r4())
   })
   canproeleventx_r2 <- reactive({
-    merge(canproeleventx_r1(), geocode, by.x = "region", by.y = "Name", all.x = TRUE)
+    merge(canproeleventx_r1(), get_session_geocode(), by.x = "region", by.y = "Name", all.x = TRUE)
   })
 
   canproeleventx_r3 <- reactive({
@@ -8291,7 +8314,7 @@ s     } else {
   })
 
   finaleleventx_r2 <- reactive({
-    if (currentlanguage == "en") {
+    if (get_session_lang() == "en") {
       finaleleventx_r1()[with(finaleleventx_r1(), order(year, scenario, pollutant)), ]
     } else {
       finaleleventx_r1()[with(finaleleventx_r1(), order(année, scénario, polluant)), ]
@@ -8309,7 +8332,7 @@ s     } else {
   })
 
   x1finaleleventx_r2 <- reactive({
-    merge_data(finaleleventx_r2(), xprov, by.x = "region", by.y = "Province")
+    merge_data(finaleleventx_r2(), get_session_xprov(), by.x = "region", by.y = "Province")
   })
   x2finaleleventx_r2 <- reactive({
     x1finaleleventx_r2()[, c(2, 3, 4, 5, 12, 6:10)]
@@ -8325,7 +8348,7 @@ s     } else {
   })
 
   x4finaleleventx_r2 <- reactive({
-    if (currentlanguage == "en") {
+    if (get_session_lang() == "en") {
       x3finaleleventx_r2()[with(x3finaleleventx_r2(), order(Year, Scenario, Geocode)), ]
     } else {
       x3finaleleventx_r2()[with(x3finaleleventx_r2(), order(Année, Scénario, Géocode)), ]
@@ -8425,7 +8448,7 @@ s     } else {
   })
 
   canpro_allthreenc2 <- reactive({
-    merge(canpro_allthreenc1(), geocode, by.x = "region", by.y = "Name", all.x = TRUE)
+    merge(canpro_allthreenc1(), get_session_geocode(), by.x = "region", by.y = "Name", all.x = TRUE)
   })
 
   canpro_allthreenc3 <- reactive({
@@ -8437,7 +8460,7 @@ s     } else {
   })
 
   toxicnoncancerfinal2 <- reactive({
-    if (currentlanguage == "en") {
+    if (get_session_lang() == "en") {
       toxicnoncancerfinal1()[with(toxicnoncancerfinal1(), order(year, scenario, pollutant)), ]
     } else {
       toxicnoncancerfinal1()[with(toxicnoncancerfinal1(), order(année, scénario, polluant)), ]
@@ -8445,7 +8468,7 @@ s     } else {
   })
 
   x1toxicnoncancerfinal2 <- reactive({
-    merge_data(toxicnoncancerfinal2(), xprov, by.x = "region", by.y = "Province")
+    merge_data(toxicnoncancerfinal2(), get_session_xprov(), by.x = "region", by.y = "Province")
   })
   x2toxicnoncancerfinal2 <- reactive({
     x1toxicnoncancerfinal2()[, c(2, 3, 4, 5, 10, 6:8)]
@@ -8461,7 +8484,7 @@ s     } else {
   })
 
   x4toxicnoncancerfinal2 <- reactive({
-    if (currentlanguage == "en") {
+    if (get_session_lang() == "en") {
       x3toxicnoncancerfinal2()[with(x3toxicnoncancerfinal2(), order(Year, Scenario, Geocode)), ]
     } else {
       x3toxicnoncancerfinal2()[with(x3toxicnoncancerfinal2(), order(Année, Scénario, Géocode)), ]
@@ -8612,7 +8635,7 @@ s     } else {
   })
 
   twelveb <- reactive({
-    if (currentlanguage == "en") {
+    if (get_session_lang() == "en") {
       twelveb0()[with(twelveb0(), order(year, scenario, CDUID, pollutant)), ]
     } else {
       twelveb0()[with(twelveb0(), order(année, scénario, IDUDR, polluant)), ]
@@ -8626,7 +8649,7 @@ s     } else {
   # })
   # # convert from wide to long format
   # plong1 <- reactive({
-  #   if (currentlanguage == "en") {
+  #   if (get_session_lang() == "en") {
   #     gather(pone(), pollutant, value, pm25_2, no2_2, o3_2, summero3_2, co24h_2, co1h_2, so2_2, bz_2, bt_2, ac_2, fm_2)
   #   } else {
   #     gather(pone(), polluant, valeur, pm25_2, no2_2, o3_2, o3été_2, co24h_2, co1h_2, so2_2, bz_2, bt_2, ac_2, fm_2)
@@ -8665,7 +8688,7 @@ s     } else {
   # })
   # # calculate per capita valuation
   # map2a <- reactive({
-  #   if (currentlanguage == "en") {
+  #   if (get_session_lang() == "en") {
   #     cbind(vp(), vp()$valuation / vp()$allages)
   #   } else {
   #     cbind(vp(), vp()$valuation / vp()$touslesâges)
@@ -8696,7 +8719,7 @@ s     } else {
   # })
   #
   # cdaggmort1 <- reactive({
-  #   if (currentlanguage == "en") {
+  #   if (get_session_lang() == "en") {
   #     mapagg()[which(mapagg()$endpoint == "Chronic Exposure Mortality" | mapagg()$endpoint == "Chronic Exposure Respiratory Mortality" | mapagg()$endpoint == "Acute Exposure Mortality"), ]
   #   } else {
   #     mapagg()[which(mapagg()$paramètre == "Mortalité liée à une exposition chronique" | mapagg()$paramètre == "Mortalité respiratoire liée à une exposition chronique" | mapagg()$paramètre == "Mortalité liée à une exposition aiguë"), ]
@@ -8704,7 +8727,7 @@ s     } else {
   # })
 
   # cdaggmort2 <- reactive({
-  #   if (currentlanguage == "en") {
+  #   if (get_session_lang() == "en") {
   #     as.data.frame(aggregate(counts ~ year + scenario + CDUID, cdaggmort1(), sum, na.action = NULL))
   #   } else {
   #     as.data.frame(aggregate(counts ~ année + scénario + IDUDR, cdaggmort1(), sum, na.action = NULL))
@@ -8719,7 +8742,7 @@ s     } else {
   # })
 
   # cdaggmort2c <- reactive({
-  #   if (currentlanguage == "en") {
+  #   if (get_session_lang() == "en") {
   #     cbind(cdaggmort2b()[c(1, 3, 2)], "All (CO, NO2, O3, PM2.5, SO2)", "Total Mortality", "Counts/100k", 100000 * cdaggmort2b()$counts / cdaggmort2b()$allages)
   #   } else {
   #     cbind(cdaggmort2b()[c(1, 3, 2)], "Tous (CO, NO2, O3, PM2,5, SO2)", "Total du nombre de mortalités", "Comptes par 100 000", 100000 * cdaggmort2b()$counts / cdaggmort2b()$touslesâges)
@@ -8742,7 +8765,7 @@ s     } else {
   # })
   #
   # cdaggval2 <- reactive({
-  #   if (currentlanguage == "en") {
+  #   if (get_session_lang() == "en") {
   #     as.data.frame(aggregate(valuation ~ year + scenario + CDUID, mapaggv(), sum, na.action = NULL))
   #   } else {
   #     as.data.frame(aggregate(valuation ~ année + scénario + IDUDR, mapaggv(), sum, na.action = NULL))
@@ -8757,7 +8780,7 @@ s     } else {
   # })
   #
   # cdaggval2c <- reactive({
-  #   if (currentlanguage == "en") {
+  #   if (get_session_lang() == "en") {
   #     cbind(cdaggval2b()[c(1, 3, 2)], "All (CO, NO2, O3, PM2.5, SO2)", "Total Valuation", "Per capita valuation", cdaggval2b()$valuation / cdaggval2b()$allages)
   #   } else {
   #     cbind(cdaggval2b()[c(1, 3, 2)], "Tous (CO, NO2, O3, PM2,5, SO2)", "Évaluation économique totale", "Évaluation économique par habitant", cdaggval2b()$valuation / cdaggval2b()$touslesâges)
@@ -8823,7 +8846,7 @@ s     } else {
   # })
   #
   # mapbzbt2 <- reactive({
-  #   if (currentlanguage == "en") {
+  #   if (get_session_lang() == "en") {
   #     aggregate(value ~ year + scenario + CDUID, mapbzbt1(), sum, na.action = NULL)
   #   } else {
   #     aggregate(valeur ~ année + scénario + IDUDR, mapbzbt1(), sum, na.action = NULL)
@@ -8927,7 +8950,7 @@ s     } else {
   # })
   #
   # mapdata1 <- reactive({
-  #   if (currentlanguage == "en") {
+  #   if (get_session_lang() == "en") {
   #     mapdata0()[which(mapdata0()$year == input$mdy & mapdata0()$scenario == input$scenario & mapdata0()$pollutant == input$mdp & mapdata0()$endpoint == mapep() & mapdata0()$metric == mapmt()), ]
   #   } else {
   #     mapdata0()[which(mapdata0()$année == input$mdy & mapdata0()$scénario == input$scenario & mapdata0()$polluant == input$mdp & mapdata0()$paramètre == mapep() & mapdata0()$mesure == mapmt()), ]
@@ -8935,7 +8958,7 @@ s     } else {
   # })
   #
   # prov1 <- reactive({
-  #   if (currentlanguage == "en") {
+  #   if (get_session_lang() == "en") {
   #     cbind(mapdata1()$CDUID, substr(mapdata1()$CDUID, 1, 2))
   #   } else {
   #     cbind(mapdata1()$IDUDR, substr(mapdata1()$IDUDR, 1, 2))
@@ -8970,7 +8993,7 @@ s     } else {
   # })
 
   # mapdatap1 <- reactive({
-  #   if (currentlanguage == "en") {
+  #   if (get_session_lang() == "en") {
   #     mapdata3()[which(mapdata3()$Province == input$mdg, mapdata3()$year == input$mdy & mapdata3()$scenario == input$scenario & mapdata3()$pollutant == input$mdp & mapdata3()$endpoint == mapep() & mapdata3()$metric == mapmt()), ]
   #   } else {
   #     mapdata3()[which(mapdata3()$Province == input$mdg, mapdata3()$année == input$mdy & mapdata3()$scénario == input$scenario & mapdata3()$polluant == input$mdp & mapdata3()$paramètre == mapep() & mapdata3()$mesure == mapmt()), ]
@@ -8978,7 +9001,7 @@ s     } else {
   # })
   #
   # mapdatap <- reactive({
-  #   if (currentlanguage == "en") {
+  #   if (get_session_lang() == "en") {
   #     merge(cdmap1, mapdatap1(), by = "CDUID", all.x = FALSE)
   #   } else {
   #     merge(cdmap1_download, mapdatap1(), by = "IDUDR", all.x = FALSE)
@@ -9010,7 +9033,7 @@ s     } else {
     xxtwelveb1()[, c(1:3, 5, 6, 7:12)]
   })
   a1cdtable <- reactive({
-    if (currentlanguage == "en") {
+    if (get_session_lang() == "en") {
       cbind(xxxtwelveb1()[C(1:5)], as.data.frame(sapply((xxxtwelveb1()[c(6:11)]), format_numbers, simplify = FALSE)))
     } else {
       cbind(xxxtwelveb1()[C(1:5)], as.data.frame(sapply((xxxtwelveb1()[c(6:11)]), format_numbers2, simplify = FALSE)))
@@ -9048,7 +9071,7 @@ s     } else {
   })
 
   twelveb3 <- reactive({
-    if (currentlanguage == "en") {
+    if (get_session_lang() == "en") {
       twelveb3i()[with(twelveb3i(), order(year, scenario, CDUID, province, pollutant, endpoint)), ]
     } else {
       twelveb3i()[with(twelveb3i(), order(année, scénario, IDUDR, province, polluant, paramètre)), ]
@@ -9056,7 +9079,7 @@ s     } else {
   })
 
   outresultcd <- reactive({
-    if (currentlanguage == "en") {
+    if (get_session_lang() == "en") {
       twelveb3()[with(twelveb3(), order(year, scenario, CDUID, province, pollutant, endpoint)), ]
     } else {
       twelveb3()[with(twelveb3(), order(année, scénario, IDUDR, province, polluant, paramètre)), ]
@@ -9064,7 +9087,7 @@ s     } else {
   })
 
   x1outresultcd <- reactive({
-    merge_data(outresultcd(), xprov, by.x = "province", by.y = "Province")
+    merge_data(outresultcd(), get_session_xprov(), by.x = "province", by.y = "Province")
   })
   x2outresultcd <- reactive({
     x1outresultcd()[, c(2, 3, 4, 21, 5:19)]
@@ -9082,7 +9105,7 @@ s     } else {
   })
 
   x4outresultcd <- reactive({
-    if (currentlanguage == "en") {
+    if (get_session_lang() == "en") {
       x3outresultcd()[with(x3outresultcd(), order(Year, Scenario, CDUID, Province, Pollutant, Endpoint)), ]
     } else {
       x3outresultcd()[with(x3outresultcd(), order(Année, Scénario, IDUDR, Province, Polluant, Paramètre)), ]
@@ -9092,7 +9115,7 @@ s     } else {
   # aggregate results nationally
 
   Canaggcountval1 <- reactive({
-    if (currentlanguage == "en") {
+    if (get_session_lang() == "en") {
       aggregate(cbind(counts, L95CI_counts, U95CI_counts, valuation, L95CI_val, U95CI_val, chg7(counts, proportional_change), chg7(L95CI_counts, L95CI_p), chg7(U95CI_counts, U95CI_p)) ~ year + scenario + pollutant + endpoint, twelveb2(), sum, na.action = NULL)
     } else {
       aggregate(cbind(counts, L95CI_counts, U95CI_counts, valuation, L95CI_val, U95CI_val, chg7(counts, proportional_change), chg7(L95CI_counts, L95CI_p), chg7(U95CI_counts, U95CI_p)) ~ année + scénario + polluant + paramètre, twelveb2(), sum, na.action = NULL)
@@ -9126,7 +9149,7 @@ s     } else {
   })
 
   Canagglifeyr2 <- reactive({
-    if (currentlanguage == "en") {
+    if (get_session_lang() == "en") {
       aggregate(cbind(life_year * pop, L95CI_le * pop, U95CI_le * pop, pop) ~ year + scenario + pollutant + endpoint, Canagglifeyr1(), sum, na.action = NULL)
     } else {
       aggregate(cbind(life_year * pop, L95CI_le * pop, U95CI_le * pop, pop) ~ année + scénario + polluant + paramètre, Canagglifeyr1(), sum, na.action = NULL)
@@ -9134,7 +9157,7 @@ s     } else {
   })
 
   Canagglifeyr3a <- reactive({
-    if (currentlanguage == "en") {
+    if (get_session_lang() == "en") {
       cbind.data.frame(
         Canagglifeyr2()$year, Canagglifeyr2()$scenario, "Canada", Canagglifeyr2()$pollutant, Canagglifeyr2()$endpoint, as.data.frame(chg7(Canagglifeyr2()$V1, Canagglifeyr2()$pop)),
         as.data.frame(chg7(Canagglifeyr2()$V2, Canagglifeyr2()$pop)), as.data.frame(chg7(Canagglifeyr2()$V3, Canagglifeyr2()$pop))
@@ -9159,7 +9182,7 @@ s     } else {
 
   # aggregate results by province
   paggcountval1 <- reactive({
-    if (currentlanguage == "en") {
+    if (get_session_lang() == "en") {
       aggregate(cbind(counts, L95CI_counts, U95CI_counts, valuation, L95CI_val, U95CI_val, chg7(counts, proportional_change), chg7(L95CI_counts, L95CI_p), chg7(U95CI_counts, U95CI_p)) ~ year + scenario + province + pollutant + endpoint, twelveb2(), sum, na.action = NULL)
     } else {
       aggregate(cbind(counts, L95CI_counts, U95CI_counts, valuation, L95CI_val, U95CI_val, chg7(counts, proportional_change), chg7(L95CI_counts, L95CI_p), chg7(U95CI_counts, U95CI_p)) ~ année + scénario + province + polluant + paramètre, twelveb2(), sum, na.action = NULL)
@@ -9187,7 +9210,7 @@ s     } else {
   })
 
   Proagglifeyr2 <- reactive({
-    if (currentlanguage == "en") {
+    if (get_session_lang() == "en") {
       aggregate(cbind(life_year * pop, L95CI_le * pop, U95CI_le * pop, pop) ~ year + scenario + province + pollutant + endpoint, Proagglifeyr1(), sum, na.action = NULL)
     } else {
       aggregate(cbind(life_year * pop, L95CI_le * pop, U95CI_le * pop, pop) ~ année + scénario + province + polluant + paramètre, Proagglifeyr1(), sum, na.action = NULL)
@@ -9209,7 +9232,7 @@ s     } else {
   })
 
   CanProagglifeyr2 <- reactive({
-    if (currentlanguage == "en") {
+    if (get_session_lang() == "en") {
       cbind(as.integer(CanProagglifeyr()$year), as.integer(CanProagglifeyr()$scenario), CanProagglifeyr()[c(3:8)])
     } else {
       cbind(as.integer(CanProagglifeyr()$année), as.integer(CanProagglifeyr()$scénario), CanProagglifeyr()[c(3:8)])
@@ -9264,7 +9287,7 @@ s     } else {
   })
 
   canproresults1 <- reactive({
-    if (currentlanguage == "en") {
+    if (get_session_lang() == "en") {
       xcanproresults1i()[with(xcanproresults1i(), order(year, scenario, region, pollutant, endpoint)), ]
     } else {
       xcanproresults1i()[with(xcanproresults1i(), order(année, scénario, region, polluant, paramètre)), ]
@@ -9272,7 +9295,7 @@ s     } else {
   })
 
   outresultcanpro3 <- reactive({
-    if (currentlanguage == "en") {
+    if (get_session_lang() == "en") {
       canproresults1()[with(canproresults1(), order(year, scenario, region, pollutant, endpoint)), ]
     } else {
       canproresults1()[with(canproresults1(), order(année, scénario, region, polluant, paramètre)), ]
@@ -9280,7 +9303,7 @@ s     } else {
   })
 
   x1outresultcanpro3 <- reactive({
-    merge_data(outresultcanpro3(), xprov, by.x = "region", by.y = "Province")
+    merge_data(outresultcanpro3(), get_session_xprov(), by.x = "region", by.y = "Province")
   })
   x2outresultcanpro3 <- reactive({
     x1outresultcanpro3()[, c(2, 3, 19, 4:17)]
@@ -9297,7 +9320,7 @@ s     } else {
   })
 
   x4outresultcanpro3 <- reactive({
-    if (currentlanguage == "en") {
+    if (get_session_lang() == "en") {
       x3outresultcanpro3()[with(x3outresultcanpro3(), order(Year, Scenario, Province, Pollutant, Endpoint)), ]
     } else {
       x3outresultcanpro3()[with(x3outresultcanpro3(), order(Année, Scénario, Province, Polluant, Paramètre)), ]
@@ -9309,7 +9332,7 @@ s     } else {
   # summary for variable "mort"
 
   provsummary1 <- reactive({
-    if (currentlanguage == "en") {
+    if (get_session_lang() == "en") {
       aggregate(cbind(counts, L95CI_counts, U95CI_counts, valuation, L95CI_val, U95CI_val) ~ year + scenario + province + mort, twelveb2(), sum, na.action = NULL)
     } else {
       aggregate(cbind(counts, L95CI_counts, U95CI_counts, valuation, L95CI_val, U95CI_val) ~ année + scénario + province + mort, twelveb2(), sum, na.action = NULL)
@@ -9317,7 +9340,7 @@ s     } else {
   })
 
   provsummary2 <- reactive({
-    if (currentlanguage == "en") {
+    if (get_session_lang() == "en") {
       provsummary1()[with(provsummary1(), order(year, scenario)), ]
     } else {
       provsummary1()[with(provsummary1(), order(année, scénario)), ]
@@ -9334,7 +9357,7 @@ s     } else {
   })
 
   cansummary1 <- reactive({
-    if (currentlanguage == "en") {
+    if (get_session_lang() == "en") {
       aggregate(cbind(counts, L95CI_counts, U95CI_counts, valuation, L95CI_val, U95CI_val) ~ year + scenario + mort, twelveb2(), sum, na.action = NULL)
     } else {
       aggregate(cbind(counts, L95CI_counts, U95CI_counts, valuation, L95CI_val, U95CI_val) ~ année + scénario + mort, twelveb2(), sum, na.action = NULL)
@@ -9342,7 +9365,7 @@ s     } else {
   })
 
   cansummary2 <- reactive({
-    if (currentlanguage == "en") {
+    if (get_session_lang() == "en") {
       cansummary1()[with(cansummary1(), order(year, scenario)), ]
     } else {
       cansummary1()[with(cansummary1(), order(année, scénario)), ]
@@ -9399,7 +9422,7 @@ s     } else {
   # for summary allendpoint
 
   sumallendpoint <- reactive({
-    if (currentlanguage == "en") {
+    if (get_session_lang() == "en") {
       aggregate(cbind(valuation, L95CI_val, U95CI_val) ~ year + scenario + region, canprovsummary(), sum, na.action = NULL)
     } else {
       aggregate(cbind(valuation, L95CI_val, U95CI_val) ~ année + scénario + region, canprovsummary(), sum, na.action = NULL)
@@ -9407,7 +9430,7 @@ s     } else {
   })
 
   sumallendpoint1 <- reactive({
-    if (currentlanguage == "en") {
+    if (get_session_lang() == "en") {
       sumallendpoint()[with(sumallendpoint(), order(year, scenario)), ]
     } else {
       sumallendpoint()[with(sumallendpoint(), order(année, scénario)), ]
@@ -9432,7 +9455,7 @@ s     } else {
   })
 
   summaryresults <- reactive({
-    if (currentlanguage == "en") {
+    if (get_session_lang() == "en") {
       summaryresultsi()[with(summaryresultsi(), order(year, scenario, endpoint)), ]
     } else {
       summaryresultsi()[with(summaryresultsi(), order(année, scénario, paramètre)), ]
@@ -9440,7 +9463,7 @@ s     } else {
   })
 
   x1summaryresults <- reactive({
-    merge_data(summaryresults(), xprov, by.x = "region", by.y = "Province")
+    merge_data(summaryresults(), get_session_xprov(), by.x = "region", by.y = "Province")
   })
   x2summaryresults <- reactive({
     x1summaryresults()[, c(2, 3, 12, 4:10)]
@@ -9456,7 +9479,7 @@ s     } else {
   })
 
   x4summaryresults <- reactive({
-    if (currentlanguage == "en") {
+    if (get_session_lang() == "en") {
       x3summaryresults()[with(x3summaryresults(), order(Year, Scenario, Province, Endpoint)), ]
     } else {
       x3summaryresults()[with(x3summaryresults(), order(Année, Scénario, Province, Paramètre)), ]
@@ -9468,7 +9491,7 @@ s     } else {
   # output CD,national and provincial aggregate results and summary results
 
   data_list1 <- reactive({
-    if (currentlanguage == "en") {
+    if (get_session_lang() == "en") {
       list(
         CDresults = x4outresultcd(),
         PTNationalresults = x4outresultcanpro3(),
@@ -9505,7 +9528,7 @@ s     } else {
   )
 
   data_listtx <- reactive({
-    if (currentlanguage == "en") {
+    if (get_session_lang() == "en") {
       list(
         Cancer = x4finaleleventx_r2(),
         `Non-cancer` = x4toxicnoncancerfinal2()
@@ -9598,7 +9621,7 @@ s     } else {
   })
 
   xxfinaleleventx_r2 <- reactive({
-    if (currentlanguage == "en") {
+    if (get_session_lang() == "en") {
       cbind(xfinaleleventx_r2()[c(1:7)], as.data.frame(sapply((xfinaleleventx_r2()[c(8:10)]), format_numbers, simplify = FALSE)))
     } else {
       cbind(xfinaleleventx_r2()[c(1:7)], as.data.frame(sapply((xfinaleleventx_r2()[c(8:10)]), format_numbers2, simplify = FALSE)))
@@ -9616,7 +9639,7 @@ s     } else {
   })
 
   pnametoxic <- reactive({
-    merge_data(xxfinaleleventx_r2(), xprov, by.x = i18n$t("Region"), by.y = "Province")
+    merge_data(xxfinaleleventx_r2(), get_session_xprov(), by.x = get_session_t("Region"), by.y = "Province")
   })
   xpnametoxic <- reactive({
     cbind(pnametoxic()[c(2, 3)], as.integer(pnametoxic_Geocode()), pnametoxic()[c(12, 6:10)])
@@ -9643,7 +9666,7 @@ s     } else {
 
   # Baseline Data
   xoutbasedata <- reactive({
-    merge_data(basedata(), xprov, by.x = "province", by.y = "Province")
+    merge_data(basedata(), get_session_xprov(), by.x = "province", by.y = "Province")
   })
   xxoutbasedata <- reactive({
     xoutbasedata()[c(2, 3, 31, 4:29)]
@@ -9665,7 +9688,7 @@ s     } else {
   })
 
   x4outbasedata <- reactive({
-    if (currentlanguage == "en") {
+    if (get_session_lang() == "en") {
       xxxoutbasedata()[with(xxxoutbasedata(), order(Year, CDUID)), ]
     } else {
       xxxoutbasedata()[with(xxxoutbasedata(), order(Année, IDUDR)), ]
@@ -9673,7 +9696,7 @@ s     } else {
   })
 
   xxxbaserates <- reactive({
-    if (currentlanguage == "en") {
+    if (get_session_lang() == "en") {
       cbind(xxbaserates()[c(1:3)], as.data.frame(sapply((xxbaserates()[c(4:9)]), format_numbers, simplify = FALSE)))
     } else {
       cbind(xxbaserates()[c(1:3)], as.data.frame(sapply((xxbaserates()[c(4:9)]), format_numbers2, simplify = FALSE)))
@@ -9692,7 +9715,7 @@ s     } else {
 
 
   pnamebaseline <- reactive({
-    merge_data(xxxbaserates(), xprov, by.x = "Province", by.y = "Province")
+    merge_data(xxxbaserates(), get_session_xprov(), by.x = "Province", by.y = "Province")
   })
   xpnamebaseline <- reactive({
     pnamebaseline()[c(2, 3, 11, 4:9)]
@@ -9734,7 +9757,7 @@ s     } else {
 
   # can't use i18n within a list, so need to create an object
   popup_workaround <- reactive({
-    if (currentlanguage == "en") {
+    if (get_session_lang() == "en") {
       list("value" = list(digits = 1), "year" = list(big.mark = ""), "CDUID" = list(big.mark = ""))
     } else {
       list("valeur" = list(digits = 1), "année" = list(big.mark = ""), "IDUDR" = list(big.mark = ""))
@@ -9742,7 +9765,7 @@ s     } else {
   })
 
   legend_workaround <- reactive({
-    if (currentlanguage == "en") {
+    if (get_session_lang() == "en") {
       list(text.separator = "to")
     } else {
       list(text.separator = "à")
