@@ -244,19 +244,22 @@ geocode_en <- .geocode_lang("en")
 geocode_fr <- .geocode_lang("fr")
 geocode <- geocode_en # default for source-time use
 
-# define functions
-beta <- function(rtype, rr, incr) {
-  ifelse(rtype == i18n$t("log-linear"), log(rr) / incr, (rr - 1) / incr)
+# define functions (log_linear_label optional: pass get_session_t("log-linear") from server for session language)
+beta <- function(rtype, rr, incr, log_linear_label = NULL) {
+  ll <- if (is.null(log_linear_label)) i18n$t("log-linear") else log_linear_label
+  ifelse(rtype == ll, log(rr) / incr, (rr - 1) / incr)
 } # transfer RR to beta
-se <- function(rtype, urr, lrr, incr) {
-  ifelse(rtype == i18n$t("log-linear"), (log(urr) - log(lrr)) / (2 * 1.96 * incr), (urr - lrr) / (2 * 1.96 * incr))
+se <- function(rtype, urr, lrr, incr, log_linear_label = NULL) {
+  ll <- if (is.null(log_linear_label)) i18n$t("log-linear") else log_linear_label
+  ifelse(rtype == ll, (log(urr) - log(lrr)) / (2 * 1.96 * incr), (urr - lrr) / (2 * 1.96 * incr))
 } # transfer 95%CI to se
 
 chrochg <- function(statusquo, counterfactual) {
   return(statusquo - counterfactual)
 } # function for SCHIF
-af <- function(rtype, beta, deltap) {
-  ifelse(rtype == i18n$t("log-linear"), ((exp(beta * deltap) - 1) / exp(beta * deltap)), beta * deltap)
+af <- function(rtype, beta, deltap, log_linear_label = NULL) {
+  ll <- if (is.null(log_linear_label)) i18n$t("log-linear") else log_linear_label
+  ifelse(rtype == ll, ((exp(beta * deltap) - 1) / exp(beta * deltap)), beta * deltap)
 } # function for attributable fraction
 afa <- function(deltap, beta) {
   (exp(beta * deltap) - 1) / exp(beta * deltap)
@@ -415,12 +418,15 @@ lifeyr6 <- function(pct2) {
 # functions for changes in life expectancy
 
 
-valdist <- function(y, n, a1, a2, a3, a4, a5) {
-  if (y == i18n$t("normal")) {
+valdist <- function(y, n, a1, a2, a3, a4, a5, normal_label = NULL, discrete_label = NULL, triangular_label = NULL) {
+  nlab <- if (is.null(normal_label)) i18n$t("normal") else normal_label
+  dlab <- if (is.null(discrete_label)) i18n$t("discrete") else discrete_label
+  tlab <- if (is.null(triangular_label)) i18n$t("triangular") else triangular_label
+  if (y == nlab) {
     return(rnorm(n, a1, a2))
-  } else if (y == i18n$t("discrete")) {
+  } else if (y == dlab) {
     return(sample(c(a1, a2, a3), size = n, replace = TRUE, prob = c(a4, a5, 1 - a4 - a5)))
-  } else if (y == i18n$t("triangular")) {
+  } else if (y == tlab) {
     return(rtri(n, as.double(a2), as.double(a3), as.double(a1)))
   }
 } # loop for valuation distribution
@@ -435,26 +441,11 @@ ui <- function(request = NULL) {
       if (!is.null(query$lang) && query$lang %in% c("en", "fr")) lang <- query$lang
     }
   }
+  # Set i18n for this request so UI strings (i18n$t) are correct when page is built. No other globals.
   currentlanguage <<- i18n$set_translation_language(lang)
-  pmReferences <<- if (lang == "en") pmReferences_en else pmReferences_fr
-  otherReferences <<- if (lang == "en") otherReferences_en else otherReferences_fr
-  valuationReferences <<- if (lang == "en") valuationReferences_en else valuationReferences_fr
-  pollnames <<- if (lang == "en") pollnames_en else pollnames_fr
-  prov <<- if (lang == "en") prov_en else prov_fr
-  xprov <<- if (lang == "en") xprov_en else xprov_fr
-  cdmap <<- if (lang == "en") cdmap_en else cdmap_fr
-  three <<- if (lang == "en") three_en else three_fr
-  cpi <<- if (lang == "en") cpi_en else cpi_fr
-  xsample1 <<- if (lang == "en") xsample1_en else xsample1_fr
-  geocode <<- data.frame(
-    Name = c(
-      "Canada", i18n$t("NL"), i18n$t("PE"), i18n$t("NS"), i18n$t("NB"), i18n$t("QC"), i18n$t("ON"), i18n$t("MB"), i18n$t("SK"),
-      i18n$t("AB"), i18n$t("BC"), i18n$t("YK"), i18n$t("NT"), i18n$t("NU")
-    ),
-    geocode = c(1, 10, 11, 12, 13, 24, 35, 46, 47, 48, 59, 60, 61, 62),
-    geotype = c(i18n$t("National"), "Province", "Province", "Province", "Province", "Province", "Province", "Province", "Province", "Province", "Province", i18n$t("Territory"), i18n$t("Territory"), i18n$t("Territory"))
-  )
-  one <<- if (lang == "en") one_en else one_fr
+  pmRefs <- if (lang == "en") pmReferences_en else pmReferences_fr
+  otherRefs <- if (lang == "en") otherReferences_en else otherReferences_fr
+  valuationRefs <- if (lang == "en") valuationReferences_en else valuationReferences_fr
   fluidPage(
   # Hidden input: language for this session (set when UI is built; avoids URL reactive / cross-session issues)
   tags$div(style = "display: none;", textInput("session_lang", label = NULL, value = lang)),
@@ -2485,52 +2476,46 @@ ui <- function(request = NULL) {
           )
         ),
         h2(i18n$t("PM2.5 CRFs"), id = "PM25-CRFs"),
-        lapply(1:nrow(pmReferences), function(i) {
-          # Debugging print
-          # print(pmReferences[i, ])
+        lapply(1:nrow(pmRefs), function(i) {
           tags$div(
             htmlTemplate("templates/reference.html",
-              heading = pmReferences$heading[i],
-              description = pmReferences$description[i],
-              authors = pmReferences$authors[i],
-              source = pmReferences$source[i],
-              articleTitle = pmReferences$articleTitle[i],
-              publication = pmReferences$publication[i],
-              lang = pmReferences$lang[i],
+              heading = pmRefs$heading[i],
+              description = pmRefs$description[i],
+              authors = pmRefs$authors[i],
+              source = pmRefs$source[i],
+              articleTitle = pmRefs$articleTitle[i],
+              publication = pmRefs$publication[i],
+              lang = pmRefs$lang[i],
             )
           )
         }),
         hr(),
         h2(i18n$t("Other CRFs"), id = "others"),
-        lapply(1:nrow(otherReferences), function(i) {
-          # Debugging print
-          # print(otherReferences[i, ])
+        lapply(1:nrow(otherRefs), function(i) {
           tags$div(
             htmlTemplate("templates/reference.html",
-              heading = otherReferences$heading[i],
-              description = otherReferences$description[i],
-              authors = otherReferences$authors[i],
-              source = otherReferences$source[i],
-              articleTitle = otherReferences$articleTitle[i],
-              publication = otherReferences$publication[i],
-              lang = otherReferences$lang[i],
+              heading = otherRefs$heading[i],
+              description = otherRefs$description[i],
+              authors = otherRefs$authors[i],
+              source = otherRefs$source[i],
+              articleTitle = otherRefs$articleTitle[i],
+              publication = otherRefs$publication[i],
+              lang = otherRefs$lang[i],
             )
           )
         }),
         hr(),
         h2(i18n$t("Valuation estimates"), id = "value"),
-        lapply(1:nrow(valuationReferences), function(i) {
-          # Debugging print
-          # print(pmReferences[i, ])
+        lapply(1:nrow(valuationRefs), function(i) {
           tags$div(
             htmlTemplate("templates/reference.html",
-              heading = valuationReferences$heading[i],
-              description = valuationReferences$description[i],
-              authors = valuationReferences$authors[i],
-              source = valuationReferences$source[i],
-              articleTitle = valuationReferences$articleTitle[i],
-              publication = valuationReferences$publication[i],
-              lang = valuationReferences$lang[i],
+              heading = valuationRefs$heading[i],
+              description = valuationRefs$description[i],
+              authors = valuationRefs$authors[i],
+              source = valuationRefs$source[i],
+              articleTitle = valuationRefs$articleTitle[i],
+              publication = valuationRefs$publication[i],
+              lang = valuationRefs$lang[i],
             )
           )
         }),
@@ -2605,35 +2590,19 @@ server <- function(input, output, session) {
   # Pass URL query string to ui(request) so ?lang=fr works for French
   enableBookmarking(store = "url")
 
-  # Set this session's language once from the initial URL; never overwrite (so other tabs can't poison it)
-  observe({
-    if (is.null(session$userData$lang)) {
-      url_search <- session$clientData$url_search
-      if (!is.null(url_search) && nzchar(url_search)) {
-        query <- parseQueryString(url_search)
-        if (!is.null(query$lang) && query$lang %in% c("en", "fr")) {
-          session$userData$lang <- query$lang
-          return()
-        }
-      }
-      session$userData$lang <- "en"
-    }
-  })
-
-  # Get language for this session. Prefer (1) URL, (2) hidden input from page build,
-  # (3) cache. So downloads match the current tab even when URL is stripped by proxy.
+  # Session language: from hidden input (set when this page was built), else URL, else cache. No globals.
   get_session_lang <- function() {
+    if (!is.null(input$session_lang) && input$session_lang %in% c("en", "fr")) {
+      session$userData$lang <- input$session_lang
+      return(input$session_lang)
+    }
     url_search <- session$clientData$url_search
     if (!is.null(url_search) && nzchar(url_search)) {
       query <- parseQueryString(url_search)
       if (!is.null(query$lang) && query$lang %in% c("en", "fr")) {
         session$userData$lang <- query$lang
-        return(session$userData$lang)
+        return(query$lang)
       }
-    }
-    if (!is.null(input$session_lang) && input$session_lang %in% c("en", "fr")) {
-      session$userData$lang <- input$session_lang
-      return(session$userData$lang)
     }
     if (!is.null(session$userData$lang) && session$userData$lang %in% c("en", "fr")) {
       return(session$userData$lang)
@@ -2647,6 +2616,7 @@ server <- function(input, output, session) {
   get_session_geocode <- function() if (get_session_lang() == "en") geocode_en else geocode_fr
   get_session_three <- function() if (get_session_lang() == "en") three_en else three_fr
   get_session_one <- function() if (get_session_lang() == "en") one_en else one_fr
+  get_session_cpi <- function() if (get_session_lang() == "en") cpi_en else cpi_fr
 
   # Translate for this session without changing global i18n (cross-tab fix)
   get_session_t <- function(key) {
@@ -2698,9 +2668,9 @@ server <- function(input, output, session) {
     if (input$pollutants$size > 0 && tools::file_ext(input$pollutants$name) == "csv") {
       shinyjs::addClass(selector = "#dataUploadedInfo", class = "alert-success")
       shinyjs::removeClass(selector = "#data-preview", class = "hidden")
-      # Use i18n to translate the messages
-      header_message <- i18n$t("Your data has been uploaded")
-      instruction_message <- i18n$t("To upload new data, please click 'Clear all data and restart'.")
+      # Session language so message matches this tab (cross-tab fix)
+      header_message <- gsub("\\\\", "\\\\\\\\", gsub('"', '\\\\"', get_session_t("Your data has been uploaded")))
+      instruction_message <- gsub("\\\\", "\\\\\\\\", gsub('"', '\\\\"', get_session_t("To upload new data, please click 'Clear all data and restart'.")))
 
       # Set innerHTML using JavaScript with translated messages
       shinyjs::runjs(sprintf('
@@ -2712,9 +2682,9 @@ server <- function(input, output, session) {
     } else {
       shinyjs::addClass(selector = "#dataUploadedInfo", class = "alert-danger")
 
-      # Use i18n to translate the error messages
-      error_header_message <- i18n$t("Error: Invalid file type.")
-      error_instruction_message <- i18n$t("Please restart the application and upload a valid CSV file.")
+      # Session language for error messages (cross-tab fix)
+      error_header_message <- gsub("\\\\", "\\\\\\\\", gsub('"', '\\\\"', get_session_t("Error: Invalid file type.")))
+      error_instruction_message <- gsub("\\\\", "\\\\\\\\", gsub('"', '\\\\"', get_session_t("Please restart the application and upload a valid CSV file.")))
 
       # Set innerHTML using JavaScript with translated error messages
       shinyjs::runjs(sprintf('
@@ -3038,21 +3008,21 @@ server <- function(input, output, session) {
   # output$xmap <- renderUI({
   #   if (is.null(input$pollutants)) {
   #     div(
-  #       i18n$t("The image below is an example of output that would be generated when a dataset is uploaded to the \"Pollutant data upload\" tab. The image shows the counts for chronic exposure mortality per 100,000 for the pollutant PM2.5 in 2016 with scenario set as \"1\". The census division for 'Toronto' in Ontario is selected as an example."),
+  #       get_session_t("The image below is an example of output that would be generated when a dataset is uploaded to the \"Pollutant data upload\" tab. The image shows the counts for chronic exposure mortality per 100,000 for the pollutant PM2.5 in 2016 with scenario set as \"1\". The census division for 'Toronto' in Ontario is selected as an example."),
   #       br(),
-  #       strong(i18n$t("Note:")),
-  #       i18n$t("These are static images."),
-  #       strong(i18n$t("They cannot be interacted with.")),
-  #       i18n$t("Interaction, customization, and more visualization options will be presented once data has been uploaded."),
+  #       strong(get_session_t("Note:")),
+  #       get_session_t("These are static images."),
+  #       strong(get_session_t("They cannot be interacted with.")),
+  #       get_session_t("Interaction, customization, and more visualization options will be presented once data has been uploaded."),
   #     # div(img(src = "Map Options.jpg", height = 250, width = 1600)),
-  #       div(img(src = "map_screenshot.jpg", class="dummy-map", alt=i18n$t("A demo map showing pollutant concentration levels across Canada.") ))
+  #       div(img(src = "map_screenshot.jpg", class="dummy-map", alt=get_session_t("A demo map showing pollutant concentration levels across Canada.") ))
   #     )
   #   } else {
   #     useShinyjs()
   #     div(
   #       id = "formmap",
-  #       i18n$t("Click \"Restore default values\" to restore the values of each cell back to its preset. In this case, it will clear all map inputs. Default values are restored in this tab only."),
-  #       p(actionButton("resetmap", i18n$t("Restore default values"), style = "background-color: #ec7063 ; border: none; position:absoulute; bottom: 50px;", tabindex="0")),
+  #       get_session_t("Click \"Restore default values\" to restore the values of each cell back to its preset. In this case, it will clear all map inputs. Default values are restored in this tab only."),
+  #       p(actionButton("resetmap", get_session_t("Restore default values"), style = "background-color: #ec7063 ; border: none; position:absoulute; bottom: 50px;", tabindex="0")),
   #       br(),
   #       tags$section(
   #         id = "map-instructions",
@@ -3061,17 +3031,17 @@ server <- function(input, output, session) {
   #           class = "panel-heading",
   #           tags$h3(
   #             class = "panel-title",
-  #             i18n$t("Instructions for maps")
+  #             get_session_t("Instructions for maps")
   #           )
   #         ),
   #         tags$div(
   #           class = "panel-body",
   #           tags$p(
-  #             i18n$t("Select year, scenario, pollutant, endpoint and metric, then click \"Generate map\"."),
+  #             get_session_t("Select year, scenario, pollutant, endpoint and metric, then click \"Generate map\"."),
   #             br(),
-  #             i18n$t("To map the baseline mortality rate, set the scenario and pollutant to \"None\"."),
+  #             get_session_t("To map the baseline mortality rate, set the scenario and pollutant to \"None\"."),
   #             br(),
-  #             i18n$t("To map status quo pollutant concentration, select a year, scenario and pollutant, and set endpoint to \"None\".")
+  #             get_session_t("To map status quo pollutant concentration, select a year, scenario and pollutant, and set endpoint to \"None\".")
   #             )
   #         )
   #       ),
@@ -3084,9 +3054,9 @@ server <- function(input, output, session) {
   # div(
   #   class="flex-row",
   #   # setup user inputs for maps; make subsequent selections conditional on previous selections
-  #   div(class="map-options", selectInput("mdy", i18n$t("Year"), c("", 2000:2063))),
-  #   div(class="map-options", selectInput("scenario", i18n$t("Scenario"), c(i18n$t("None"), 1:50))),
-  #   div(class="map-options",selectInput("mdp", i18n$t("Pollutant"), c("", i18n$t("None"), i18n$t("PM2.5"), "CO 24h", "NO2", "O3", i18n$t("O3 Summer"), "SO2", i18n$t("All (CO, NO2, O3, PM2.5, SO2)"), i18n$t("Benzene"), i18n$t("1,3-Butadiene"), i18n$t("Acetaldehyde"), i18n$t("Formaldehyde"), i18n$t("All Toxics (cancer)"), i18n$t("All Toxics (non-cancer)")))),
+  #   div(class="map-options", selectInput("mdy", get_session_t("Year"), c("", 2000:2063))),
+  #   div(class="map-options", selectInput("scenario", get_session_t("Scenario"), c(get_session_t("None"), 1:50))),
+  #   div(class="map-options",selectInput("mdp", get_session_t("Pollutant"), c("", get_session_t("None"), get_session_t("PM2.5"), "CO 24h", "NO2", "O3", get_session_t("O3 Summer"), "SO2", get_session_t("All (CO, NO2, O3, PM2.5, SO2)"), get_session_t("Benzene"), get_session_t("1,3-Butadiene"), get_session_t("Acetaldehyde"), get_session_t("Formaldehyde"), get_session_t("All Toxics (cancer)"), get_session_t("All Toxics (non-cancer)")))),
   #   div(class="map-options",
   #     conditionalPanel(
   #       if (get_session_lang() == "en") {
@@ -3094,17 +3064,17 @@ server <- function(input, output, session) {
   #       } else {
   #         condition = "input.mdp == 'PM2,5'"
   #       },
-  #       selectInput("mde1", i18n$t("Endpoint"), c(i18n$t("None"), i18n$t("Chronic Exposure Mortality")))
+  #       selectInput("mde1", get_session_t("Endpoint"), c(get_session_t("None"), get_session_t("Chronic Exposure Mortality")))
   #     ),
   #
   #     conditionalPanel(
   #       condition = "input.mdp == 'NO2'",
-  #       selectInput("mde2", i18n$t("Endpoint"), c(i18n$t("None"), i18n$t("Acute Exposure Mortality")))
+  #       selectInput("mde2", get_session_t("Endpoint"), c(get_session_t("None"), get_session_t("Acute Exposure Mortality")))
   #     ),
   #
   #     conditionalPanel(
   #       condition = "input.mdp == 'CO 24h'",
-  #       selectInput("mde3", i18n$t("Endpoint"), c(i18n$t("None"), i18n$t("Acute Exposure Mortality")))
+  #       selectInput("mde3", get_session_t("Endpoint"), c(get_session_t("None"), get_session_t("Acute Exposure Mortality")))
   #     ),
   #
   #     conditionalPanel(
@@ -3113,7 +3083,7 @@ server <- function(input, output, session) {
   #       } else {
   #         condition = "input.mdp == 'Tous (CO, NO2, O3, PM2,5, SO2)'"
   #       },
-  #       selectInput("mde4", i18n$t("Endpoint"), c(i18n$t("Total Mortality"), i18n$t("Total Valuation")))
+  #       selectInput("mde4", get_session_t("Endpoint"), c(get_session_t("Total Mortality"), get_session_t("Total Valuation")))
   #     ),
   #
   #     conditionalPanel(
@@ -3122,7 +3092,7 @@ server <- function(input, output, session) {
   #       } else {
   #         condition = "input.mdp == 'Benzène'"
   #       },
-  #       selectInput("mde5", i18n$t("Endpoint"), c(i18n$t("None"), i18n$t("Cancer"), i18n$t("Hematological")))
+  #       selectInput("mde5", get_session_t("Endpoint"), c(get_session_t("None"), get_session_t("Cancer"), get_session_t("Hematological")))
   #     ),
   #
   #     conditionalPanel(
@@ -3131,7 +3101,7 @@ server <- function(input, output, session) {
   #       } else {
   #         condition = "input.mdp == '1,3-butadiène'"
   #       },
-  #       selectInput("mde6", i18n$t("Endpoint"), c(i18n$t("None"), i18n$t("Cancer")))
+  #       selectInput("mde6", get_session_t("Endpoint"), c(get_session_t("None"), get_session_t("Cancer")))
   #     ),
   #
   #     conditionalPanel(
@@ -3140,7 +3110,7 @@ server <- function(input, output, session) {
   #       } else {
   #         condition = "input.mdp == 'Formaldéhyde'"
   #       },
-  #       selectInput("mde7", i18n$t("Endpoint"), c(i18n$t("None"), i18n$t("Respiratory (asthma)")))
+  #       selectInput("mde7", get_session_t("Endpoint"), c(get_session_t("None"), get_session_t("Respiratory (asthma)")))
   #     ),
   #
   #     conditionalPanel(
@@ -3149,7 +3119,7 @@ server <- function(input, output, session) {
   #       } else {
   #         condition = "input.mdp == 'Acétaldéhyde'"
   #       },
-  #       selectInput("mde8", i18n$t("Endpoint"), c(i18n$t("None"), i18n$t("Respiratory (histological)")))
+  #       selectInput("mde8", get_session_t("Endpoint"), c(get_session_t("None"), get_session_t("Respiratory (histological)")))
   #     ),
   #
   #     conditionalPanel(
@@ -3158,7 +3128,7 @@ server <- function(input, output, session) {
   #       } else {
   #         condition = "input.mdp == 'Toutes toxiques (cancer)'"
   #       },
-  #       selectInput("mde9", i18n$t("Endpoint"), c(i18n$t("Cancer")))
+  #       selectInput("mde9", get_session_t("Endpoint"), c(get_session_t("Cancer")))
   #     ),
   #
   #     conditionalPanel(
@@ -3167,17 +3137,17 @@ server <- function(input, output, session) {
   #       } else {
   #         condition = "input.mdp == 'Toutes toxiques (non-cancérigène)'"
   #       },
-  #       selectInput("mde10", i18n$t("Endpoint"), c(i18n$t("Non-cancer")))
+  #       selectInput("mde10", get_session_t("Endpoint"), c(get_session_t("Non-cancer")))
   #     ),
 
   # conditionalPanel(
   #   condition = "input.mdp == 'SO2'",
-  #   selectInput("mde11", i18n$t("Endpoint"), c(i18n$t("None"), i18n$t("Acute Exposure Mortality")))
+  #   selectInput("mde11", get_session_t("Endpoint"), c(get_session_t("None"), get_session_t("Acute Exposure Mortality")))
   # ),
 
   # conditionalPanel(
   #   condition = "input.mdp == 'O3'",
-  #   selectInput("mde12", i18n$t("Endpoint"), c(i18n$t("None"), i18n$t("Acute Exposure Mortality")))
+  #   selectInput("mde12", get_session_t("Endpoint"), c(get_session_t("None"), get_session_t("Acute Exposure Mortality")))
   # ),
 
   # conditionalPanel(
@@ -3186,7 +3156,7 @@ server <- function(input, output, session) {
   #   } else {
   #     condition = "input.mdp == 'O3 en été'"
   #   },
-  #   selectInput("mde13", i18n$t("Endpoint"), c(i18n$t("None"), i18n$t("Chronic Exposure Respiratory Mortality")))
+  #   selectInput("mde13", get_session_t("Endpoint"), c(get_session_t("None"), get_session_t("Chronic Exposure Respiratory Mortality")))
   # ),
 
   # conditionalPanel(
@@ -3195,7 +3165,7 @@ server <- function(input, output, session) {
   #   } else {
   #     condition = "input.mdp == 'Benzène'"
   #   },
-  #   selectInput("mde5", i18n$t("Endpoint"), c(i18n$t("None"), "Cancer", i18n$t("Hematological")))
+  #   selectInput("mde5", get_session_t("Endpoint"), c(get_session_t("None"), "Cancer", get_session_t("Hematological")))
   # ),
 
   # conditionalPanel(
@@ -3204,7 +3174,7 @@ server <- function(input, output, session) {
   #   } else {
   #     condition = "input.mdp == '1,3-butadiène'"
   #   },
-  #   selectInput("mde6", i18n$t("Endpoint"), c(i18n$t("None"), "Cancer")))
+  #   selectInput("mde6", get_session_t("Endpoint"), c(get_session_t("None"), "Cancer")))
   # ),
 
   # conditionalPanel(
@@ -3213,7 +3183,7 @@ server <- function(input, output, session) {
   #   } else {
   #     condition = "input.mde7 == 'Aucun' & input.mdp=='Formaldéhyde'"
   #   },
-  #   selectInput("mdc6", i18n$t("Metric"), c(i18n$t("Pollutant concentration")))
+  #   selectInput("mdc6", get_session_t("Metric"), c(get_session_t("Pollutant concentration")))
   # ),
   #
   # conditionalPanel(
@@ -3222,7 +3192,7 @@ server <- function(input, output, session) {
   #   } else {
   #     condition = "input.mde3 == 'Aucun' & input.mdp=='CO 24h'"
   #   },
-  #   selectInput("mdc7", i18n$t("Metric"), c(i18n$t("Pollutant concentration")))
+  #   selectInput("mdc7", get_session_t("Metric"), c(get_session_t("Pollutant concentration")))
   # ),
   #
   # conditionalPanel(
@@ -3231,7 +3201,7 @@ server <- function(input, output, session) {
   #   } else {
   #     condition = "input.mde11 == 'Aucun' & input.mdp=='SO2'"
   #   },
-  #   selectInput("mdc8", i18n$t("Metric"), c(i18n$t("Pollutant concentration")))
+  #   selectInput("mdc8", get_session_t("Metric"), c(get_session_t("Pollutant concentration")))
   # ),
   #
   # conditionalPanel(
@@ -3240,7 +3210,7 @@ server <- function(input, output, session) {
   #   } else {
   #     condition = "input.mde12 == 'Aucun' & input.mdp=='O3'"
   #   },
-  #   selectInput("mdc9", i18n$t("Metric"), c(i18n$t("Pollutant concentration")))
+  #   selectInput("mdc9", get_session_t("Metric"), c(get_session_t("Pollutant concentration")))
   # ),
 
   # conditionalPanel(
@@ -3249,7 +3219,7 @@ server <- function(input, output, session) {
   #   } else {
   #     condition = "input.mde13 == 'Aucun' & input.mdp=='O3 en été'"
   #   },
-  #   selectInput("mdc10", i18n$t("Metric"), c(i18n$t("Pollutant concentration")))
+  #   selectInput("mdc10", get_session_t("Metric"), c(get_session_t("Pollutant concentration")))
   # ),
   #
   # conditionalPanel(
@@ -3258,7 +3228,7 @@ server <- function(input, output, session) {
   #   } else {
   #     condition = "input.mde1 == 'Mortalité liée à une exposition chronique' & input.mdp=='PM2,5'"
   #   },
-  #   selectInput("mdm1", i18n$t("Metric"), c(i18n$t("Counts/100k"), i18n$t("Per capita valuation"), i18n$t("Change in life expectancy")))
+  #   selectInput("mdm1", get_session_t("Metric"), c(get_session_t("Counts/100k"), get_session_t("Per capita valuation"), get_session_t("Change in life expectancy")))
   # ),
   #
   # conditionalPanel(
@@ -3267,7 +3237,7 @@ server <- function(input, output, session) {
   #   } else {
   #     condition = "input.mde2 == 'Mortalité liée à une exposition aiguë' & input.mdp=='NO2'"
   #   },
-  #   selectInput("mdm2", i18n$t("Metric"), c(i18n$t("Counts/100k"), i18n$t("Per capita valuation")))
+  #   selectInput("mdm2", get_session_t("Metric"), c(get_session_t("Counts/100k"), get_session_t("Per capita valuation")))
   # ),
 
   # conditionalPanel(
@@ -3276,7 +3246,7 @@ server <- function(input, output, session) {
   #   } else {
   #     condition = "input.mdp == 'Toutes toxiques (cancer)'"
   #   },
-  #   selectInput("mde9", i18n$t("Endpoint"), c("Cancer"))
+  #   selectInput("mde9", get_session_t("Endpoint"), c("Cancer"))
   # ),
 
   # conditionalPanel(
@@ -3285,7 +3255,7 @@ server <- function(input, output, session) {
   #   } else {
   #     condition = "input.mde5 == 'Hématologique' & input.mdp=='Benzène'"
   #   },
-  #   selectInput("mdm6", i18n$t("Metric"), c(i18n$t("Hazard Quotient")))
+  #   selectInput("mdm6", get_session_t("Metric"), c(get_session_t("Hazard Quotient")))
   # ),
   #
   # conditionalPanel(
@@ -3294,7 +3264,7 @@ server <- function(input, output, session) {
   #   } else {
   #     condition = "input.mde6 == 'Cancer' & input.mdp=='1,3-butadiène'"
   #   },
-  #   selectInput("mdm7", i18n$t("Metric"), c(i18n$t("Counts/100k"), i18n$t("DALYs/100k")))
+  #   selectInput("mdm7", get_session_t("Metric"), c(get_session_t("Counts/100k"), get_session_t("DALYs/100k")))
   # ),
   #
   # conditionalPanel(
@@ -3303,7 +3273,7 @@ server <- function(input, output, session) {
   #   } else {
   #     condition = "input.mde8 == 'Respiratoire (histologique)' & input.mdp=='Acétaldéhyde'"
   #   },
-  #   selectInput("mdm8", i18n$t("Metric"), c(i18n$t("Hazard Quotient")))
+  #   selectInput("mdm8", get_session_t("Metric"), c(get_session_t("Hazard Quotient")))
   # ),
   #
   # conditionalPanel(
@@ -3312,7 +3282,7 @@ server <- function(input, output, session) {
   #   } else {
   #     condition = "input.mde7 == 'Respiratoire (asthme)' & input.mdp=='Formaldéhyde'"
   #   },
-  #   selectInput("mdm9", i18n$t("Metric"), c(i18n$t("Hazard Quotient")))
+  #   selectInput("mdm9", get_session_t("Metric"), c(get_session_t("Hazard Quotient")))
   # ),
   #
   # conditionalPanel(
@@ -3321,7 +3291,7 @@ server <- function(input, output, session) {
   #   } else {
   #     condition = "input.mde9 == 'Cancer' & input.mdp=='Toutes toxiques (cancer)'"
   #   },
-  #   selectInput("mdm10", i18n$t("Metric"), c(i18n$t("Counts/100k"), i18n$t("DALYs/100k")))
+  #   selectInput("mdm10", get_session_t("Metric"), c(get_session_t("Counts/100k"), get_session_t("DALYs/100k")))
   # ),
   #
   # conditionalPanel(
@@ -3330,7 +3300,7 @@ server <- function(input, output, session) {
   #   } else {
   #     condition = "input.mde10 == 'Non-cancérigène' & input.mdp=='Toutes toxiques (non-cancérigène)'"
   #   },
-  #   selectInput("mdm11", i18n$t("Metric"), c(i18n$t("Hazard Quotient")))
+  #   selectInput("mdm11", get_session_t("Metric"), c(get_session_t("Hazard Quotient")))
   # ),
   #
   # conditionalPanel(
@@ -3339,7 +3309,7 @@ server <- function(input, output, session) {
   #   } else {
   #     condition = "input.mde13 == 'Mortalité respiratoire liée à une exposition chronique' & input.mdp=='O3 en été'"
   #   },
-  #   selectInput("mdm12", i18n$t("Metric"), c(i18n$t("Counts/100k"), i18n$t("Per capita valuation"), i18n$t("Change in life expectancy")))
+  #   selectInput("mdm12", get_session_t("Metric"), c(get_session_t("Counts/100k"), get_session_t("Per capita valuation"), get_session_t("Change in life expectancy")))
   # ),
   #
   # conditionalPanel(
@@ -3348,7 +3318,7 @@ server <- function(input, output, session) {
   #   } else {
   #     condition = "input.mde3 == 'Mortalité liée à une exposition aiguë' & input.mdp=='CO 24h'"
   #   },
-  #   selectInput("mdm13", i18n$t("Metric"), c(i18n$t("Counts/100k"), i18n$t("Per capita valuation")))
+  #   selectInput("mdm13", get_session_t("Metric"), c(get_session_t("Counts/100k"), get_session_t("Per capita valuation")))
   # ),
   #
   #     conditionalPanel(
@@ -3357,7 +3327,7 @@ server <- function(input, output, session) {
   #       } else {
   #         condition = "input.mde11 == 'Mortalité liée à une exposition aiguë' & input.mdp=='SO2'"
   #       },
-  #       selectInput("mdm14", i18n$t("Metric"), c(i18n$t("Counts/100k"), i18n$t("Valuation/100k")))
+  #       selectInput("mdm14", get_session_t("Metric"), c(get_session_t("Counts/100k"), get_session_t("Valuation/100k")))
   #     ),
   #
   #     conditionalPanel(
@@ -3366,7 +3336,7 @@ server <- function(input, output, session) {
   #       } else {
   #         condition = "input.mde12 == 'Mortalité liée à une exposition aiguë' & input.mdp=='O3'"
   #       },
-  #       selectInput("mdm15", i18n$t("Metric"), c(i18n$t("Counts/100k"), i18n$t("Per capita valuation")))
+  #       selectInput("mdm15", get_session_t("Metric"), c(get_session_t("Counts/100k"), get_session_t("Per capita valuation")))
   #     ),
   #
   #     conditionalPanel(
@@ -3375,24 +3345,24 @@ server <- function(input, output, session) {
   #       } else {
   #         condition = "input.mde14 == 'Mortalité non accidentel' & input.mdp=='Aucun'"
   #       },
-  #       selectInput("mdm16", i18n$t("Metric"), c(i18n$t("Baseline rate/100k")))
+  #       selectInput("mdm16", get_session_t("Metric"), c(get_session_t("Baseline rate/100k")))
   #     )
   #   )
   # ),
-  #       p(actionButton("genmap", i18n$t("Generate map"))),
+  #       p(actionButton("genmap", get_session_t("Generate map"))),
   #       div(tmapOutput("my_tmap", width = "100%", height = "auto")),
   #       # fluidRow(
   #       #   column(6,plotOutput("myplot"))),
   #
   #       h3("Image Downloads"),
-  #       div(strong(i18n$t("Download static national map"))),
+  #       div(strong(get_session_t("Download static national map"))),
   #         # column(2,strong("Download histogram"))
-  #       div(downloadButton("downm", i18n$t("Download map")),
+  #       div(downloadButton("downm", get_session_t("Download map")),
   #       ),
   #       br(),
-  #       div(radioButtons("mdg", i18n$t("Select province"), selected = character(0), inline = TRUE, c(i18n$t("NL"), i18n$t("PE"), i18n$t("NS"), i18n$t("NB"), i18n$t("QC"), i18n$t("ON"), i18n$t("MB"), i18n$t("SK"), i18n$t("AB"), i18n$t("BC"), i18n$t("YK"), i18n$t("NT"), i18n$t("NU")))),
-  #       div(strong(i18n$t("Download static provincial map"))),
-  #       div(downloadButton("downmp", i18n$t("Download map"))),
+  #       div(radioButtons("mdg", get_session_t("Select province"), selected = character(0), inline = TRUE, c(get_session_t("NL"), get_session_t("PE"), get_session_t("NS"), get_session_t("NB"), get_session_t("QC"), get_session_t("ON"), get_session_t("MB"), get_session_t("SK"), get_session_t("AB"), get_session_t("BC"), get_session_t("YK"), get_session_t("NT"), get_session_t("NU")))),
+  #       div(strong(get_session_t("Download static provincial map"))),
+  #       div(downloadButton("downmp", get_session_t("Download map"))),
   #     )
   #   }
   # })
@@ -3464,185 +3434,185 @@ server <- function(input, output, session) {
   # prepare all input parameters for user summary to download
 
   scenarioyr <- reactive({
-    cbind(i18n$t("Scenario year"), unique(foura_year()))
+    cbind(get_session_t("Scenario year"), unique(foura_year()))
   })
 
   currency <- reactive({
-    cbind(i18n$t("Currency"), paste(i18n$t("currency year ="), input$curr, i18n$t(", base year for discounting ="), input$baseyr, i18n$t(", discounting rate ="), input$discountrate, "%"))
+    cbind(get_session_t("Currency"), paste(get_session_t("currency year ="), input$curr, get_session_t(", base year for discounting ="), input$baseyr, get_session_t(", discounting rate ="), input$discountrate, "%"))
   })
   simulationitn <- reactive({
-    cbind(i18n$t("Simulation iterations"), paste(i18n$t("iterations ="), input$itn))
+    cbind(get_session_t("Simulation iterations"), paste(get_session_t("iterations ="), input$itn))
   })
   childasprev <- reactive({
-    cbind(i18n$t("Prevalence of asthma (age < 20 years)"), paste(i18n$t("asthma prevalence (%) ="), input$asprev))
+    cbind(get_session_t("Prevalence of asthma (age < 20 years)"), paste(get_session_t("asthma prevalence (%) ="), input$asprev))
   })
   pmcrf1 <- reactive({
-    cbind(i18n$t("Concentration response function"), paste(i18n$t("PM2.5 - Chronic exposure mortality:"), i18n$t("reg type ="), input$rtype, i18n$t(", RR/OR ="), input$crf, "[", input$l95, ",", input$u95, "],", i18n$t("Increment (ug/m3) = "), input$incr))
+    cbind(get_session_t("Concentration response function"), paste(get_session_t("PM2.5 - Chronic exposure mortality:"), get_session_t("reg type ="), input$rtype, get_session_t(", RR/OR ="), input$crf, "[", input$l95, ",", input$u95, "],", get_session_t("Increment (ug/m3) = "), input$incr))
   })
   pmcrf2 <- reactive({
-    cbind(i18n$t("Concentration response function"), paste(i18n$t("PM2.5 - Acute respiratory symptom days:"), i18n$t("reg type ="), input$pm25_rtype2, i18n$t(", RR/OR ="), input$pm25_crf2, "[", input$pm25_l95_2, ",", input$pm25_u95_2, "],", i18n$t("Increment (ug/m3) = "), input$pm25_incr2))
+    cbind(get_session_t("Concentration response function"), paste(get_session_t("PM2.5 - Acute respiratory symptom days:"), get_session_t("reg type ="), input$pm25_rtype2, get_session_t(", RR/OR ="), input$pm25_crf2, "[", input$pm25_l95_2, ",", input$pm25_u95_2, "],", get_session_t("Increment (ug/m3) = "), input$pm25_incr2))
   })
   pmcrf3 <- reactive({
-    cbind(i18n$t("Concentration response function"), paste(i18n$t("PM2.5 - Adult chronic bronchitis cases:"), i18n$t("reg type ="), input$pm25_rtype3, i18n$t(", RR/OR ="), input$pm25_crf3, "[", input$pm25_l95_3, ",", input$pm25_u95_3, "],", i18n$t("Increment (ug/m3) = "), input$pm25_incr3))
+    cbind(get_session_t("Concentration response function"), paste(get_session_t("PM2.5 - Adult chronic bronchitis cases:"), get_session_t("reg type ="), input$pm25_rtype3, get_session_t(", RR/OR ="), input$pm25_crf3, "[", input$pm25_l95_3, ",", input$pm25_u95_3, "],", get_session_t("Increment (ug/m3) = "), input$pm25_incr3))
   })
   pmcrf4 <- reactive({
-    cbind(i18n$t("Concentration response function"), paste(i18n$t("PM2.5 - Asthma symptom days:"), i18n$t("reg type ="), input$pm25_rtype4, i18n$t(", RR/OR ="), input$pm25_crf4, "[", input$pm25_l95_4, ",", input$pm25_u95_4, "],", i18n$t("Increment (ug/m3) = "), input$pm25_incr4))
+    cbind(get_session_t("Concentration response function"), paste(get_session_t("PM2.5 - Asthma symptom days:"), get_session_t("reg type ="), input$pm25_rtype4, get_session_t(", RR/OR ="), input$pm25_crf4, "[", input$pm25_l95_4, ",", input$pm25_u95_4, "],", get_session_t("Increment (ug/m3) = "), input$pm25_incr4))
   })
   pmcrf5 <- reactive({
-    cbind(i18n$t("Concentration response function"), paste(i18n$t("PM2.5 - Cardiac emergency room visits:"), i18n$t("reg type ="), input$pm25_rtype5, i18n$t(", RR/OR ="), input$pm25_crf5, "[", input$pm25_l95_5, ",", input$pm25_u95_5, "],", i18n$t("Increment (ug/m3) = "), input$pm25_incr5))
+    cbind(get_session_t("Concentration response function"), paste(get_session_t("PM2.5 - Cardiac emergency room visits:"), get_session_t("reg type ="), input$pm25_rtype5, get_session_t(", RR/OR ="), input$pm25_crf5, "[", input$pm25_l95_5, ",", input$pm25_u95_5, "],", get_session_t("Increment (ug/m3) = "), input$pm25_incr5))
   })
   pmcrf6 <- reactive({
-    cbind(i18n$t("Concentration response function"), paste(i18n$t("PM2.5 - Cardiac hospital admissions:"), i18n$t("reg type ="), input$pm25_rtype6, i18n$t(", RR/OR ="), input$pm25_crf6, "[", input$pm25_l95_6, ",", input$pm25_u95_6, "],", i18n$t("Increment (ug/m3) = "), input$pm25_incr6))
+    cbind(get_session_t("Concentration response function"), paste(get_session_t("PM2.5 - Cardiac hospital admissions:"), get_session_t("reg type ="), input$pm25_rtype6, get_session_t(", RR/OR ="), input$pm25_crf6, "[", input$pm25_l95_6, ",", input$pm25_u95_6, "],", get_session_t("Increment (ug/m3) = "), input$pm25_incr6))
   })
   pmcrf7 <- reactive({
-    cbind(i18n$t("Concentration response function"), paste(i18n$t("PM2.5 - Child acute bronchitis episodes:"), i18n$t("reg type ="), input$pm25_rtype7, i18n$t(", RR/OR ="), input$pm25_crf7, "[", input$pm25_l95_7, ",", input$pm25_u95_7, "],", i18n$t("Increment (ug/m3) = "), input$pm25_incr7))
+    cbind(get_session_t("Concentration response function"), paste(get_session_t("PM2.5 - Child acute bronchitis episodes:"), get_session_t("reg type ="), input$pm25_rtype7, get_session_t(", RR/OR ="), input$pm25_crf7, "[", input$pm25_l95_7, ",", input$pm25_u95_7, "],", get_session_t("Increment (ug/m3) = "), input$pm25_incr7))
   })
   pmcrf8 <- reactive({
-    cbind(i18n$t("Concentration response function"), paste(i18n$t("PM2.5 - Respiratory emergency room visits:"), i18n$t("reg type ="), input$pm25_rtype8, i18n$t(", RR/OR ="), input$pm25_crf8, "[", input$pm25_l95_8, ",", input$pm25_u95_8, "],", i18n$t("Increment (ug/m3) = "), input$pm25_incr8))
+    cbind(get_session_t("Concentration response function"), paste(get_session_t("PM2.5 - Respiratory emergency room visits:"), get_session_t("reg type ="), input$pm25_rtype8, get_session_t(", RR/OR ="), input$pm25_crf8, "[", input$pm25_l95_8, ",", input$pm25_u95_8, "],", get_session_t("Increment (ug/m3) = "), input$pm25_incr8))
   })
   pmcrf9 <- reactive({
-    cbind(i18n$t("Concentration response function"), paste(i18n$t("PM2.5 - Respiratory Hospital Admissions:"), i18n$t("reg type ="), input$pm25_rtype9, i18n$t(", RR/OR ="), input$pm25_crf9, "[", input$pm25_l95_9, ",", input$pm25_u95_9, "],", i18n$t("Increment (ug/m3) = "), input$pm25_incr9))
+    cbind(get_session_t("Concentration response function"), paste(get_session_t("PM2.5 - Respiratory Hospital Admissions:"), get_session_t("reg type ="), input$pm25_rtype9, get_session_t(", RR/OR ="), input$pm25_crf9, "[", input$pm25_l95_9, ",", input$pm25_u95_9, "],", get_session_t("Increment (ug/m3) = "), input$pm25_incr9))
   })
   pmcrf10 <- reactive({
-    cbind(i18n$t("Concentration response function"), paste(i18n$t("PM2.5 - Restricted Activity Days:"), i18n$t("reg type ="), input$pm25_rtype10, i18n$t(", RR/OR ="), input$pm25_crf10, "[", input$pm25_l95_10, ",", input$pm25_u95_10, "],", i18n$t("Increment (ug/m3) = "), input$pm25_incr10))
+    cbind(get_session_t("Concentration response function"), paste(get_session_t("PM2.5 - Restricted Activity Days:"), get_session_t("reg type ="), input$pm25_rtype10, get_session_t(", RR/OR ="), input$pm25_crf10, "[", input$pm25_l95_10, ",", input$pm25_u95_10, "],", get_session_t("Increment (ug/m3) = "), input$pm25_incr10))
   })
 
   pmcrf11 <- reactive({
-    cbind(i18n$t("Concentration response function"), paste(i18n$t("PM2.5 - Chronic Exposure Cerebrovascular Mortality:"), i18n$t("reg type ="), input$rtypecerebro, i18n$t(", shape ="), input$crfcerebro, i18n$t(", scale ="), input$scalecerebro, i18n$t(", Increment (ug/m3) = "), input$incrcerebro))
+    cbind(get_session_t("Concentration response function"), paste(get_session_t("PM2.5 - Chronic Exposure Cerebrovascular Mortality:"), get_session_t("reg type ="), input$rtypecerebro, get_session_t(", shape ="), input$crfcerebro, get_session_t(", scale ="), input$scalecerebro, get_session_t(", Increment (ug/m3) = "), input$incrcerebro))
   })
   pmcrf12 <- reactive({
-    cbind(i18n$t("Concentration response function"), paste(i18n$t("PM2.5 - Chronic Exposure COPD Mortality:"), i18n$t("reg type ="), input$rtypcopd, i18n$t(", shape ="), input$crfcopd, i18n$t(", scale ="), input$scalecopd, i18n$t(", Increment (ug/m3) = "), input$incrcopd))
+    cbind(get_session_t("Concentration response function"), paste(get_session_t("PM2.5 - Chronic Exposure COPD Mortality:"), get_session_t("reg type ="), input$rtypcopd, get_session_t(", shape ="), input$crfcopd, get_session_t(", scale ="), input$scalecopd, get_session_t(", Increment (ug/m3) = "), input$incrcopd))
   })
   pmcrf13 <- reactive({
-    cbind(i18n$t("Concentration response function"), paste(i18n$t("PM2.5 - Chronic Exposure Ischemic Heart Disease Mortality:"), i18n$t("reg type ="), input$rtypIschem, i18n$t(", shape ="), input$crfIschem, i18n$t(", scale ="), input$scaleIschem, i18n$t(", Increment (ug/m3) = "), input$incrIschem))
+    cbind(get_session_t("Concentration response function"), paste(get_session_t("PM2.5 - Chronic Exposure Ischemic Heart Disease Mortality:"), get_session_t("reg type ="), input$rtypIschem, get_session_t(", shape ="), input$crfIschem, get_session_t(", scale ="), input$scaleIschem, get_session_t(", Increment (ug/m3) = "), input$incrIschem))
   })
 
   pmcrf14 <- reactive({
-    cbind(i18n$t("Concentration response function"), paste(i18n$t("PM2.5 - Chronic Exposure Lung Cancer Mortality:"), i18n$t("reg type ="), input$rtypelung, i18n$t(", RR/OR ="), input$crflung, "[", input$l95lung, ",", input$u95lung, "],", i18n$t("Increment (ug/m3) = "), input$incrlung))
+    cbind(get_session_t("Concentration response function"), paste(get_session_t("PM2.5 - Chronic Exposure Lung Cancer Mortality:"), get_session_t("reg type ="), input$rtypelung, get_session_t(", RR/OR ="), input$crflung, "[", input$l95lung, ",", input$u95lung, "],", get_session_t("Increment (ug/m3) = "), input$incrlung))
   })
 
   pmcrf15 <- reactive({
-    cbind(i18n$t("Concentration response function"), paste(i18n$t("PM2.5 - Chronic exposure mortality:"), i18n$t("reg type = Non-linear SCHIF, thr conc = 2.4 ug/m3, Normal (mean = 0.0813, se = 0.01773, theta = 3.639, mu = 0.763, pi = 1.896)")))
+    cbind(get_session_t("Concentration response function"), paste(get_session_t("PM2.5 - Chronic exposure mortality:"), get_session_t("reg type = Non-linear SCHIF, thr conc = 2.4 ug/m3, Normal (mean = 0.0813, se = 0.01773, theta = 3.639, mu = 0.763, pi = 1.896)")))
   })
 
   o3crf1 <- reactive({
-    cbind(i18n$t("Concentration response function"), paste(i18n$t("O3 - Acute Exposure Mortality:"), i18n$t("reg type ="), input$o3_rtype1, i18n$t(", RR/OR ="), input$o3_crf1, "[", input$o3_l95_1, ",", input$o3_u95_1, "],", i18n$t("Increment (ppb) = "), input$o3_incr1))
+    cbind(get_session_t("Concentration response function"), paste(get_session_t("O3 - Acute Exposure Mortality:"), get_session_t("reg type ="), input$o3_rtype1, get_session_t(", RR/OR ="), input$o3_crf1, "[", input$o3_l95_1, ",", input$o3_u95_1, "],", get_session_t("Increment (ppb) = "), input$o3_incr1))
   })
   o3crf2 <- reactive({
-    cbind(i18n$t("Concentration response function"), paste(i18n$t("Summer O3 - Chronic Exposure Respiratory Mortality:"), i18n$t("reg type ="), input$o3_rtype2, i18n$t(", RR/OR ="), input$o3_crf2, "[", input$o3_l95_2, ",", input$o3_u95_2, "],", i18n$t("Increment (ppb) = "), input$o3_incr2))
+    cbind(get_session_t("Concentration response function"), paste(get_session_t("Summer O3 - Chronic Exposure Respiratory Mortality:"), get_session_t("reg type ="), input$o3_rtype2, get_session_t(", RR/OR ="), input$o3_crf2, "[", input$o3_l95_2, ",", input$o3_u95_2, "],", get_session_t("Increment (ppb) = "), input$o3_incr2))
   })
   o3crf3 <- reactive({
-    cbind(i18n$t("Concentration response function"), paste(i18n$t("Summer O3 - Acute respiratory symptom days:"), i18n$t("reg type ="), input$o3_rtype3, i18n$t(", RR/OR ="), input$o3_crf3, "[", input$o3_l95_3, ",", input$o3_u95_3, "],", i18n$t("Increment (ppb) = "), input$o3_incr3))
+    cbind(get_session_t("Concentration response function"), paste(get_session_t("Summer O3 - Acute respiratory symptom days:"), get_session_t("reg type ="), input$o3_rtype3, get_session_t(", RR/OR ="), input$o3_crf3, "[", input$o3_l95_3, ",", input$o3_u95_3, "],", get_session_t("Increment (ppb) = "), input$o3_incr3))
   })
   o3crf4 <- reactive({
-    cbind(i18n$t("Concentration response function"), paste(i18n$t("Summer O3 - Asthma symptom days:"), i18n$t("reg type ="), input$o3_rtype4, i18n$t(", RR/OR ="), input$o3_crf4, "[", input$o3_l95_4, ",", input$o3_u95_4, "],", i18n$t("Increment (ppb) = "), input$o3_incr4))
+    cbind(get_session_t("Concentration response function"), paste(get_session_t("Summer O3 - Asthma symptom days:"), get_session_t("reg type ="), input$o3_rtype4, get_session_t(", RR/OR ="), input$o3_crf4, "[", input$o3_l95_4, ",", input$o3_u95_4, "],", get_session_t("Increment (ppb) = "), input$o3_incr4))
   })
   o3crf5 <- reactive({
-    cbind(i18n$t("Concentration response function"), paste(i18n$t("Summer O3 - Minor Restricted Activity Days:"), i18n$t("reg type ="), input$o3_rtype5, i18n$t(", RR/OR ="), input$o3_crf5, "[", input$o3_l95_5, ",", input$o3_u95_5, "],", i18n$t("Increment (ppb) = "), input$o3_incr5))
+    cbind(get_session_t("Concentration response function"), paste(get_session_t("Summer O3 - Minor Restricted Activity Days:"), get_session_t("reg type ="), input$o3_rtype5, get_session_t(", RR/OR ="), input$o3_crf5, "[", input$o3_l95_5, ",", input$o3_u95_5, "],", get_session_t("Increment (ppb) = "), input$o3_incr5))
   })
   o3crf6 <- reactive({
-    cbind(i18n$t("Concentration response function"), paste(i18n$t("Summer O3 - Respiratory emergency room visits:"), i18n$t("reg type ="), input$o3_rtype6, i18n$t(", RR/OR ="), input$o3_crf6, "[", input$o3_l95_6, ",", input$o3_u95_6, "],", i18n$t("Increment (ppb) = "), input$o3_incr6))
+    cbind(get_session_t("Concentration response function"), paste(get_session_t("Summer O3 - Respiratory emergency room visits:"), get_session_t("reg type ="), input$o3_rtype6, get_session_t(", RR/OR ="), input$o3_crf6, "[", input$o3_l95_6, ",", input$o3_u95_6, "],", get_session_t("Increment (ppb) = "), input$o3_incr6))
   })
   o3crf7 <- reactive({
-    cbind(i18n$t("Concentration response function"), paste(i18n$t("Summer O3 - Respiratory Hospital Admissions:"), i18n$t("reg type ="), input$o3_rtype7, i18n$t(", RR/OR ="), input$o3_crf7, "[", input$o3_l95_7, ",", input$o3_u95_7, "],", i18n$t("Increment (ppb) = "), input$o3_incr7))
+    cbind(get_session_t("Concentration response function"), paste(get_session_t("Summer O3 - Respiratory Hospital Admissions:"), get_session_t("reg type ="), input$o3_rtype7, get_session_t(", RR/OR ="), input$o3_crf7, "[", input$o3_l95_7, ",", input$o3_u95_7, "],", get_session_t("Increment (ppb) = "), input$o3_incr7))
   })
 
   no2crf <- reactive({
-    cbind(i18n$t("Concentration response function"), paste(i18n$t("NO2 - Acute Exposure Mortality:"), i18n$t("reg type ="), input$no2_rtype, i18n$t(", RR/OR ="), input$no2_crf, "[", input$no2_l95, ",", input$no2_u95, "],", i18n$t("Increment (ppb) = "), input$no2_incr))
+    cbind(get_session_t("Concentration response function"), paste(get_session_t("NO2 - Acute Exposure Mortality:"), get_session_t("reg type ="), input$no2_rtype, get_session_t(", RR/OR ="), input$no2_crf, "[", input$no2_l95, ",", input$no2_u95, "],", get_session_t("Increment (ppb) = "), input$no2_incr))
   })
   so2crf <- reactive({
-    cbind(i18n$t("Concentration response function"), paste(i18n$t("SO2 - Acute Exposure Mortality:"), i18n$t("reg type ="), input$so2_rtype, i18n$t(", RR/OR ="), input$so2_crf, "[", input$so2_l95, ",", input$so2_u95, "],", i18n$t("Increment (ppb) = "), input$so2_incr))
+    cbind(get_session_t("Concentration response function"), paste(get_session_t("SO2 - Acute Exposure Mortality:"), get_session_t("reg type ="), input$so2_rtype, get_session_t(", RR/OR ="), input$so2_crf, "[", input$so2_l95, ",", input$so2_u95, "],", get_session_t("Increment (ppb) = "), input$so2_incr))
   })
   cocrf1 <- reactive({
-    cbind(i18n$t("Concentration response function"), paste(i18n$t("CO (24h) - Acute Exposure Mortality:"), i18n$t("reg type ="), input$co24_rtype, i18n$t(", RR/OR ="), input$co24_crf, "[", input$co24_l95, ",", input$co24_u95, "],", i18n$t("Increment (ppm) = "), input$co24_incr))
+    cbind(get_session_t("Concentration response function"), paste(get_session_t("CO (24h) - Acute Exposure Mortality:"), get_session_t("reg type ="), input$co24_rtype, get_session_t(", RR/OR ="), input$co24_crf, "[", input$co24_l95, ",", input$co24_u95, "],", get_session_t("Increment (ppm) = "), input$co24_incr))
   })
   cocrf2 <- reactive({
-    cbind(i18n$t("Concentration response function"), paste(i18n$t("CO (1h) - Elderly cardiac hospital admissions:"), i18n$t("reg type ="), input$co1_rtype, i18n$t(", RR/OR ="), input$co1_crf, "[", input$co1_l95, ",", input$co1_u95, "],", i18n$t("Increment (ppm) = "), input$co1_incr))
+    cbind(get_session_t("Concentration response function"), paste(get_session_t("CO (1h) - Elderly cardiac hospital admissions:"), get_session_t("reg type ="), input$co1_rtype, get_session_t(", RR/OR ="), input$co1_crf, "[", input$co1_l95, ",", input$co1_u95, "],", get_session_t("Increment (ppm) = "), input$co1_incr))
   })
 
 
 
   endpointval1 <- reactive({
-    cbind(i18n$t("endpoint valuations($)"), paste(
-      i18n$t("Mortality: source year ="), input$vslyr, i18n$t(", distribution form ="), input$vslfm, i18n$t("(low ="), input$lvsl, i18n$t("million, central ="), input$vsl,
-      i18n$t("million, high ="), input$uvsl, i18n$t("million, low value probability ="), input$plvsl, i18n$t(", central value probability ="), input$pcvsl, ")"
+    cbind(get_session_t("endpoint valuations($)"), paste(
+      get_session_t("Mortality: source year ="), input$vslyr, get_session_t(", distribution form ="), input$vslfm, get_session_t("(low ="), input$lvsl, get_session_t("million, central ="), input$vsl,
+      get_session_t("million, high ="), input$uvsl, get_session_t("million, low value probability ="), input$plvsl, get_session_t(", central value probability ="), input$pcvsl, ")"
     ))
   })
 
   endpointval2 <- reactive({
-    cbind(i18n$t("endpoint valuations($)"), paste(i18n$t("Acute respiratory symptom days: source year ="), input$vsl2yr, i18n$t(", distribution form ="), input$vsl2fm, i18n$t("( mean ="), input$vsl2, i18n$t(", se ="), input$lvsl2, ")"))
+    cbind(get_session_t("endpoint valuations($)"), paste(get_session_t("Acute respiratory symptom days: source year ="), input$vsl2yr, get_session_t(", distribution form ="), input$vsl2fm, get_session_t("( mean ="), input$vsl2, get_session_t(", se ="), input$lvsl2, ")"))
   })
 
   endpointval3 <- reactive({
-    cbind(i18n$t("endpoint valuations($)"), paste(
-      i18n$t("Adult Chronic Bronchitis Cases: source year ="), input$vsl3yr, i18n$t(", distribution form ="), input$vsl3fm, i18n$t("(low ="), input$lvsl3 * 1000, i18n$t(", central ="), input$vsl3 * 1000,
-      i18n$t(", high ="), input$uvsl3 * 1000, i18n$t(", low value probability ="), input$pcvsl3, i18n$t(", central value probability ="), input$plvsl3, ")"
+    cbind(get_session_t("endpoint valuations($)"), paste(
+      get_session_t("Adult Chronic Bronchitis Cases: source year ="), input$vsl3yr, get_session_t(", distribution form ="), input$vsl3fm, get_session_t("(low ="), input$lvsl3 * 1000, get_session_t(", central ="), input$vsl3 * 1000,
+      get_session_t(", high ="), input$uvsl3 * 1000, get_session_t(", low value probability ="), input$pcvsl3, get_session_t(", central value probability ="), input$plvsl3, ")"
     ))
   })
 
 
   endpointval4 <- reactive({
-    cbind(i18n$t("endpoint valuations($)"), paste(
-      i18n$t("Asthma symptom days: source year ="), input$sourcevsl4b, i18n$t(", distribution form ="), input$sourcevsl4c, "(min =", input$lvsl4, i18n$t(", central ="), input$vsl4,
+    cbind(get_session_t("endpoint valuations($)"), paste(
+      get_session_t("Asthma symptom days: source year ="), input$sourcevsl4b, get_session_t(", distribution form ="), input$sourcevsl4c, "(min =", input$lvsl4, get_session_t(", central ="), input$vsl4,
       ", max=", input$uvsl4, ")"
     ))
   })
 
   endpointval5 <- reactive({
-    cbind(i18n$t("endpoint valuations($)"), paste(i18n$t("Cardiac emergency room visits: source year ="), input$sourcevsl5b, i18n$t(", distribution form ="), input$sourcevsl5c, i18n$t("( mean ="), input$vsl5, i18n$t(", se ="), input$lvsl5, ")"))
+    cbind(get_session_t("endpoint valuations($)"), paste(get_session_t("Cardiac emergency room visits: source year ="), input$sourcevsl5b, get_session_t(", distribution form ="), input$sourcevsl5c, get_session_t("( mean ="), input$vsl5, get_session_t(", se ="), input$lvsl5, ")"))
   })
 
 
   endpointval6 <- reactive({
-    cbind(i18n$t("endpoint valuations($)"), paste(
-      i18n$t("Child acute bronchitis episodes: source year ="), input$sourcevsl6b, i18n$t(", distribution form ="), input$sourcevsl6c, i18n$t("(low ="), input$lvsl6, i18n$t(", central ="), input$vsl6,
-      i18n$t(", high ="), input$uvsl6, i18n$t(", low value probability ="), input$plvsl6, i18n$t(", central value probability ="), input$pcvsl6, ")"
+    cbind(get_session_t("endpoint valuations($)"), paste(
+      get_session_t("Child acute bronchitis episodes: source year ="), input$sourcevsl6b, get_session_t(", distribution form ="), input$sourcevsl6c, get_session_t("(low ="), input$lvsl6, get_session_t(", central ="), input$vsl6,
+      get_session_t(", high ="), input$uvsl6, get_session_t(", low value probability ="), input$plvsl6, get_session_t(", central value probability ="), input$pcvsl6, ")"
     ))
   })
 
   endpointval7 <- reactive({
-    cbind(i18n$t("endpoint valuations($)"), paste(i18n$t("Elderly cardiac hospital admissions: source year ="), input$sourcevsl7b, i18n$t(", distribution form ="), input$sourcevsl7c, i18n$t("( mean ="), input$vsl7, i18n$t(", se ="), input$lvsl7, ")"))
+    cbind(get_session_t("endpoint valuations($)"), paste(get_session_t("Elderly cardiac hospital admissions: source year ="), input$sourcevsl7b, get_session_t(", distribution form ="), input$sourcevsl7c, get_session_t("( mean ="), input$vsl7, get_session_t(", se ="), input$lvsl7, ")"))
   })
 
   endpointval8 <- reactive({
-    cbind(i18n$t("endpoint valuations($)"), paste(
-      i18n$t("Minor Restricted Activity Days: source year ="), input$sourcevsl8b, i18n$t(", distribution form ="), input$sourcevsl8c,
-      i18n$t("( mean ="), input$vsl8, i18n$t(", se ="), input$lvsl8, ")"
+    cbind(get_session_t("endpoint valuations($)"), paste(
+      get_session_t("Minor Restricted Activity Days: source year ="), input$sourcevsl8b, get_session_t(", distribution form ="), input$sourcevsl8c,
+      get_session_t("( mean ="), input$vsl8, get_session_t(", se ="), input$lvsl8, ")"
     ))
   })
 
 
   endpointval9 <- reactive({
-    cbind(i18n$t("endpoint valuations($)"), paste(
-      i18n$t("Respiratory emergency room visits: source year ="), input$sourcevsl9b, i18n$t(", distribution form ="), input$sourcevsl9c,
-      i18n$t("( mean ="), input$vsl9, i18n$t(", se ="), input$lvsl9, ")"
+    cbind(get_session_t("endpoint valuations($)"), paste(
+      get_session_t("Respiratory emergency room visits: source year ="), input$sourcevsl9b, get_session_t(", distribution form ="), input$sourcevsl9c,
+      get_session_t("( mean ="), input$vsl9, get_session_t(", se ="), input$lvsl9, ")"
     ))
   })
 
   endpointval10 <- reactive({
-    cbind(i18n$t("endpoint valuations($)"), paste(
-      i18n$t("Restricted Activity Days: source year ="), input$sourcevsl10b, i18n$t(", distribution form ="), input$sourcevsl10c,
-      i18n$t("( mean ="), input$vsl10, i18n$t(", se ="), input$lvsl10, ")"
+    cbind(get_session_t("endpoint valuations($)"), paste(
+      get_session_t("Restricted Activity Days: source year ="), input$sourcevsl10b, get_session_t(", distribution form ="), input$sourcevsl10c,
+      get_session_t("( mean ="), input$vsl10, get_session_t(", se ="), input$lvsl10, ")"
     ))
   })
 
   pmthreshold <- reactive({
-    cbind(i18n$t("PM2.5 threshold concentration (ug/m3)"), paste(i18n$t("threshold ="), input$pmthr))
+    cbind(get_session_t("PM2.5 threshold concentration (ug/m3)"), paste(get_session_t("threshold ="), input$pmthr))
   })
   o3threshold <- reactive({
-    cbind(i18n$t("O3 threshold concentration (ppb)"), paste(i18n$t("threshold ="), input$o3thr))
+    cbind(get_session_t("O3 threshold concentration (ppb)"), paste(get_session_t("threshold ="), input$o3thr))
   })
   summero3threshold <- reactive({
-    cbind(i18n$t("Summer O3 threshold concentration (ppb)"), paste(i18n$t("threshold ="), input$summero3thr))
+    cbind(get_session_t("Summer O3 threshold concentration (ppb)"), paste(get_session_t("threshold ="), input$summero3thr))
   })
   no2threshold <- reactive({
-    cbind(i18n$t("NO2 threshold concentration (ppb)"), paste(i18n$t("threshold ="), input$no2thr))
+    cbind(get_session_t("NO2 threshold concentration (ppb)"), paste(get_session_t("threshold ="), input$no2thr))
   })
   so2threshold <- reactive({
-    cbind(i18n$t("SO2 threshold concentration (ppb)"), paste(i18n$t("threshold ="), input$so2thr))
+    cbind(get_session_t("SO2 threshold concentration (ppb)"), paste(get_session_t("threshold ="), input$so2thr))
   })
   cothreshold <- reactive({
-    cbind(i18n$t("CO threshold concentration (ppm)"), paste(i18n$t("threshold ="), input$cothr))
+    cbind(get_session_t("CO threshold concentration (ppm)"), paste(get_session_t("threshold ="), input$cothr))
   })
 
 
@@ -3660,7 +3630,7 @@ server <- function(input, output, session) {
 
   inputallparameters <- reactive({
     i <- inputallparameters1()
-    colnames(i) <- c(i18n$t("Item"), "Description")
+    colnames(i) <- c(get_session_t("Item"), "Description")
     i
   })
 
@@ -3676,7 +3646,7 @@ server <- function(input, output, session) {
 
   output$allinputb <- downloadHandler(
     filename = function() {
-      i18n$t("input_parameters.xlsx")
+      get_session_t("input_parameters.xlsx")
     },
     content = function(file) {
       write_xlsx(inputallparameters(), path = file)
@@ -3776,8 +3746,8 @@ server <- function(input, output, session) {
   xxbaserates <- reactive({
     xk5 <- xbaserates()
     colnames(xk5) <- c(
-      i18n$t("Year"), i18n$t("CDUID"), "Province", i18n$t("Acute Exposure Mortality"), i18n$t("Chronic Exposure Mortality"), i18n$t("Respiratory Mortality"),
-      i18n$t("Cardiovascular Mortality"), i18n$t("Cerebrovascular Mortality"), i18n$t("COPD Mortality")
+      get_session_t("Year"), get_session_t("CDUID"), "Province", get_session_t("Acute Exposure Mortality"), get_session_t("Chronic Exposure Mortality"), get_session_t("Respiratory Mortality"),
+      get_session_t("Cardiovascular Mortality"), get_session_t("Cerebrovascular Mortality"), get_session_t("COPD Mortality")
     )
     xk5
   })
@@ -3823,8 +3793,8 @@ server <- function(input, output, session) {
   Canwexposure3 <- reactive({
     es1 <- Canwexposure2()
     colnames(es1) <- c(
-      i18n$t("year"), i18n$t("scenario"), "region", "pm25", "summer_O3", "O3", "NO2", "SO2", "CO_1h",
-      "CO_24h", i18n$t("Benzene"), "butadiene.1.3", i18n$t("Acetaldehyde"), i18n$t("Formaldehyde")
+      get_session_t("year"), get_session_t("scenario"), "region", "pm25", "summer_O3", "O3", "NO2", "SO2", "CO_1h",
+      "CO_24h", get_session_t("Benzene"), "butadiene.1.3", get_session_t("Acetaldehyde"), get_session_t("Formaldehyde")
     )
     es1
   })
@@ -3855,7 +3825,7 @@ server <- function(input, output, session) {
 
   pwexposure3 <- reactive({
     es2 <- pwexposure2()
-    colnames(es2) <- c(i18n$t("year"), i18n$t("scenario"), "region", "pm25", "summer_O3", "O3", "NO2", "SO2", "CO_1h", "CO_24h", i18n$t("Benzene"), "butadiene.1.3", i18n$t("Acetaldehyde"), i18n$t("Formaldehyde"))
+    colnames(es2) <- c(get_session_t("year"), get_session_t("scenario"), "region", "pm25", "summer_O3", "O3", "NO2", "SO2", "CO_1h", "CO_24h", get_session_t("Benzene"), "butadiene.1.3", get_session_t("Acetaldehyde"), get_session_t("Formaldehyde"))
     es2
   })
 
@@ -3875,8 +3845,8 @@ server <- function(input, output, session) {
   xxCanprowexposure1 <- reactive({
     xes1 <- Canprowexposure1()
     colnames(xes1) <- c(
-      i18n$t("Year"), i18n$t("Scenario"), i18n$t("Region"), i18n$t("PM2.5"), i18n$t("Summer O3"), "O3", "NO2",
-      "SO2", "CO 1h", "CO 24h", i18n$t("Benzene"), i18n$t("1,3-Butadiene"), i18n$t("Acetaldehyde"), i18n$t("Formaldehyde")
+      get_session_t("Year"), get_session_t("Scenario"), get_session_t("Region"), get_session_t("PM2.5"), get_session_t("Summer O3"), "O3", "NO2",
+      "SO2", "CO 1h", "CO 24h", get_session_t("Benzene"), get_session_t("1,3-Butadiene"), get_session_t("Acetaldehyde"), get_session_t("Formaldehyde")
     )
     xes1
   })
@@ -3953,19 +3923,19 @@ server <- function(input, output, session) {
   # PM2.5 chronic exposure mortality
   set.seed(100)
   bm <- reactive({
-    rnorm(input$itn, beta(input$rtype, input$crf, input$incr), se(input$rtype, input$u95, input$l95, input$incr))
+    rnorm(input$itn, beta(input$rtype, input$crf, input$incr, get_session_t("log-linear")), se(input$rtype, input$u95, input$l95, input$incr, get_session_t("log-linear")))
   }) # n=10,000
 
   set.seed(100)
   vm <- reactive({
-    valdist(input$vslfm, input$itn, input$vsl, input$lvsl, input$uvsl, input$pcvsl, input$plvsl)
+    valdist(input$vslfm, input$itn, input$vsl, input$lvsl, input$uvsl, input$pcvsl, input$plvsl, get_session_t("normal"), get_session_t("discrete"), get_session_t("triangular"))
   })
   cpiy <- reactive({
-    cpi[which(cpi_year() == input$curr), ]
+    get_session_cpi()[which(cpi_year() == input$curr), ]
   }) # define currency year-CPI
 
   cpiy1 <- reactive({
-    cpi[which(cpi_year() == input$vslyr), ]
+    get_session_cpi()[which(cpi_year() == input$vslyr), ]
   }) # source year-CPI
 
   cpiadj <- reactive({
@@ -3979,13 +3949,13 @@ server <- function(input, output, session) {
   })
 
   five <- reactive({
-    (four_age25plus() / 1000000) * four_Mort_chronic() * af(four()$rtype, beta(four()$rtype, input$crf, input$incr), chg(four()$pm25_2, four()$pm25_1, input$pmthr))
+    (four_age25plus() / 1000000) * four_Mort_chronic() * af(four()$rtype, beta(four()$rtype, input$crf, input$incr, get_session_t("log-linear")), chg(four()$pm25_2, four()$pm25_1, input$pmthr), get_session_t("log-linear"))
   })
   six <- reactive({
-    (four_age25plus() / 1000000) * four_Mort_chronic() * af(four()$rtype, quantile(bm(), 0.025), chg(four()$pm25_2, four()$pm25_1, input$pmthr))
+    (four_age25plus() / 1000000) * four_Mort_chronic() * af(four()$rtype, quantile(bm(), 0.025), chg(four()$pm25_2, four()$pm25_1, input$pmthr), get_session_t("log-linear"))
   })
   seven <- reactive({
-    (four_age25plus() / 1000000) * four_Mort_chronic() * af(four()$rtype, quantile(bm(), 0.975), chg(four()$pm25_2, four()$pm25_1, input$pmthr))
+    (four_age25plus() / 1000000) * four_Mort_chronic() * af(four()$rtype, quantile(bm(), 0.975), chg(four()$pm25_2, four()$pm25_1, input$pmthr), get_session_t("log-linear"))
   })
 
 
@@ -4022,13 +3992,13 @@ server <- function(input, output, session) {
     100000 * five() / foura_allages()
   })
   pctxsmort <- reactive({
-    af(four()$rtype, beta(four()$rtype, input$crf, input$incr), chg(four()$pm25_2, four()$pm25_1, input$pmthr))
+    af(four()$rtype, beta(four()$rtype, input$crf, input$incr, get_session_t("log-linear")), chg(four()$pm25_2, four()$pm25_1, input$pmthr), get_session_t("log-linear"))
   }) # pctXS is a function of CRF*concentration change
   pctxsmortl95 <- reactive({
-    af(four()$rtype, quantile(bm(), 0.025), chg(four()$pm25_2, four()$pm25_1, input$pmthr))
+    af(four()$rtype, quantile(bm(), 0.025), chg(four()$pm25_2, four()$pm25_1, input$pmthr), get_session_t("log-linear"))
   })
   pctxsmortu95 <- reactive({
-    af(four()$rtype, quantile(bm(), 0.975), chg(four()$pm25_2, four()$pm25_1, input$pmthr))
+    af(four()$rtype, quantile(bm(), 0.975), chg(four()$pm25_2, four()$pm25_1, input$pmthr), get_session_t("log-linear"))
   })
 
   leyr <- reactive({
@@ -4178,7 +4148,7 @@ server <- function(input, output, session) {
   Canaggschif6 <- reactive({
     s2 <- Canaggschif5()
     colnames(s2) <- c(
-      i18n$t("year"), i18n$t("scenario"), "region", i18n$t("pollutant"), i18n$t("endpoint"), "counts",
+      get_session_t("year"), get_session_t("scenario"), "region", get_session_t("pollutant"), get_session_t("endpoint"), "counts",
       "L95CI_counts", "U95CI_counts", "valuation", "L95CI_val", "U95CI_val", "counts_per_100K",
       "proportional_change", "L95CI_p", "U95CI_p"
     )
@@ -4215,7 +4185,7 @@ server <- function(input, output, session) {
   Canaggschifle4 <- reactive({
     s3 <- Canaggschifle3()
     colnames(s3) <- c(
-      i18n$t("year"), i18n$t("scenario"), "region", i18n$t("pollutant"), i18n$t("endpoint"),
+      get_session_t("year"), get_session_t("scenario"), "region", get_session_t("pollutant"), get_session_t("endpoint"),
       "life_year", "L95CI_le", "U95CI_le"
     )
     s3
@@ -4232,14 +4202,14 @@ server <- function(input, output, session) {
   Canaggschifle6 <- reactive({
     s4 <- Canaggschifle5()
     colnames(s4) <- c(
-      i18n$t("year"), i18n$t("scenario"), "region", i18n$t("pollutant"), i18n$t("endpoint"),
+      get_session_t("year"), get_session_t("scenario"), "region", get_session_t("pollutant"), get_session_t("endpoint"),
       "life_year", "L95CI_le", "U95CI_le"
     )
     s4
   })
 
   Canaggschiffinal1 <- reactive({
-    left_join(Canaggschif6(), Canaggschifle6(), by = c(i18n$t("year"), i18n$t("scenario"), "region", i18n$t("pollutant"), i18n$t("endpoint")))
+    left_join(Canaggschif6(), Canaggschifle6(), by = c(get_session_t("year"), get_session_t("scenario"), "region", get_session_t("pollutant"), get_session_t("endpoint")))
   })
 
 
@@ -4269,7 +4239,7 @@ server <- function(input, output, session) {
   paggschif4 <- reactive({
     ps1 <- paggschif3()
     colnames(ps1) <- c(
-      i18n$t("year"), i18n$t("scenario"), "region", i18n$t("pollutant"), i18n$t("endpoint"), "counts",
+      get_session_t("year"), get_session_t("scenario"), "region", get_session_t("pollutant"), get_session_t("endpoint"), "counts",
       "L95CI_counts", "U95CI_counts", "valuation", "L95CI_val", "U95CI_val",
       "counts_per_100K", "proportional_change", "L95CI_p", "U95CI_p"
     )
@@ -4294,14 +4264,14 @@ server <- function(input, output, session) {
   Proaggschifle3 <- reactive({
     ps2 <- Proaggschifle2()
     colnames(ps2) <- c(
-      i18n$t("year"), i18n$t("scenario"), "region", i18n$t("pollutant"), i18n$t("endpoint"),
+      get_session_t("year"), get_session_t("scenario"), "region", get_session_t("pollutant"), get_session_t("endpoint"),
       "life_year", "L95CI_le", "U95CI_le"
     )
     ps2
   })
 
   Proaggschiffinal1 <- reactive({
-    left_join(paggschif4(), Proaggschifle3(), by = c(i18n$t("year"), i18n$t("scenario"), "region", i18n$t("pollutant"), i18n$t("endpoint")))
+    left_join(paggschif4(), Proaggschifle3(), by = c(get_session_t("year"), get_session_t("scenario"), "region", get_session_t("pollutant"), get_session_t("endpoint")))
   })
 
 
@@ -4364,11 +4334,11 @@ server <- function(input, output, session) {
   xallschiffinal3 <- reactive({
     xxhh5 <- allschiffinal3()
     colnames(xxhh5) <- c(
-      i18n$t("Year"), i18n$t("Scenario"), i18n$t("Geocode"), i18n$t("Region"), i18n$t("Type of Geography"), i18n$t("Pollutant"),
-      i18n$t("Endpoint"), i18n$t("Counts"), i18n$t("L95CI Counts"), i18n$t("U95CI Counts"), i18n$t("Valuation"),
-      i18n$t("L95CI Valuation"), i18n$t("U95CI Valuation"), i18n$t("Counts per 100,000"),
-      i18n$t("Proportional Change"), i18n$t("L95CI Proportional Change"), i18n$t("U95CI Proportional Change"),
-      i18n$t("Life Expectancy Change"), i18n$t("L95CI Life Expectancy Change"), i18n$t("U95CI Life Expectancy Change")
+      get_session_t("Year"), get_session_t("Scenario"), get_session_t("Geocode"), get_session_t("Region"), get_session_t("Type of Geography"), get_session_t("Pollutant"),
+      get_session_t("Endpoint"), get_session_t("Counts"), get_session_t("L95CI Counts"), get_session_t("U95CI Counts"), get_session_t("Valuation"),
+      get_session_t("L95CI Valuation"), get_session_t("U95CI Valuation"), get_session_t("Counts per 100,000"),
+      get_session_t("Proportional Change"), get_session_t("L95CI Proportional Change"), get_session_t("U95CI Proportional Change"),
+      get_session_t("Life Expectancy Change"), get_session_t("L95CI Life Expectancy Change"), get_session_t("U95CI Life Expectancy Change")
     )
     xxhh5
   })
@@ -4401,9 +4371,9 @@ server <- function(input, output, session) {
   xxpnameschiff <- reactive({
     xkphh2 <- xpnameschiff()
     colnames(xkphh2) <- c(
-      i18n$t("Year"), i18n$t("Scenario"), i18n$t("Geocode"), "Province", i18n$t("Pollutant"), i18n$t("Endpoint"),
-      i18n$t("Counts"), i18n$t("L95CI Counts"), i18n$t("U95CI Counts"), i18n$t("Valuation"), i18n$t("L95CI Valuation"),
-      i18n$t("U95CI Valuation")
+      get_session_t("Year"), get_session_t("Scenario"), get_session_t("Geocode"), "Province", get_session_t("Pollutant"), get_session_t("Endpoint"),
+      get_session_t("Counts"), get_session_t("L95CI Counts"), get_session_t("U95CI Counts"), get_session_t("Valuation"), get_session_t("L95CI Valuation"),
+      get_session_t("U95CI Valuation")
     )
     xkphh2
   })
@@ -4418,11 +4388,11 @@ server <- function(input, output, session) {
   x3xallschiffinal3 <- reactive({
     x3schif <- x2xallschiffinal3()
     colnames(x3schif) <- c(
-      i18n$t("Year"), i18n$t("Scenario"), i18n$t("Geocode"), i18n$t("Type of Geography"), i18n$t("Region"), i18n$t("Pollutant"),
-      i18n$t("Endpoint"), i18n$t("Counts"), i18n$t("L95CI Counts"), i18n$t("U95CI Counts"), i18n$t("Valuation"),
-      i18n$t("L95CI Valuation"), i18n$t("U95CI Valuation"), i18n$t("Counts per 100,000"), i18n$t("Proportional Change"),
-      i18n$t("L95CI Proportional Change"), i18n$t("U95CI Proportional Change"), i18n$t("Life Expectancy Change"),
-      i18n$t("L95CI Life Expectancy Change"), i18n$t("U95CI Life Expectancy Change")
+      get_session_t("Year"), get_session_t("Scenario"), get_session_t("Geocode"), get_session_t("Type of Geography"), get_session_t("Region"), get_session_t("Pollutant"),
+      get_session_t("Endpoint"), get_session_t("Counts"), get_session_t("L95CI Counts"), get_session_t("U95CI Counts"), get_session_t("Valuation"),
+      get_session_t("L95CI Valuation"), get_session_t("U95CI Valuation"), get_session_t("Counts per 100,000"), get_session_t("Proportional Change"),
+      get_session_t("L95CI Proportional Change"), get_session_t("U95CI Proportional Change"), get_session_t("Life Expectancy Change"),
+      get_session_t("L95CI Life Expectancy Change"), get_session_t("U95CI Life Expectancy Change")
     )
     x3schif
   })
@@ -4437,7 +4407,7 @@ server <- function(input, output, session) {
 
   output$d4 <- downloadHandler(
     filename = function() {
-      i18n$t("Mortality_SCHIF.xlsx")
+      get_session_t("Mortality_SCHIF.xlsx")
     },
     content = function(file) {
       write_xlsx(x4xallschiffinal3(), path = file)
@@ -4453,11 +4423,11 @@ server <- function(input, output, session) {
 
   set.seed(100)
   vmcerebro <- reactive({
-    valdist(input$vslfm, input$itn, input$vsl, input$lvsl, input$uvsl, input$pcvsl, input$plvsl)
+    valdist(input$vslfm, input$itn, input$vsl, input$lvsl, input$uvsl, input$pcvsl, input$plvsl, get_session_t("normal"), get_session_t("discrete"), get_session_t("triangular"))
   })
 
   cpiy1cerebro <- reactive({
-    cpi[which(cpi_year() == input$vslyr), ]
+    get_session_cpi()[which(cpi_year() == input$vslyr), ]
   })
 
   cpiadjcerebro <- reactive({
@@ -4530,9 +4500,9 @@ server <- function(input, output, session) {
 
   eleven_xmort1 <- reactive({
     cbind(
-      foura_year(), foura_scenario(), foura()[c(1, 2)], i18n$t("PM2.5"), i18n$t("Cerebrovascular"), fivecerebro(), sixcerebro(), sevencerebro(),
+      foura_year(), foura_scenario(), foura()[c(1, 2)], get_session_t("PM2.5"), get_session_t("Cerebrovascular"), fivecerebro(), sixcerebro(), sevencerebro(),
       eightcerebro(), ninecerebro(), tencerebro(), tenacerebro(), pctxsmortcerebro(), pctxsmortl95cerebro(), pctxsmortu95cerebro(),
-      leyrcerebro(), leyrl95cerebro(), leyru95cerebro(), i18n$t("mortality"), four_age25plus()
+      leyrcerebro(), leyrl95cerebro(), leyru95cerebro(), get_session_t("mortality"), four_age25plus()
     )
   })
 
@@ -4544,11 +4514,11 @@ server <- function(input, output, session) {
 
   set.seed(100)
   vmcopd <- reactive({
-    valdist(input$vslfm, input$itn, input$vsl, input$lvsl, input$uvsl, input$pcvsl, input$plvsl)
+    valdist(input$vslfm, input$itn, input$vsl, input$lvsl, input$uvsl, input$pcvsl, input$plvsl, get_session_t("normal"), get_session_t("discrete"), get_session_t("triangular"))
   })
 
   cpiy1copd <- reactive({
-    cpi[which(cpi_year() == input$vslyr), ]
+    get_session_cpi()[which(cpi_year() == input$vslyr), ]
   })
 
   cpiadjcopd <- reactive({
@@ -4616,9 +4586,9 @@ server <- function(input, output, session) {
 
   eleven_xmort2 <- reactive({
     cbind(
-      foura_year(), foura_scenario(), foura()[c(1, 2)], i18n$t("PM2.5"), i18n$t("COPD"), fivecopd(), sixcopd(), sevencopd(),
+      foura_year(), foura_scenario(), foura()[c(1, 2)], get_session_t("PM2.5"), get_session_t("COPD"), fivecopd(), sixcopd(), sevencopd(),
       eightcopd(), ninecopd(), tencopd(), tenacopd(), pctxsmortcopd(), pctxsmortl95copd(), pctxsmortu95copd(),
-      leyrcopd(), leyrl95copd(), leyru95copd(), i18n$t("mortality"), four_age25plus()
+      leyrcopd(), leyrl95copd(), leyru95copd(), get_session_t("mortality"), four_age25plus()
     )
   })
 
@@ -4630,11 +4600,11 @@ server <- function(input, output, session) {
 
   set.seed(100)
   vmischemic <- reactive({
-    valdist(input$vslfm, input$itn, input$vsl, input$lvsl, input$uvsl, input$pcvsl, input$plvsl)
+    valdist(input$vslfm, input$itn, input$vsl, input$lvsl, input$uvsl, input$pcvsl, input$plvsl, get_session_t("normal"), get_session_t("discrete"), get_session_t("triangular"))
   })
 
   cpiy1ischemic <- reactive({
-    cpi[which(cpi_year() == input$vslyr), ]
+    get_session_cpi()[which(cpi_year() == input$vslyr), ]
   })
 
   cpiadjischemic <- reactive({
@@ -4702,25 +4672,25 @@ server <- function(input, output, session) {
 
   eleven_xmort3 <- reactive({
     cbind(
-      foura_year(), foura_scenario(), foura()[c(1, 2)], i18n$t("PM2.5"), i18n$t("Ischemic Heart Disease"), fiveischemic(), sixischemic(), sevenischemic(),
+      foura_year(), foura_scenario(), foura()[c(1, 2)], get_session_t("PM2.5"), get_session_t("Ischemic Heart Disease"), fiveischemic(), sixischemic(), sevenischemic(),
       eightischemic(), nineischemic(), tenischemic(), tenaischemic(), pctxsmortischemic(), pctxsmortl95ischemic(), pctxsmortu95ischemic(),
-      leyrischemic(), leyrl95ischemic(), leyru95ischemic(), i18n$t("mortality"), four_age25plus()
+      leyrischemic(), leyrl95ischemic(), leyru95ischemic(), get_session_t("mortality"), four_age25plus()
     )
   })
 
   # PM2.5 Chronic Exposure Lung Cancer Mortality
   set.seed(100)
   bmlung <- reactive({
-    rnorm(input$itn, beta(input$rtypelung, input$crflung, input$incrlung), se(input$rtypelung, input$u95lung, input$l95lung, input$incrlung))
+    rnorm(input$itn, beta(input$rtypelung, input$crflung, input$incrlung, get_session_t("log-linear")), se(input$rtypelung, input$u95lung, input$l95lung, input$incrlung, get_session_t("log-linear")))
   }) # n=10,000
 
   set.seed(100)
   vmlung <- reactive({
-    valdist(input$vslfm, input$itn, input$vsl, input$lvsl, input$uvsl, input$pcvsl, input$plvsl)
+    valdist(input$vslfm, input$itn, input$vsl, input$lvsl, input$uvsl, input$pcvsl, input$plvsl, get_session_t("normal"), get_session_t("discrete"), get_session_t("triangular"))
   })
 
   cpiy1lung <- reactive({
-    cpi[which(cpi_year() == input$vslyr), ]
+    get_session_cpi()[which(cpi_year() == input$vslyr), ]
   })
 
   cpiadjlung <- reactive({
@@ -4782,13 +4752,13 @@ server <- function(input, output, session) {
     100000 * fivelung() / foura_age25plus()
   })
   pctxsmortlung <- reactive({
-    af(fourlung()$rtypelung, beta(fourlung()$rtypelung, input$crflung, input$incrlung), chg(four()$pm25_2, four()$pm25_1, input$pmthr))
+    af(fourlung()$rtypelung, beta(fourlung()$rtypelung, input$crflung, input$incrlung, get_session_t("log-linear")), chg(four()$pm25_2, four()$pm25_1, input$pmthr), get_session_t("log-linear"))
   })
   pctxsmortl95lung <- reactive({
-    af(fourlung()$rtypelung, quantile(bmlung(), 0.025), chg(four()$pm25_2, four()$pm25_1, input$pmthr))
+    af(fourlung()$rtypelung, quantile(bmlung(), 0.025), chg(four()$pm25_2, four()$pm25_1, input$pmthr), get_session_t("log-linear"))
   })
   pctxsmortu95lung <- reactive({
-    af(fourlung()$rtypelung, quantile(bmlung(), 0.975), chg(four()$pm25_2, four()$pm25_1, input$pmthr))
+    af(fourlung()$rtypelung, quantile(bmlung(), 0.975), chg(four()$pm25_2, four()$pm25_1, input$pmthr), get_session_t("log-linear"))
   })
 
   leyrlung <- reactive({
@@ -4803,9 +4773,9 @@ server <- function(input, output, session) {
 
   eleven_xmort4 <- reactive({
     cbind(
-      foura_year(), foura_scenario(), foura()[c(1, 2)], i18n$t("PM2.5"), i18n$t("Lung Cancer"), fivelung(), sixlung(), sevenlung(),
+      foura_year(), foura_scenario(), foura()[c(1, 2)], get_session_t("PM2.5"), get_session_t("Lung Cancer"), fivelung(), sixlung(), sevenlung(),
       eightlung(), ninelung(), tenlung(), tenalung(), pctxsmortlung(), pctxsmortl95lung(), pctxsmortu95lung(),
-      leyrlung(), leyrl95lung(), leyru95lung(), i18n$t("mortality"), four_age25plus()
+      leyrlung(), leyrl95lung(), leyru95lung(), get_session_t("mortality"), four_age25plus()
     )
   })
 
@@ -4876,7 +4846,7 @@ server <- function(input, output, session) {
   Canaggxmort6 <- reactive({
     k2 <- Canaggxmort5()
     colnames(k2) <- c(
-      i18n$t("year"), i18n$t("scenario"), "region", i18n$t("pollutant"), i18n$t("endpoint"), "counts",
+      get_session_t("year"), get_session_t("scenario"), "region", get_session_t("pollutant"), get_session_t("endpoint"), "counts",
       "L95CI_counts", "U95CI_counts", "valuation", "L95CI_val", "U95CI_val", "counts_per_100K",
       "proportional_change", "L95CI_p", "U95CI_p"
     )
@@ -4908,7 +4878,7 @@ server <- function(input, output, session) {
   Canaggxmortle3 <- reactive({
     le2 <- Canaggxmortle2()
     colnames(le2) <- c(
-      i18n$t("year"), i18n$t("scenario"), "region", i18n$t("pollutant"), i18n$t("endpoint"), "life_year",
+      get_session_t("year"), get_session_t("scenario"), "region", get_session_t("pollutant"), get_session_t("endpoint"), "life_year",
       "L95CI_le", "U95CI_le"
     )
     le2
@@ -4916,7 +4886,7 @@ server <- function(input, output, session) {
 
 
   Canaggxmortfinal1 <- reactive({
-    left_join(Canaggxmort6(), Canaggxmortle3(), by = c(i18n$t("year"), i18n$t("scenario"), "region", i18n$t("pollutant"), i18n$t("endpoint")))
+    left_join(Canaggxmort6(), Canaggxmortle3(), by = c(get_session_t("year"), get_session_t("scenario"), "region", get_session_t("pollutant"), get_session_t("endpoint")))
   })
 
 
@@ -4947,7 +4917,7 @@ server <- function(input, output, session) {
   paggxmort4 <- reactive({
     ac2 <- paggxmort3()
     colnames(ac2) <- c(
-      i18n$t("year"), i18n$t("scenario"), "region", i18n$t("pollutant"), i18n$t("endpoint"), "counts",
+      get_session_t("year"), get_session_t("scenario"), "region", get_session_t("pollutant"), get_session_t("endpoint"), "counts",
       "L95CI_counts", "U95CI_counts", "valuation", "L95CI_val", "U95CI_val", "counts_per_100K",
       "proportional_change", "L95CI_p", "U95CI_p"
     )
@@ -4970,7 +4940,7 @@ server <- function(input, output, session) {
   Proaggxmortle3 <- reactive({
     le3 <- Proaggxmortle2()
     colnames(le3) <- c(
-      i18n$t("year"), i18n$t("scenario"), "region", i18n$t("pollutant"), i18n$t("endpoint"), "life_year",
+      get_session_t("year"), get_session_t("scenario"), "region", get_session_t("pollutant"), get_session_t("endpoint"), "life_year",
       "L95CI_le", "U95CI_le"
     )
     le3
@@ -4978,7 +4948,7 @@ server <- function(input, output, session) {
 
 
   Proaggxmortfinal1 <- reactive({
-    left_join(paggxmort4(), Proaggxmortle3(), by = c(i18n$t("year"), i18n$t("scenario"), "region", i18n$t("pollutant"), i18n$t("endpoint")))
+    left_join(paggxmort4(), Proaggxmortle3(), by = c(get_session_t("year"), get_session_t("scenario"), "region", get_session_t("pollutant"), get_session_t("endpoint")))
   })
 
   CanProaggxmortfinal1 <- reactive({
@@ -5071,8 +5041,8 @@ server <- function(input, output, session) {
   xxpnamemortfinal <- reactive({
     pphh2 <- xpnamemortfinal()
     colnames(pphh2) <- c(
-      i18n$t("Year"), i18n$t("Scenario"), i18n$t("Geocode"), "Province", i18n$t("Pollutant"), i18n$t("Endpoint"), i18n$t("Counts"),
-      i18n$t("L95CI Counts"), i18n$t("U95CI Counts"), i18n$t("Valuation"), i18n$t("L95CI Valuation"), i18n$t("U95CI Valuation")
+      get_session_t("Year"), get_session_t("Scenario"), get_session_t("Geocode"), "Province", get_session_t("Pollutant"), get_session_t("Endpoint"), get_session_t("Counts"),
+      get_session_t("L95CI Counts"), get_session_t("U95CI Counts"), get_session_t("Valuation"), get_session_t("L95CI Valuation"), get_session_t("U95CI Valuation")
     )
     pphh2
   })
@@ -5080,11 +5050,11 @@ server <- function(input, output, session) {
   xallxmortfinal3 <- reactive({
     xhh5 <- allxmortfinal3()
     colnames(xhh5) <- c(
-      i18n$t("Year"), i18n$t("Scenario"), i18n$t("Geocode"), i18n$t("Type of Geography"), i18n$t("Region"), i18n$t("Pollutant"),
-      i18n$t("Endpoint"), i18n$t("Counts"), i18n$t("L95CI Counts"), i18n$t("U95CI Counts"), i18n$t("Valuation"),
-      i18n$t("L95CI Valuation"), i18n$t("U95CI Valuation"), i18n$t("Counts per 100,000"), i18n$t("Proportional Change"),
-      i18n$t("L95CI Proportional Change"), i18n$t("U95CI Proportional Change"), i18n$t("Life Expectancy Change"),
-      i18n$t("L95CI Life Expectancy Change"), i18n$t("U95CI Life Expectancy Change")
+      get_session_t("Year"), get_session_t("Scenario"), get_session_t("Geocode"), get_session_t("Type of Geography"), get_session_t("Region"), get_session_t("Pollutant"),
+      get_session_t("Endpoint"), get_session_t("Counts"), get_session_t("L95CI Counts"), get_session_t("U95CI Counts"), get_session_t("Valuation"),
+      get_session_t("L95CI Valuation"), get_session_t("U95CI Valuation"), get_session_t("Counts per 100,000"), get_session_t("Proportional Change"),
+      get_session_t("L95CI Proportional Change"), get_session_t("U95CI Proportional Change"), get_session_t("Life Expectancy Change"),
+      get_session_t("L95CI Life Expectancy Change"), get_session_t("U95CI Life Expectancy Change")
     )
     xhh5
   })
@@ -5099,11 +5069,11 @@ server <- function(input, output, session) {
   x3xallxmortfinal3 <- reactive({
     x3mort <- x2xallxmortfinal3()
     colnames(x3mort) <- c(
-      i18n$t("Year"), i18n$t("Scenario"), i18n$t("Geocode"), i18n$t("Type of Geography"), i18n$t("Region"), i18n$t("Pollutant"),
-      i18n$t("Endpoint"), i18n$t("Counts"), i18n$t("L95CI Counts"), i18n$t("U95CI Counts"), i18n$t("Valuation"),
-      i18n$t("L95CI Valuation"), i18n$t("U95CI Valuation"), i18n$t("Counts per 100,000"), i18n$t("Proportional Change"),
-      i18n$t("L95CI Proportional Change"), i18n$t("U95CI Proportional Change"), i18n$t("Life Expectancy Change"),
-      i18n$t("L95CI Life Expectancy Change"), i18n$t("U95CI Life Expectancy Change")
+      get_session_t("Year"), get_session_t("Scenario"), get_session_t("Geocode"), get_session_t("Type of Geography"), get_session_t("Region"), get_session_t("Pollutant"),
+      get_session_t("Endpoint"), get_session_t("Counts"), get_session_t("L95CI Counts"), get_session_t("U95CI Counts"), get_session_t("Valuation"),
+      get_session_t("L95CI Valuation"), get_session_t("U95CI Valuation"), get_session_t("Counts per 100,000"), get_session_t("Proportional Change"),
+      get_session_t("L95CI Proportional Change"), get_session_t("U95CI Proportional Change"), get_session_t("Life Expectancy Change"),
+      get_session_t("L95CI Life Expectancy Change"), get_session_t("U95CI Life Expectancy Change")
     )
     x3mort
   })
@@ -5119,7 +5089,7 @@ server <- function(input, output, session) {
 
   output$d3 <- downloadHandler(
     filename = function() {
-      i18n$t("Mortality_Results.xlsx")
+      get_session_t("Mortality_Results.xlsx")
     },
     content = function(file) {
       write_xlsx(x4xallxmortfinal3(), path = file)
@@ -5129,16 +5099,16 @@ server <- function(input, output, session) {
   # PM2.5 Adult Chronic Bronchitis Cases
   set.seed(100)
   bacbc <- reactive({
-    chg2(rnorm(input$itn, beta(input$pm25_rtype3, input$pm25_crf3, input$pm25_incr3), se(input$pm25_rtype3, input$pm25_u95_3, input$pm25_l95_3, input$pm25_incr3)))
+    chg2(rnorm(input$itn, beta(input$pm25_rtype3, input$pm25_crf3, input$pm25_incr3, get_session_t("log-linear")), se(input$pm25_rtype3, input$pm25_u95_3, input$pm25_l95_3, input$pm25_incr3, get_session_t("log-linear"))))
   }) # chg2 function not allowed distribution values below 0 to ensure lower 95%CI not below 0
 
 
   set.seed(100)
   vacbc <- reactive({
-    valdist(input$vsl3fm, input$itn, input$vsl3, input$lvsl3, input$uvsl3, input$pcvsl3, input$plvsl3)
+    valdist(input$vsl3fm, input$itn, input$vsl3, input$lvsl3, input$uvsl3, input$pcvsl3, input$plvsl3, get_session_t("normal"), get_session_t("discrete"), get_session_t("triangular"))
   })
   cpiy1acbc <- reactive({
-    cpi[which(cpi_year() == input$vsl3yr), ]
+    get_session_cpi()[which(cpi_year() == input$vsl3yr), ]
   })
   cpiadjacbc <- reactive({
     (cpiy()$cpi / cpiy1acbc()$cpi) / ((1 + 0.01 * input$discountrate)^(foura_year() - input$baseyr))
@@ -5150,13 +5120,13 @@ server <- function(input, output, session) {
     cbind(foura(), rtypeacbc(), cpiadjacbc())
   })
   fiveacbc <- reactive({
-    (fouracbc_age25plus() / 1000000) * fouracbc_Adult_Chronic_Bronchitis_Cases() * af(fouracbc()$rtypeacbc, beta(input$pm25_rtype3, input$pm25_crf3, input$pm25_incr3), chg(fouracbc()$pm25_2, fouracbc()$pm25_1, input$pmthr))
+    (fouracbc_age25plus() / 1000000) * fouracbc_Adult_Chronic_Bronchitis_Cases() * af(fouracbc()$rtypeacbc, beta(input$pm25_rtype3, input$pm25_crf3, input$pm25_incr3, get_session_t("log-linear")), chg(fouracbc()$pm25_2, fouracbc()$pm25_1, input$pmthr), get_session_t("log-linear"))
   })
   sixacbc <- reactive({
-    (fouracbc_age25plus() / 1000000) * fouracbc_Adult_Chronic_Bronchitis_Cases() * af(fouracbc()$rtypeacbc, quantile(bacbc(), 0.025), chg(fouracbc()$pm25_2, fouracbc()$pm25_1, input$pmthr))
+    (fouracbc_age25plus() / 1000000) * fouracbc_Adult_Chronic_Bronchitis_Cases() * af(fouracbc()$rtypeacbc, quantile(bacbc(), 0.025), chg(fouracbc()$pm25_2, fouracbc()$pm25_1, input$pmthr), get_session_t("log-linear"))
   })
   sevenacbc <- reactive({
-    (fouracbc_age25plus() / 1000000) * fouracbc_Adult_Chronic_Bronchitis_Cases() * af(fouracbc()$rtypeacbc, quantile(bacbc(), 0.975), chg(fouracbc()$pm25_2, fouracbc()$pm25_1, input$pmthr))
+    (fouracbc_age25plus() / 1000000) * fouracbc_Adult_Chronic_Bronchitis_Cases() * af(fouracbc()$rtypeacbc, quantile(bacbc(), 0.975), chg(fouracbc()$pm25_2, fouracbc()$pm25_1, input$pmthr), get_session_t("log-linear"))
   })
   eightacbc <- reactive({
     fiveacbc() * mean(vacbc()) * fouracbc()$cpiadjacbc * 1000
@@ -5193,13 +5163,13 @@ server <- function(input, output, session) {
     100000 * fiveacbc() / foura_age25plus()
   })
   pctxsacbc <- reactive({
-    af(fouracbc()$rtypeacbc, beta(input$pm25_rtype3, input$pm25_crf3, input$pm25_incr3), chg(fouracbc()$pm25_2, fouracbc()$pm25_1, input$pmthr))
+    af(fouracbc()$rtypeacbc, beta(input$pm25_rtype3, input$pm25_crf3, input$pm25_incr3, get_session_t("log-linear")), chg(fouracbc()$pm25_2, fouracbc()$pm25_1, input$pmthr), get_session_t("log-linear"))
   })
   pctxsacbcl95 <- reactive({
-    af(fouracbc()$rtypeacbc, quantile(bacbc(), 0.025), chg(fouracbc()$pm25_2, fouracbc()$pm25_1, input$pmthr))
+    af(fouracbc()$rtypeacbc, quantile(bacbc(), 0.025), chg(fouracbc()$pm25_2, fouracbc()$pm25_1, input$pmthr), get_session_t("log-linear"))
   })
   pctxsacbcu95 <- reactive({
-    af(fouracbc()$rtypeacbc, quantile(bacbc(), 0.975), chg(fouracbc()$pm25_2, fouracbc()$pm25_1, input$pmthr))
+    af(fouracbc()$rtypeacbc, quantile(bacbc(), 0.975), chg(fouracbc()$pm25_2, fouracbc()$pm25_1, input$pmthr), get_session_t("log-linear"))
   })
 
 
@@ -5311,15 +5281,15 @@ server <- function(input, output, session) {
   # PM2.5 Cardiac Emergency Room Visits
   set.seed(100)
   bcerv <- reactive({
-    chg2(rnorm(input$itn, beta(input$pm25_rtype5, input$pm25_crf5, input$pm25_incr5), se(input$pm25_rtype5, input$pm25_u95_5, input$pm25_l95_5, input$pm25_incr5)))
+    chg2(rnorm(input$itn, beta(input$pm25_rtype5, input$pm25_crf5, input$pm25_incr5, get_session_t("log-linear")), se(input$pm25_rtype5, input$pm25_u95_5, input$pm25_l95_5, input$pm25_incr5, get_session_t("log-linear"))))
   })
 
   set.seed(100)
   vcerv <- reactive({
-    chg2(valdist(input$sourcevsl5c, input$itn, input$vsl5, input$lvsl5, input$uvsl5, input$pcvsl5, input$plvsl5))
+    chg2(valdist(input$sourcevsl5c, input$itn, input$vsl5, input$lvsl5, input$uvsl5, input$pcvsl5, input$plvsl5, get_session_t("normal"), get_session_t("discrete"), get_session_t("triangular")))
   })
   cpiy1cerv <- reactive({
-    cpi[which(cpi_year() == input$sourcevsl5b), ]
+    get_session_cpi()[which(cpi_year() == input$sourcevsl5b), ]
   })
 
   cpiadjcerv <- reactive({
@@ -5335,7 +5305,7 @@ server <- function(input, output, session) {
 
   # for threshold>0 and linear crf
   xpctxscard1a <- reactive({
-    outer(pmthrchg(), beta(input$pm25_rtype5, input$pm25_crf5, input$pm25_incr5), afb)
+    outer(pmthrchg(), beta(input$pm25_rtype5, input$pm25_crf5, input$pm25_incr5, get_session_t("log-linear")), afb)
   })
   xpctxscard2a <- reactive({
     thr2(xpctxscard1a(), wtnum)
@@ -5366,7 +5336,7 @@ server <- function(input, output, session) {
 
   # for threshold>0 and log-linear crf
   xpctxscard1d <- reactive({
-    outer(pmthrchg(), beta(input$pm25_rtype5, input$pm25_crf5, input$pm25_incr5), afa)
+    outer(pmthrchg(), beta(input$pm25_rtype5, input$pm25_crf5, input$pm25_incr5, get_session_t("log-linear")), afa)
   })
   xpctxscard2d <- reactive({
     thr2(xpctxscard1d(), wtnum)
@@ -5396,19 +5366,19 @@ server <- function(input, output, session) {
   })
 
   pctxscard <- reactive({
-    if (input$pmthr == 0 & input$pm25_rtype5 == i18n$t("linear")) {
-      xpctxscard1 <- outer(pmregchg(), beta(input$pm25_rtype5, input$pm25_crf5, input$pm25_incr5), afb)
+    if (input$pmthr == 0 & input$pm25_rtype5 == get_session_t("linear")) {
+      xpctxscard1 <- outer(pmregchg(), beta(input$pm25_rtype5, input$pm25_crf5, input$pm25_incr5, get_session_t("log-linear")), afb)
       xpctxscard2 <- outer(pmregchg(), quantile(bcerv(), 0.025), afb)
       xpctxscard3 <- outer(pmregchg(), quantile(bcerv(), 0.975), afb)
-    } else if (input$pmthr == 0 & input$pm25_rtype5 == i18n$t("log-linear")) {
-      xpctxscard1 <- outer(pmregchg(), beta(input$pm25_rtype5, input$pm25_crf5, input$pm25_incr5), afa)
+    } else if (input$pmthr == 0 & input$pm25_rtype5 == get_session_t("log-linear")) {
+      xpctxscard1 <- outer(pmregchg(), beta(input$pm25_rtype5, input$pm25_crf5, input$pm25_incr5, get_session_t("log-linear")), afa)
       xpctxscard2 <- outer(pmregchg(), quantile(bcerv(), 0.025), afa)
       xpctxscard3 <- outer(pmregchg(), quantile(bcerv(), 0.975), afa)
-    } else if (input$pmthr > 0 & input$pm25_rtype5 == i18n$t("linear")) {
+    } else if (input$pmthr > 0 & input$pm25_rtype5 == get_session_t("linear")) {
       xpctxscard1 <- ypctxscard1()
       xpctxscard2 <- ypctxscard2()
       xpctxscard3 <- ypctxscard3()
-    } else if (input$pmthr > 0 & input$pm25_rtype5 == i18n$t("log-linear")) {
+    } else if (input$pmthr > 0 & input$pm25_rtype5 == get_session_t("log-linear")) {
       xpctxscard1 <- zpctxscard1()
       xpctxscard2 <- zpctxscard2()
       xpctxscard3 <- zpctxscard3()
@@ -5474,7 +5444,7 @@ server <- function(input, output, session) {
   # PM2.5 Cardiac Hospital Admissions
   set.seed(100)
   bcha <- reactive({
-    chg2(rnorm(input$itn, beta(input$pm25_rtype6, input$pm25_crf6, input$pm25_incr6), se(input$pm25_rtype6, input$pm25_u95_6, input$pm25_l95_6, input$pm25_incr6)))
+    chg2(rnorm(input$itn, beta(input$pm25_rtype6, input$pm25_crf6, input$pm25_incr6, get_session_t("log-linear")), se(input$pm25_rtype6, input$pm25_u95_6, input$pm25_l95_6, input$pm25_incr6, get_session_t("log-linear"))))
   })
   rtypecha <- reactive({
     input$pm25_rtype6
@@ -5485,7 +5455,7 @@ server <- function(input, output, session) {
 
   # for threshold>0 and linear crf
   xpctxscha1a <- reactive({
-    outer(pmthrchg(), beta(input$pm25_rtype6, input$pm25_crf6, input$pm25_incr6), afb)
+    outer(pmthrchg(), beta(input$pm25_rtype6, input$pm25_crf6, input$pm25_incr6, get_session_t("log-linear")), afb)
   })
   xpctxscha2a <- reactive({
     thr2(xpctxscha1a(), wtnum)
@@ -5517,7 +5487,7 @@ server <- function(input, output, session) {
 
   # for threshold>0 and log-linear crf
   xpctxscha1d <- reactive({
-    outer(pmthrchg(), beta(input$pm25_rtype6, input$pm25_crf6, input$pm25_incr6), afa)
+    outer(pmthrchg(), beta(input$pm25_rtype6, input$pm25_crf6, input$pm25_incr6, get_session_t("log-linear")), afa)
   })
   xpctxscha2d <- reactive({
     thr2(xpctxscha1d(), wtnum)
@@ -5547,19 +5517,19 @@ server <- function(input, output, session) {
   })
 
   xxpctxscha <- reactive({
-    if (input$pmthr == 0 & input$pm25_rtype6 == i18n$t("linear")) {
-      xpctxscha1 <- outer(pmregchg(), beta(input$pm25_rtype6, input$pm25_crf6, input$pm25_incr6), afb)
+    if (input$pmthr == 0 & input$pm25_rtype6 == get_session_t("linear")) {
+      xpctxscha1 <- outer(pmregchg(), beta(input$pm25_rtype6, input$pm25_crf6, input$pm25_incr6, get_session_t("log-linear")), afb)
       xpctxscha2 <- outer(pmregchg(), quantile(bcha(), 0.025), afb)
       xpctxscha3 <- outer(pmregchg(), quantile(bcha(), 0.975), afb)
-    } else if (input$pmthr == 0 & input$pm25_rtype6 == i18n$t("log-linear")) {
-      xpctxscha1 <- outer(pmregchg(), beta(input$pm25_rtype6, input$pm25_crf6, input$pm25_incr6), afa)
+    } else if (input$pmthr == 0 & input$pm25_rtype6 == get_session_t("log-linear")) {
+      xpctxscha1 <- outer(pmregchg(), beta(input$pm25_rtype6, input$pm25_crf6, input$pm25_incr6, get_session_t("log-linear")), afa)
       xpctxscha2 <- outer(pmregchg(), quantile(bcha(), 0.025), afa)
       xpctxscha3 <- outer(pmregchg(), quantile(bcha(), 0.975), afa)
-    } else if (input$pmthr > 0 & input$pm25_rtype6 == i18n$t("linear")) {
+    } else if (input$pmthr > 0 & input$pm25_rtype6 == get_session_t("linear")) {
       xpctxscha1 <- ypctxscha1()
       xpctxscha2 <- ypctxscha2()
       xpctxscha3 <- ypctxscha3()
-    } else if (input$pmthr > 0 & input$pm25_rtype6 == i18n$t("log-linear")) {
+    } else if (input$pmthr > 0 & input$pm25_rtype6 == get_session_t("log-linear")) {
       xpctxscha1 <- zpctxscha1()
       xpctxscha2 <- zpctxscha2()
       xpctxscha3 <- zpctxscha3()
@@ -5593,16 +5563,16 @@ server <- function(input, output, session) {
   # PM2.5  Asthma Symptom Days
   set.seed(100)
   basd <- reactive({
-    chg2(rnorm(input$itn, beta(input$pm25_rtype4, input$pm25_crf4, input$pm25_incr4), se(input$pm25_rtype4, input$pm25_u95_4, input$pm25_l95_4, input$pm25_incr4)))
+    chg2(rnorm(input$itn, beta(input$pm25_rtype4, input$pm25_crf4, input$pm25_incr4, get_session_t("log-linear")), se(input$pm25_rtype4, input$pm25_u95_4, input$pm25_l95_4, input$pm25_incr4, get_session_t("log-linear"))))
   })
 
   set.seed(100)
   vasd <- reactive({
-    valdist(input$sourcevsl4c, input$itn, as.double(input$vsl4), as.double(input$lvsl4), as.double(input$uvsl4), input$pcvsl4, input$plvsl4)
+    valdist(input$sourcevsl4c, input$itn, as.double(input$vsl4), as.double(input$lvsl4), as.double(input$uvsl4), input$pcvsl4, input$plvsl4, get_session_t("normal"), get_session_t("discrete"), get_session_t("triangular"))
   })
 
   cpiy1asd <- reactive({
-    cpi[which(cpi_year() == input$sourcevsl4b), ]
+    get_session_cpi()[which(cpi_year() == input$sourcevsl4b), ]
   })
 
   cpiadjasd <- reactive({
@@ -5618,7 +5588,7 @@ server <- function(input, output, session) {
 
   # for threshold>0 and linear crf
   xpctxsasd1a <- reactive({
-    outer(pmthrchg(), beta(input$pm25_rtype4, input$pm25_crf4, input$pm25_incr4), afb)
+    outer(pmthrchg(), beta(input$pm25_rtype4, input$pm25_crf4, input$pm25_incr4, get_session_t("log-linear")), afb)
   })
   xpctxsasd2a <- reactive({
     thr2(xpctxsasd1a(), wtnum)
@@ -5650,7 +5620,7 @@ server <- function(input, output, session) {
 
   # for threshold>0 and log-linear crf
   xpctxsasd1d <- reactive({
-    outer(pmthrchg(), beta(input$pm25_rtype4, input$pm25_crf4, input$pm25_incr4), afa)
+    outer(pmthrchg(), beta(input$pm25_rtype4, input$pm25_crf4, input$pm25_incr4, get_session_t("log-linear")), afa)
   })
   xpctxsasd2d <- reactive({
     thr2(xpctxsasd1d(), wtnum)
@@ -5680,19 +5650,19 @@ server <- function(input, output, session) {
   })
 
   xxpctxsasd <- reactive({
-    if (input$pmthr == 0 & input$pm25_rtype4 == i18n$t("linear")) {
-      xpctxsasd1 <- outer(pmregchg(), beta(input$pm25_rtype4, input$pm25_crf4, input$pm25_incr4), afb)
+    if (input$pmthr == 0 & input$pm25_rtype4 == get_session_t("linear")) {
+      xpctxsasd1 <- outer(pmregchg(), beta(input$pm25_rtype4, input$pm25_crf4, input$pm25_incr4, get_session_t("log-linear")), afb)
       xpctxsasd2 <- outer(pmregchg(), quantile(basd(), 0.025), afb)
       xpctxsasd3 <- outer(pmregchg(), quantile(basd(), 0.975), afb)
-    } else if (input$pmthr == 0 & input$pm25_rtype4 == i18n$t("log-linear")) {
-      xpctxsasd1 <- outer(pmregchg(), beta(input$pm25_rtype4, input$pm25_crf4, input$pm25_incr4), afa)
+    } else if (input$pmthr == 0 & input$pm25_rtype4 == get_session_t("log-linear")) {
+      xpctxsasd1 <- outer(pmregchg(), beta(input$pm25_rtype4, input$pm25_crf4, input$pm25_incr4, get_session_t("log-linear")), afa)
       xpctxsasd2 <- outer(pmregchg(), quantile(basd(), 0.025), afa)
       xpctxsasd3 <- outer(pmregchg(), quantile(basd(), 0.975), afa)
-    } else if (input$pmthr > 0 & input$pm25_rtype4 == i18n$t("linear")) {
+    } else if (input$pmthr > 0 & input$pm25_rtype4 == get_session_t("linear")) {
       xpctxsasd1 <- ypctxsasd1()
       xpctxsasd2 <- ypctxsasd2()
       xpctxsasd3 <- ypctxsasd3()
-    } else if (input$pmthr > 0 & input$pm25_rtype4 == i18n$t("log-linear")) {
+    } else if (input$pmthr > 0 & input$pm25_rtype4 == get_session_t("log-linear")) {
       xpctxsasd1 <- zpctxsasd1()
       xpctxsasd2 <- zpctxsasd2()
       xpctxsasd3 <- zpctxsasd3()
@@ -5737,15 +5707,15 @@ server <- function(input, output, session) {
   # PM2.5  Child Acute Bronchitis Episodes
   set.seed(100)
   bcabe <- reactive({
-    chg2(rnorm(input$itn, beta(input$pm25_rtype7, input$pm25_crf7, input$pm25_incr7), se(input$pm25_rtype7, input$pm25_u95_7, input$pm25_l95_7, input$pm25_incr7)))
+    chg2(rnorm(input$itn, beta(input$pm25_rtype7, input$pm25_crf7, input$pm25_incr7, get_session_t("log-linear")), se(input$pm25_rtype7, input$pm25_u95_7, input$pm25_l95_7, input$pm25_incr7, get_session_t("log-linear"))))
   })
   # vcabe<-reactive({sample(c(input$vsl6,input$lvsl6,input$uvsl6), size = input$itn, replace = TRUE, prob = c(input$pcvsl6,input$plvsl6,(1-input$pcvsl6-input$plvsl6)))})
   set.seed(100)
   vcabe <- reactive({
-    valdist(input$sourcevsl6c, input$itn, input$vsl6, input$lvsl6, input$uvsl6, input$pcvsl6, input$plvsl6)
+    valdist(input$sourcevsl6c, input$itn, input$vsl6, input$lvsl6, input$uvsl6, input$pcvsl6, input$plvsl6, get_session_t("normal"), get_session_t("discrete"), get_session_t("triangular"))
   })
   cpiy1cabe <- reactive({
-    cpi[which(cpi_year() == input$sourcevsl6b), ]
+    get_session_cpi()[which(cpi_year() == input$sourcevsl6b), ]
   })
 
   cpiadjcabe <- reactive({
@@ -5761,7 +5731,7 @@ server <- function(input, output, session) {
 
   # for threshold>0 and linear crf
   xpctxscabe1a <- reactive({
-    outer(pmthrchg(), beta(input$pm25_rtype7, input$pm25_crf7, input$pm25_incr7), afb)
+    outer(pmthrchg(), beta(input$pm25_rtype7, input$pm25_crf7, input$pm25_incr7, get_session_t("log-linear")), afb)
   })
   xpctxscabe2a <- reactive({
     thr2(xpctxscabe1a(), wtnum)
@@ -5793,7 +5763,7 @@ server <- function(input, output, session) {
 
   # for threshold>0 and log-linear crf
   xpctxscabe1d <- reactive({
-    outer(pmthrchg(), beta(input$pm25_rtype7, input$pm25_crf7, input$pm25_incr7), afa)
+    outer(pmthrchg(), beta(input$pm25_rtype7, input$pm25_crf7, input$pm25_incr7, get_session_t("log-linear")), afa)
   })
   xpctxscabe2d <- reactive({
     thr2(xpctxscabe1d(), wtnum)
@@ -5823,19 +5793,19 @@ server <- function(input, output, session) {
   })
 
   xxpctxscabe <- reactive({
-    if (input$pmthr == 0 & input$pm25_rtype7 == i18n$t("linear")) {
-      xpctxscabe1 <- outer(pmregchg(), beta(input$pm25_rtype7, input$pm25_crf7, input$pm25_incr7), afb)
+    if (input$pmthr == 0 & input$pm25_rtype7 == get_session_t("linear")) {
+      xpctxscabe1 <- outer(pmregchg(), beta(input$pm25_rtype7, input$pm25_crf7, input$pm25_incr7, get_session_t("log-linear")), afb)
       xpctxscabe2 <- outer(pmregchg(), quantile(bcabe(), 0.025), afb)
       xpctxscabe3 <- outer(pmregchg(), quantile(bcabe(), 0.975), afb)
-    } else if (input$pmthr == 0 & input$pm25_rtype7 == i18n$t("log-linear")) {
-      xpctxscabe1 <- outer(pmregchg(), beta(input$pm25_rtype7, input$pm25_crf7, input$pm25_incr7), afa)
+    } else if (input$pmthr == 0 & input$pm25_rtype7 == get_session_t("log-linear")) {
+      xpctxscabe1 <- outer(pmregchg(), beta(input$pm25_rtype7, input$pm25_crf7, input$pm25_incr7, get_session_t("log-linear")), afa)
       xpctxscabe2 <- outer(pmregchg(), quantile(bcabe(), 0.025), afa)
       xpctxscabe3 <- outer(pmregchg(), quantile(bcabe(), 0.975), afa)
-    } else if (input$pmthr > 0 & input$pm25_rtype7 == i18n$t("linear")) {
+    } else if (input$pmthr > 0 & input$pm25_rtype7 == get_session_t("linear")) {
       xpctxscabe1 <- ypctxscabe1()
       xpctxscabe2 <- ypctxscabe2()
       xpctxscabe3 <- ypctxscabe3()
-    } else if (input$pmthr > 0 & input$pm25_rtype7 == i18n$t("log-linear")) {
+    } else if (input$pmthr > 0 & input$pm25_rtype7 == get_session_t("log-linear")) {
       xpctxscabe1 <- zpctxscabe1()
       xpctxscabe2 <- zpctxscabe2()
       xpctxscabe3 <- zpctxscabe3()
@@ -5902,15 +5872,15 @@ server <- function(input, output, session) {
   # PM2.5  Respiratory Emergency Room Visits
   set.seed(100)
   brerv <- reactive({
-    chg2(rnorm(input$itn, beta(input$pm25_rtype8, input$pm25_crf8, input$pm25_incr8), se(input$pm25_rtype8, input$pm25_u95_8, input$pm25_l95_8, input$pm25_incr8)))
+    chg2(rnorm(input$itn, beta(input$pm25_rtype8, input$pm25_crf8, input$pm25_incr8, get_session_t("log-linear")), se(input$pm25_rtype8, input$pm25_u95_8, input$pm25_l95_8, input$pm25_incr8, get_session_t("log-linear"))))
   })
 
   set.seed(100)
   vrerv <- reactive({
-    chg2(valdist(input$sourcevsl8c, input$itn, input$vsl9, input$lvsl9, input$uvsl9, input$pcvsl9, input$plvsl9))
+    chg2(valdist(input$sourcevsl8c, input$itn, input$vsl9, input$lvsl9, input$uvsl9, input$pcvsl9, input$plvsl9, get_session_t("normal"), get_session_t("discrete"), get_session_t("triangular")))
   })
   cpiy1rerv <- reactive({
-    cpi[which(cpi_year() == input$sourcevsl9b), ]
+    get_session_cpi()[which(cpi_year() == input$sourcevsl9b), ]
   })
 
   cpiadjrerv <- reactive({
@@ -5927,7 +5897,7 @@ server <- function(input, output, session) {
 
   # for threshold>0 and linear crf
   xpctexcess1a <- reactive({
-    outer(pmthrchg(), beta(input$pm25_rtype8, input$pm25_crf8, input$pm25_incr8), afb)
+    outer(pmthrchg(), beta(input$pm25_rtype8, input$pm25_crf8, input$pm25_incr8, get_session_t("log-linear")), afb)
   })
   xpctexcess2a <- reactive({
     thr2(xpctexcess1a(), wtnum)
@@ -5958,7 +5928,7 @@ server <- function(input, output, session) {
 
   # for threshold>0 and log-linear crf
   xpctexcess1d <- reactive({
-    outer(pmthrchg(), beta(input$pm25_rtype8, input$pm25_crf8, input$pm25_incr8), afa)
+    outer(pmthrchg(), beta(input$pm25_rtype8, input$pm25_crf8, input$pm25_incr8, get_session_t("log-linear")), afa)
   })
   xpctexcess2d <- reactive({
     thr2(xpctexcess1d(), wtnum)
@@ -5988,19 +5958,19 @@ server <- function(input, output, session) {
   })
 
   pctexcessrerv <- reactive({
-    if (input$pmthr == 0 & input$pm25_rtype8 == i18n$t("linear")) {
-      xpctexcess1 <- outer(pmregchg(), beta(input$pm25_rtype8, input$pm25_crf8, input$pm25_incr8), afb)
+    if (input$pmthr == 0 & input$pm25_rtype8 == get_session_t("linear")) {
+      xpctexcess1 <- outer(pmregchg(), beta(input$pm25_rtype8, input$pm25_crf8, input$pm25_incr8, get_session_t("log-linear")), afb)
       xpctexcess2 <- outer(pmregchg(), quantile(brerv(), 0.025), afb)
       xpctexcess3 <- outer(pmregchg(), quantile(brerv(), 0.975), afb)
-    } else if (input$pmthr == 0 & input$pm25_rtype8 == i18n$t("log-linear")) {
-      xpctexcess1 <- outer(pmregchg(), beta(input$pm25_rtype8, input$pm25_crf8, input$pm25_incr8), afa)
+    } else if (input$pmthr == 0 & input$pm25_rtype8 == get_session_t("log-linear")) {
+      xpctexcess1 <- outer(pmregchg(), beta(input$pm25_rtype8, input$pm25_crf8, input$pm25_incr8, get_session_t("log-linear")), afa)
       xpctexcess2 <- outer(pmregchg(), quantile(brerv(), 0.025), afa)
       xpctexcess3 <- outer(pmregchg(), quantile(brerv(), 0.975), afa)
-    } else if (input$pmthr > 0 & input$pm25_rtype8 == i18n$t("linear")) {
+    } else if (input$pmthr > 0 & input$pm25_rtype8 == get_session_t("linear")) {
       xpctexcess1 <- ypctexcess1()
       xpctexcess2 <- ypctexcess2()
       xpctexcess3 <- ypctexcess3()
-    } else if (input$pmthr > 0 & input$pm25_rtype8 == i18n$t("log-linear")) {
+    } else if (input$pmthr > 0 & input$pm25_rtype8 == get_session_t("log-linear")) {
       xpctexcess1 <- zpctexcess1()
       xpctexcess2 <- zpctexcess2()
       xpctexcess3 <- zpctexcess3()
@@ -6069,7 +6039,7 @@ server <- function(input, output, session) {
   # PM2.5  Respiratory Hospital Admissions
   set.seed(100)
   brha <- reactive({
-    chg2(rnorm(input$itn, beta(input$pm25_rtype9, input$pm25_crf9, input$pm25_incr9), se(input$pm25_rtype9, input$pm25_u95_9, input$pm25_l95_9, input$pm25_incr9)))
+    chg2(rnorm(input$itn, beta(input$pm25_rtype9, input$pm25_crf9, input$pm25_incr9, get_session_t("log-linear")), se(input$pm25_rtype9, input$pm25_u95_9, input$pm25_l95_9, input$pm25_incr9, get_session_t("log-linear"))))
   })
 
   rtyperha <- reactive({
@@ -6080,7 +6050,7 @@ server <- function(input, output, session) {
   })
 
   xpctxsrha1a <- reactive({
-    outer(pmthrchg(), beta(input$pm25_rtype9, input$pm25_crf9, input$pm25_incr9), afb)
+    outer(pmthrchg(), beta(input$pm25_rtype9, input$pm25_crf9, input$pm25_incr9, get_session_t("log-linear")), afb)
   })
   xpctxsrha2a <- reactive({
     thr2(xpctxsrha1a(), wtnum)
@@ -6112,7 +6082,7 @@ server <- function(input, output, session) {
 
   # for threshold>0 and log-linear crf
   xpctxsrha1d <- reactive({
-    outer(pmthrchg(), beta(input$pm25_rtype9, input$pm25_crf9, input$pm25_incr9), afa)
+    outer(pmthrchg(), beta(input$pm25_rtype9, input$pm25_crf9, input$pm25_incr9, get_session_t("log-linear")), afa)
   })
   xpctxsrha2d <- reactive({
     thr2(xpctxsrha1d(), wtnum)
@@ -6142,19 +6112,19 @@ server <- function(input, output, session) {
   })
 
   xxpctxsrha <- reactive({
-    if (input$pmthr == 0 & input$pm25_rtype9 == i18n$t("linear")) {
-      xpctxsrha1 <- outer(pmregchg(), beta(input$pm25_rtype9, input$pm25_crf9, input$pm25_incr9), afb)
+    if (input$pmthr == 0 & input$pm25_rtype9 == get_session_t("linear")) {
+      xpctxsrha1 <- outer(pmregchg(), beta(input$pm25_rtype9, input$pm25_crf9, input$pm25_incr9, get_session_t("log-linear")), afb)
       xpctxsrha2 <- outer(pmregchg(), quantile(brha(), 0.025), afb)
       xpctxsrha3 <- outer(pmregchg(), quantile(brha(), 0.975), afb)
-    } else if (input$pmthr == 0 & input$pm25_rtype9 == i18n$t("log-linear")) {
-      xpctxsrha1 <- outer(pmregchg(), beta(input$pm25_rtype9, input$pm25_crf9, input$pm25_incr9), afa)
+    } else if (input$pmthr == 0 & input$pm25_rtype9 == get_session_t("log-linear")) {
+      xpctxsrha1 <- outer(pmregchg(), beta(input$pm25_rtype9, input$pm25_crf9, input$pm25_incr9, get_session_t("log-linear")), afa)
       xpctxsrha2 <- outer(pmregchg(), quantile(brha(), 0.025), afa)
       xpctxsrha3 <- outer(pmregchg(), quantile(brha(), 0.975), afa)
-    } else if (input$pmthr > 0 & input$pm25_rtype9 == i18n$t("linear")) {
+    } else if (input$pmthr > 0 & input$pm25_rtype9 == get_session_t("linear")) {
       xpctxsrha1 <- ypctxsrha1()
       xpctxsrha2 <- ypctxsrha2()
       xpctxsrha3 <- ypctxsrha3()
-    } else if (input$pmthr > 0 & input$pm25_rtype9 == i18n$t("log-linear")) {
+    } else if (input$pmthr > 0 & input$pm25_rtype9 == get_session_t("log-linear")) {
       xpctxsrha1 <- zpctxsrha1()
       xpctxsrha2 <- zpctxsrha2()
       xpctxsrha3 <- zpctxsrha3()
@@ -6190,15 +6160,15 @@ server <- function(input, output, session) {
   # PM2.5 Restricted Activity Days
   set.seed(100)
   brad <- reactive({
-    chg2(rnorm(input$itn, beta(input$pm25_rtype10, input$pm25_crf10, input$pm25_incr10), se(input$pm25_rtype10, input$pm25_u95_10, input$pm25_l95_10, input$pm25_incr10)))
+    chg2(rnorm(input$itn, beta(input$pm25_rtype10, input$pm25_crf10, input$pm25_incr10, get_session_t("log-linear")), se(input$pm25_rtype10, input$pm25_u95_10, input$pm25_l95_10, input$pm25_incr10, get_session_t("log-linear"))))
   })
 
   set.seed(100)
   vrad <- reactive({
-    chg2(valdist(input$sourcevsl10c, input$itn, input$vsl10, input$lvsl10, input$uvsl10, input$pcvsl10, input$plvsl10))
+    chg2(valdist(input$sourcevsl10c, input$itn, input$vsl10, input$lvsl10, input$uvsl10, input$pcvsl10, input$plvsl10, get_session_t("normal"), get_session_t("discrete"), get_session_t("triangular")))
   })
   cpiy1rad <- reactive({
-    cpi[which(cpi_year() == input$sourcevsl10b), ]
+    get_session_cpi()[which(cpi_year() == input$sourcevsl10b), ]
   })
 
   cpiadjrad <- reactive({
@@ -6213,7 +6183,7 @@ server <- function(input, output, session) {
 
   # for threshold>0 and linear crf
   xpctxsrad1a <- reactive({
-    outer(pmthrchg(), beta(input$pm25_rtype10, input$pm25_crf10, input$pm25_incr10), afb)
+    outer(pmthrchg(), beta(input$pm25_rtype10, input$pm25_crf10, input$pm25_incr10, get_session_t("log-linear")), afb)
   })
   xpctxsrad2a <- reactive({
     thr2(xpctxsrad1a(), wtnum)
@@ -6245,7 +6215,7 @@ server <- function(input, output, session) {
 
   # for threshold>0 and log-linear crf
   xpctxsrad1d <- reactive({
-    outer(pmthrchg(), beta(input$pm25_rtype10, input$pm25_crf10, input$pm25_incr10), afa)
+    outer(pmthrchg(), beta(input$pm25_rtype10, input$pm25_crf10, input$pm25_incr10, get_session_t("log-linear")), afa)
   })
   xpctxsrad2d <- reactive({
     thr2(xpctxsrad1d(), wtnum)
@@ -6275,19 +6245,19 @@ server <- function(input, output, session) {
   })
 
   xxpctxsrad <- reactive({
-    if (input$pmthr == 0 & input$pm25_rtype10 == i18n$t("linear")) {
-      xpctxsrad1 <- outer(pmregchg(), beta(input$pm25_rtype10, input$pm25_crf10, input$pm25_incr10), afb)
+    if (input$pmthr == 0 & input$pm25_rtype10 == get_session_t("linear")) {
+      xpctxsrad1 <- outer(pmregchg(), beta(input$pm25_rtype10, input$pm25_crf10, input$pm25_incr10, get_session_t("log-linear")), afb)
       xpctxsrad2 <- outer(pmregchg(), quantile(brad(), 0.025), afb)
       xpctxsrad3 <- outer(pmregchg(), quantile(brad(), 0.975), afb)
-    } else if (input$pmthr == 0 & input$pm25_rtype10 == i18n$t("log-linear")) {
-      xpctxsrad1 <- outer(pmregchg(), beta(input$pm25_rtype10, input$pm25_crf10, input$pm25_incr10), afa)
+    } else if (input$pmthr == 0 & input$pm25_rtype10 == get_session_t("log-linear")) {
+      xpctxsrad1 <- outer(pmregchg(), beta(input$pm25_rtype10, input$pm25_crf10, input$pm25_incr10, get_session_t("log-linear")), afa)
       xpctxsrad2 <- outer(pmregchg(), quantile(brad(), 0.025), afa)
       xpctxsrad3 <- outer(pmregchg(), quantile(brad(), 0.975), afa)
-    } else if (input$pmthr > 0 & input$pm25_rtype10 == i18n$t("linear")) {
+    } else if (input$pmthr > 0 & input$pm25_rtype10 == get_session_t("linear")) {
       xpctxsrad1 <- ypctxsrad1()
       xpctxsrad2 <- ypctxsrad2()
       xpctxsrad3 <- ypctxsrad3()
-    } else if (input$pmthr > 0 & input$pm25_rtype10 == i18n$t("log-linear")) {
+    } else if (input$pmthr > 0 & input$pm25_rtype10 == get_session_t("log-linear")) {
       xpctxsrad1 <- zpctxsrad1()
       xpctxsrad2 <- zpctxsrad2()
       xpctxsrad3 <- zpctxsrad3()
@@ -6369,15 +6339,15 @@ server <- function(input, output, session) {
   # PM2.5 Acute Respiratory Symptom Days
   set.seed(100)
   barsd <- reactive({
-    chg2(rnorm(input$itn, beta(input$pm25_rtype2, input$pm25_crf2, input$pm25_incr2), se(input$pm25_rtype2, input$pm25_u95_2, input$pm25_l95_2, input$pm25_incr2)))
+    chg2(rnorm(input$itn, beta(input$pm25_rtype2, input$pm25_crf2, input$pm25_incr2, get_session_t("log-linear")), se(input$pm25_rtype2, input$pm25_u95_2, input$pm25_l95_2, input$pm25_incr2, get_session_t("log-linear"))))
   })
 
   set.seed(100)
   varsd <- reactive({
-    chg2(valdist(input$vsl2fm, input$itn, input$vsl2, input$lvsl2, input$uvsl2, input$pcvsl2, input$plvsl2))
+    chg2(valdist(input$vsl2fm, input$itn, input$vsl2, input$lvsl2, input$uvsl2, input$pcvsl2, input$plvsl2, get_session_t("normal"), get_session_t("discrete"), get_session_t("triangular")))
   })
   cpiy1arsd <- reactive({
-    cpi[which(cpi_year() == input$vsl2yr), ]
+    get_session_cpi()[which(cpi_year() == input$vsl2yr), ]
   })
 
   cpiadjarsd <- reactive({
@@ -6393,7 +6363,7 @@ server <- function(input, output, session) {
 
   # for threshold>0 and linear crf
   xpctxsarsd1a <- reactive({
-    outer(pmthrchg(), beta(input$pm25_rtype2, input$pm25_crf2, input$pm25_incr2), afb)
+    outer(pmthrchg(), beta(input$pm25_rtype2, input$pm25_crf2, input$pm25_incr2, get_session_t("log-linear")), afb)
   })
   xpctxsarsd2a <- reactive({
     thr2(xpctxsarsd1a(), wtnum)
@@ -6425,7 +6395,7 @@ server <- function(input, output, session) {
 
   # for threshold>0 and log-linear crf
   xpctxsarsd1d <- reactive({
-    outer(pmthrchg(), beta(input$pm25_rtype2, input$pm25_crf2, input$pm25_incr2), afa)
+    outer(pmthrchg(), beta(input$pm25_rtype2, input$pm25_crf2, input$pm25_incr2, get_session_t("log-linear")), afa)
   })
   xpctxsarsd2d <- reactive({
     thr2(xpctxsarsd1d(), wtnum)
@@ -6455,19 +6425,19 @@ server <- function(input, output, session) {
   })
 
   xxpctxsarsd <- reactive({
-    if (input$pmthr == 0 & input$pm25_rtype2 == i18n$t("linear")) {
-      xpctxsarsd1 <- outer(pmregchg(), beta(input$pm25_rtype2, input$pm25_crf2, input$pm25_incr2), afb)
+    if (input$pmthr == 0 & input$pm25_rtype2 == get_session_t("linear")) {
+      xpctxsarsd1 <- outer(pmregchg(), beta(input$pm25_rtype2, input$pm25_crf2, input$pm25_incr2, get_session_t("log-linear")), afb)
       xpctxsarsd2 <- outer(pmregchg(), quantile(barsd(), 0.025), afb)
       xpctxsarsd3 <- outer(pmregchg(), quantile(barsd(), 0.975), afb)
-    } else if (input$pmthr == 0 & input$pm25_rtype2 == i18n$t("log-linear")) {
-      xpctxsarsd1 <- outer(pmregchg(), beta(input$pm25_rtype2, input$pm25_crf2, input$pm25_incr2), afa)
+    } else if (input$pmthr == 0 & input$pm25_rtype2 == get_session_t("log-linear")) {
+      xpctxsarsd1 <- outer(pmregchg(), beta(input$pm25_rtype2, input$pm25_crf2, input$pm25_incr2, get_session_t("log-linear")), afa)
       xpctxsarsd2 <- outer(pmregchg(), quantile(barsd(), 0.025), afa)
       xpctxsarsd3 <- outer(pmregchg(), quantile(barsd(), 0.975), afa)
-    } else if (input$pmthr > 0 & input$pm25_rtype2 == i18n$t("linear")) {
+    } else if (input$pmthr > 0 & input$pm25_rtype2 == get_session_t("linear")) {
       xpctxsarsd1 <- ypctxsarsd1()
       xpctxsarsd2 <- ypctxsarsd2()
       xpctxsarsd3 <- ypctxsarsd3()
-    } else if (input$pmthr > 0 & input$pm25_rtype2 == i18n$t("log-linear")) {
+    } else if (input$pmthr > 0 & input$pm25_rtype2 == get_session_t("log-linear")) {
       xpctxsarsd1 <- zpctxsarsd1()
       xpctxsarsd2 <- zpctxsarsd2()
       xpctxsarsd3 <- zpctxsarsd3()
@@ -6546,18 +6516,18 @@ server <- function(input, output, session) {
   # NO2 Acute Exposure Mortality
   set.seed(100)
   baem <- reactive({
-    rnorm(input$itn, beta(input$no2_rtype, input$no2_crf, input$no2_incr), se(input$no2_rtype, input$no2_u95, input$no2_l95, input$no2_incr))
+    rnorm(input$itn, beta(input$no2_rtype, input$no2_crf, input$no2_incr, get_session_t("log-linear")), se(input$no2_rtype, input$no2_u95, input$no2_l95, input$no2_incr, get_session_t("log-linear")))
   })
 
   set.seed(100)
   vaem <- reactive({
-    valdist(input$vslfm, input$itn, input$vsl, input$lvsl, input$uvsl, input$pcvsl, input$plvsl)
+    valdist(input$vslfm, input$itn, input$vsl, input$lvsl, input$uvsl, input$pcvsl, input$plvsl, get_session_t("normal"), get_session_t("discrete"), get_session_t("triangular"))
   })
   cpiyaem <- reactive({
-    cpi[which(cpi_year() == input$curr), ]
+    get_session_cpi()[which(cpi_year() == input$curr), ]
   })
   cpiyaem1 <- reactive({
-    cpi[which(cpi_year() == input$vslyr), ]
+    get_session_cpi()[which(cpi_year() == input$vslyr), ]
   })
 
   cpiadjaem <- reactive({
@@ -6573,7 +6543,7 @@ server <- function(input, output, session) {
 
   # for threshold>0 and linear crf
   xpctxsno2aem1a <- reactive({
-    outer(no2thrchg(), beta(input$no2_rtype, input$no2_crf, input$no2_incr), afb)
+    outer(no2thrchg(), beta(input$no2_rtype, input$no2_crf, input$no2_incr, get_session_t("log-linear")), afb)
   })
   xpctxsno2aem2a <- reactive({
     thr2(xpctxsno2aem1a(), wtnum)
@@ -6605,7 +6575,7 @@ server <- function(input, output, session) {
 
   # for threshold>0 and log-linear crf
   xpctxsno2aem1d <- reactive({
-    outer(no2thrchg(), beta(input$no2_rtype, input$no2_crf, input$no2_incr), afa)
+    outer(no2thrchg(), beta(input$no2_rtype, input$no2_crf, input$no2_incr, get_session_t("log-linear")), afa)
   })
   xpctxsno2aem2d <- reactive({
     thr2(xpctxsno2aem1d(), wtnum)
@@ -6635,19 +6605,19 @@ server <- function(input, output, session) {
   })
 
   xxpctxsno2aem <- reactive({
-    if (input$no2thr == 0 & input$no2_rtype == i18n$t("linear")) {
-      xpctxsno2aem1 <- outer(no2regchg(), beta(input$no2_rtype, input$no2_crf, input$no2_incr), afb)
+    if (input$no2thr == 0 & input$no2_rtype == get_session_t("linear")) {
+      xpctxsno2aem1 <- outer(no2regchg(), beta(input$no2_rtype, input$no2_crf, input$no2_incr, get_session_t("log-linear")), afb)
       xpctxsno2aem2 <- outer(no2regchg(), quantile(baem(), 0.025), afb)
       xpctxsno2aem3 <- outer(no2regchg(), quantile(baem(), 0.975), afb)
-    } else if (input$no2thr == 0 & input$no2_rtype == i18n$t("log-linear")) {
-      xpctxsno2aem1 <- outer(no2regchg(), beta(input$no2_rtype, input$no2_crf, input$no2_incr), afa)
+    } else if (input$no2thr == 0 & input$no2_rtype == get_session_t("log-linear")) {
+      xpctxsno2aem1 <- outer(no2regchg(), beta(input$no2_rtype, input$no2_crf, input$no2_incr, get_session_t("log-linear")), afa)
       xpctxsno2aem2 <- outer(no2regchg(), quantile(baem(), 0.025), afa)
       xpctxsno2aem3 <- outer(no2regchg(), quantile(baem(), 0.975), afa)
-    } else if (input$no2thr > 0 & input$no2_rtype == i18n$t("linear")) {
+    } else if (input$no2thr > 0 & input$no2_rtype == get_session_t("linear")) {
       xpctxsno2aem1 <- ypctxsno2aem1()
       xpctxsno2aem2 <- ypctxsno2aem2()
       xpctxsno2aem3 <- ypctxsno2aem3()
-    } else if (input$no2thr > 0 & input$no2_rtype == i18n$t("log-linear")) {
+    } else if (input$no2thr > 0 & input$no2_rtype == get_session_t("log-linear")) {
       xpctxsno2aem1 <- zpctxsno2aem1()
       xpctxsno2aem2 <- zpctxsno2aem2()
       xpctxsno2aem3 <- zpctxsno2aem3()
@@ -6711,19 +6681,19 @@ server <- function(input, output, session) {
   # O3 Acute Exposure Mortality
   set.seed(100)
   bo3aem <- reactive({
-    rnorm(input$itn, beta(input$o3_rtype1, input$o3_crf1, input$o3_incr1), se(input$o3_rtype1, input$o3_u95_1, input$o3_l95_1, input$o3_incr1))
+    rnorm(input$itn, beta(input$o3_rtype1, input$o3_crf1, input$o3_incr1, get_session_t("log-linear")), se(input$o3_rtype1, input$o3_u95_1, input$o3_l95_1, input$o3_incr1, get_session_t("log-linear")))
   })
 
   set.seed(100)
   vo3aem <- reactive({
-    valdist(input$vslfm, input$itn, input$vsl, input$lvsl, input$uvsl, input$pcvsl, input$plvsl)
+    valdist(input$vslfm, input$itn, input$vsl, input$lvsl, input$uvsl, input$pcvsl, input$plvsl, get_session_t("normal"), get_session_t("discrete"), get_session_t("triangular"))
   })
 
   cpiyo3aem <- reactive({
-    cpi[which(cpi_year() == input$curr), ]
+    get_session_cpi()[which(cpi_year() == input$curr), ]
   })
   cpiyo3aem1 <- reactive({
-    cpi[which(cpi_year() == input$vslyr), ]
+    get_session_cpi()[which(cpi_year() == input$vslyr), ]
   })
 
   cpiadjo3aem <- reactive({
@@ -6739,7 +6709,7 @@ server <- function(input, output, session) {
 
   # for threshold>0 and linear crf
   xpctxso3aem1a <- reactive({
-    outer(o3thrchg(), beta(input$o3_rtype1, input$o3_crf1, input$o3_incr1), afb)
+    outer(o3thrchg(), beta(input$o3_rtype1, input$o3_crf1, input$o3_incr1, get_session_t("log-linear")), afb)
   })
   xpctxso3aem2a <- reactive({
     thr2(xpctxso3aem1a(), wtnum)
@@ -6771,7 +6741,7 @@ server <- function(input, output, session) {
 
   # for threshold>0 and log-linear crf
   xpctxso3aem1d <- reactive({
-    outer(o3thrchg(), beta(input$o3_rtype1, input$o3_crf1, input$o3_incr1), afa)
+    outer(o3thrchg(), beta(input$o3_rtype1, input$o3_crf1, input$o3_incr1, get_session_t("log-linear")), afa)
   })
   xpctxso3aem2d <- reactive({
     thr2(xpctxso3aem1d(), wtnum)
@@ -6801,19 +6771,19 @@ server <- function(input, output, session) {
   })
 
   xxpctxso3aem <- reactive({
-    if (input$o3thr == 0 & input$o3_rtype1 == i18n$t("linear")) {
-      xpctxso3aem1 <- outer(o3regchg(), beta(input$o3_rtype1, input$o3_crf1, input$o3_incr1), afb)
+    if (input$o3thr == 0 & input$o3_rtype1 == get_session_t("linear")) {
+      xpctxso3aem1 <- outer(o3regchg(), beta(input$o3_rtype1, input$o3_crf1, input$o3_incr1, get_session_t("log-linear")), afb)
       xpctxso3aem2 <- outer(o3regchg(), quantile(bo3aem(), 0.025), afb)
       xpctxso3aem3 <- outer(o3regchg(), quantile(bo3aem(), 0.975), afb)
-    } else if (input$o3thr == 0 & input$o3_rtype1 == i18n$t("log-linear")) {
-      xpctxso3aem1 <- outer(o3regchg(), beta(input$o3_rtype1, input$o3_crf1, input$o3_incr1), afa)
+    } else if (input$o3thr == 0 & input$o3_rtype1 == get_session_t("log-linear")) {
+      xpctxso3aem1 <- outer(o3regchg(), beta(input$o3_rtype1, input$o3_crf1, input$o3_incr1, get_session_t("log-linear")), afa)
       xpctxso3aem2 <- outer(o3regchg(), quantile(bo3aem(), 0.025), afa)
       xpctxso3aem3 <- outer(o3regchg(), quantile(bo3aem(), 0.975), afa)
-    } else if (input$o3thr > 0 & input$o3_rtype1 == i18n$t("linear")) {
+    } else if (input$o3thr > 0 & input$o3_rtype1 == get_session_t("linear")) {
       xpctxso3aem1 <- ypctxso3aem1()
       xpctxso3aem2 <- ypctxso3aem2()
       xpctxso3aem3 <- ypctxso3aem3()
-    } else if (input$o3thr > 0 & input$o3_rtype1 == i18n$t("log-linear")) {
+    } else if (input$o3thr > 0 & input$o3_rtype1 == get_session_t("log-linear")) {
       xpctxso3aem1 <- zpctxso3aem1()
       xpctxso3aem2 <- zpctxso3aem2()
       xpctxso3aem3 <- zpctxso3aem3()
@@ -6874,18 +6844,18 @@ server <- function(input, output, session) {
   # Summer O3 Chronic Exposure Respiratory Mortality
   set.seed(100)
   bo3cerm <- reactive({
-    rnorm(input$itn, beta(input$o3_rtype2, input$o3_crf2, input$o3_incr2), se(input$o3_rtype2, input$o3_u95_2, input$o3_l95_2, input$o3_incr2))
+    rnorm(input$itn, beta(input$o3_rtype2, input$o3_crf2, input$o3_incr2, get_session_t("log-linear")), se(input$o3_rtype2, input$o3_u95_2, input$o3_l95_2, input$o3_incr2, get_session_t("log-linear")))
   })
 
   set.seed(100)
   vo3cerm <- reactive({
-    valdist(input$vslfm, input$itn, input$vsl, input$lvsl, input$uvsl, input$pcvsl, input$plvsl)
+    valdist(input$vslfm, input$itn, input$vsl, input$lvsl, input$uvsl, input$pcvsl, input$plvsl, get_session_t("normal"), get_session_t("discrete"), get_session_t("triangular"))
   })
   cpiyo3cerm <- reactive({
-    cpi[which(cpi_year() == input$curr), ]
+    get_session_cpi()[which(cpi_year() == input$curr), ]
   })
   cpiyo3cerm1 <- reactive({
-    cpi[which(cpi_year() == input$vslyr), ]
+    get_session_cpi()[which(cpi_year() == input$vslyr), ]
   })
 
   cpiadjo3cerm <- reactive({
@@ -6900,14 +6870,14 @@ server <- function(input, output, session) {
   })
 
   fiveo3cerm <- reactive({
-    (fouro3cerm_age30plus() / 1000000) * fouro3cerm_Mort_respiratory() * af(fouro3cerm()$rtypeo3cerm, beta(fouro3cerm()$rtypeo3cerm, input$o3_crf2, input$o3_incr2), chg(fouro3cerm_summero3_2(), fouro3cerm_summero3_1(), input$summero3thr))
+    (fouro3cerm_age30plus() / 1000000) * fouro3cerm_Mort_respiratory() * af(fouro3cerm()$rtypeo3cerm, beta(fouro3cerm()$rtypeo3cerm, input$o3_crf2, input$o3_incr2, get_session_t("log-linear")), chg(fouro3cerm_summero3_2(), fouro3cerm_summero3_1(), input$summero3thr), get_session_t("log-linear"))
   })
 
   sixo3cerm <- reactive({
-    (fouro3cerm_age30plus() / 1000000) * fouro3cerm_Mort_respiratory() * af(fouro3cerm()$rtypeo3cerm, quantile(bo3cerm(), 0.025), chg(fouro3cerm_summero3_2(), fouro3cerm_summero3_1(), input$summero3thr))
+    (fouro3cerm_age30plus() / 1000000) * fouro3cerm_Mort_respiratory() * af(fouro3cerm()$rtypeo3cerm, quantile(bo3cerm(), 0.025), chg(fouro3cerm_summero3_2(), fouro3cerm_summero3_1(), input$summero3thr), get_session_t("log-linear"))
   })
   seveno3cerm <- reactive({
-    (fouro3cerm_age30plus() / 1000000) * fouro3cerm_Mort_respiratory() * af(fouro3cerm()$rtypeo3cerm, quantile(bo3cerm(), 0.975), chg(fouro3cerm_summero3_2(), fouro3cerm_summero3_1(), input$summero3thr))
+    (fouro3cerm_age30plus() / 1000000) * fouro3cerm_Mort_respiratory() * af(fouro3cerm()$rtypeo3cerm, quantile(bo3cerm(), 0.975), chg(fouro3cerm_summero3_2(), fouro3cerm_summero3_1(), input$summero3thr), get_session_t("log-linear"))
   })
 
   eighto3cerm <- reactive({
@@ -6939,13 +6909,13 @@ server <- function(input, output, session) {
     100000 * fiveo3cerm() / fouro3cerm_allages()
   })
   pctxso3cerm <- reactive({
-    af(fouro3cerm()$rtypeo3cerm, beta(fouro3cerm()$rtypeo3cerm, input$o3_crf2, input$o3_incr2), chg(fouro3cerm_summero3_2(), fouro3cerm_summero3_1(), input$summero3thr))
+    af(fouro3cerm()$rtypeo3cerm, beta(fouro3cerm()$rtypeo3cerm, input$o3_crf2, input$o3_incr2, get_session_t("log-linear")), chg(fouro3cerm_summero3_2(), fouro3cerm_summero3_1(), input$summero3thr), get_session_t("log-linear"))
   })
   pctxso3cerml95 <- reactive({
-    af(fouro3cerm()$rtypeo3cerm, quantile(bo3cerm(), 0.025), chg(fouro3cerm_summero3_2(), fouro3cerm_summero3_1(), input$summero3thr))
+    af(fouro3cerm()$rtypeo3cerm, quantile(bo3cerm(), 0.025), chg(fouro3cerm_summero3_2(), fouro3cerm_summero3_1(), input$summero3thr), get_session_t("log-linear"))
   })
   pctxso3cermu95 <- reactive({
-    af(fouro3cerm()$rtypeo3cerm, quantile(bo3cerm(), 0.975), chg(fouro3cerm_summero3_2(), fouro3cerm_summero3_1(), input$summero3thr))
+    af(fouro3cerm()$rtypeo3cerm, quantile(bo3cerm(), 0.975), chg(fouro3cerm_summero3_2(), fouro3cerm_summero3_1(), input$summero3thr), get_session_t("log-linear"))
   })
 
   leyrrep <- reactive({
@@ -6961,15 +6931,15 @@ server <- function(input, output, session) {
   # Summer O3 Minor Restricted Activity Days
   set.seed(100)
   bmrad <- reactive({
-    chg2(rnorm(input$itn, beta(input$o3_rtype5, input$o3_crf5, input$o3_incr5), se(input$o3_rtype5, input$o3_u95_5, input$o3_l95_5, input$o3_incr5)))
+    chg2(rnorm(input$itn, beta(input$o3_rtype5, input$o3_crf5, input$o3_incr5, get_session_t("log-linear")), se(input$o3_rtype5, input$o3_u95_5, input$o3_l95_5, input$o3_incr5, get_session_t("log-linear"))))
   })
 
   set.seed(100)
   vmrad <- reactive({
-    chg2(valdist(input$sourcevsl8c, input$itn, input$vsl8, input$lvsl8, input$uvsl8, input$pcvsl8, input$plvsl8))
+    chg2(valdist(input$sourcevsl8c, input$itn, input$vsl8, input$lvsl8, input$uvsl8, input$pcvsl8, input$plvsl8, get_session_t("normal"), get_session_t("discrete"), get_session_t("triangular")))
   })
   cpiy1mrad <- reactive({
-    cpi[which(cpi_year() == input$sourcevsl8b), ]
+    get_session_cpi()[which(cpi_year() == input$sourcevsl8b), ]
   })
 
   cpiadjmrad <- reactive({
@@ -6985,7 +6955,7 @@ server <- function(input, output, session) {
 
   # for threshold>0 and linear crf
   xpctxsmrad1a <- reactive({
-    outer(summo3thrchg(), beta(input$o3_rtype5, input$o3_crf5, input$o3_incr5), afb)
+    outer(summo3thrchg(), beta(input$o3_rtype5, input$o3_crf5, input$o3_incr5, get_session_t("log-linear")), afb)
   })
   xpctxsmrad2a <- reactive({
     thr2(xpctxsmrad1a(), wtnum)
@@ -7017,7 +6987,7 @@ server <- function(input, output, session) {
 
   # for threshold>0 and log-linear crf
   xpctxsmrad1d <- reactive({
-    outer(summo3thrchg(), beta(input$o3_rtype5, input$o3_crf5, input$o3_incr5), afa)
+    outer(summo3thrchg(), beta(input$o3_rtype5, input$o3_crf5, input$o3_incr5, get_session_t("log-linear")), afa)
   })
   xpctxsmrad2d <- reactive({
     thr2(xpctxsmrad1d(), wtnum)
@@ -7047,19 +7017,19 @@ server <- function(input, output, session) {
   })
 
   xxpctxsmrad <- reactive({
-    if (input$summero3thr == 0 & input$o3_rtype5 == i18n$t("linear")) {
-      xpctxsmrad1 <- outer(summo3regchg(), beta(input$o3_rtype5, input$o3_crf5, input$o3_incr5), afb)
+    if (input$summero3thr == 0 & input$o3_rtype5 == get_session_t("linear")) {
+      xpctxsmrad1 <- outer(summo3regchg(), beta(input$o3_rtype5, input$o3_crf5, input$o3_incr5, get_session_t("log-linear")), afb)
       xpctxsmrad2 <- outer(summo3regchg(), quantile(bmrad(), 0.025), afb)
       xpctxsmrad3 <- outer(summo3regchg(), quantile(bmrad(), 0.975), afb)
-    } else if (input$summero3thr == 0 & input$o3_rtype5 == i18n$t("log-linear")) {
-      xpctxsmrad1 <- outer(summo3regchg(), beta(input$o3_rtype5, input$o3_crf5, input$o3_incr5), afa)
+    } else if (input$summero3thr == 0 & input$o3_rtype5 == get_session_t("log-linear")) {
+      xpctxsmrad1 <- outer(summo3regchg(), beta(input$o3_rtype5, input$o3_crf5, input$o3_incr5, get_session_t("log-linear")), afa)
       xpctxsmrad2 <- outer(summo3regchg(), quantile(bmrad(), 0.025), afa)
       xpctxsmrad3 <- outer(summo3regchg(), quantile(bmrad(), 0.975), afa)
-    } else if (input$summero3thr > 0 & input$o3_rtype5 == i18n$t("linear")) {
+    } else if (input$summero3thr > 0 & input$o3_rtype5 == get_session_t("linear")) {
       xpctxsmrad1 <- ypctxsmrad1()
       xpctxsmrad2 <- ypctxsmrad2()
       xpctxsmrad3 <- ypctxsmrad3()
-    } else if (input$summero3thr > 0 & input$o3_rtype5 == i18n$t("log-linear")) {
+    } else if (input$summero3thr > 0 & input$o3_rtype5 == get_session_t("log-linear")) {
       xpctxsmrad1 <- zpctxsmrad1()
       xpctxsmrad2 <- zpctxsmrad2()
       xpctxsmrad3 <- zpctxsmrad3()
@@ -7120,15 +7090,15 @@ server <- function(input, output, session) {
   # O3 Summer o3arsd - Acute Respiratory Symptom Days
   set.seed(100)
   bo3arsd <- reactive({
-    chg2(rnorm(input$itn, beta(input$o3_rtype3, input$o3_crf3, input$o3_incr3), se(input$o3_rtype3, input$o3_u95_3, input$o3_l95_3, input$o3_incr3)))
+    chg2(rnorm(input$itn, beta(input$o3_rtype3, input$o3_crf3, input$o3_incr3, get_session_t("log-linear")), se(input$o3_rtype3, input$o3_u95_3, input$o3_l95_3, input$o3_incr3, get_session_t("log-linear"))))
   })
 
   set.seed(100)
   vo3arsd <- reactive({
-    chg2(valdist(input$vsl2fm, input$itn, input$vsl2, input$lvsl2, input$uvsl2, input$pcvsl2, input$plvsl2))
+    chg2(valdist(input$vsl2fm, input$itn, input$vsl2, input$lvsl2, input$uvsl2, input$pcvsl2, input$plvsl2, get_session_t("normal"), get_session_t("discrete"), get_session_t("triangular")))
   })
   cpiy1o3arsd <- reactive({
-    cpi[which(cpi_year() == input$vsl2yr), ]
+    get_session_cpi()[which(cpi_year() == input$vsl2yr), ]
   })
 
   cpiadjo3arsd <- reactive({
@@ -7145,7 +7115,7 @@ server <- function(input, output, session) {
 
   # for threshold>0 and linear crf
   xpctxso3arsd1a <- reactive({
-    outer(summo3thrchg(), beta(input$o3_rtype3, input$o3_crf3, input$o3_incr3), afb)
+    outer(summo3thrchg(), beta(input$o3_rtype3, input$o3_crf3, input$o3_incr3, get_session_t("log-linear")), afb)
   })
   xpctxso3arsd2a <- reactive({
     thr2(xpctxso3arsd1a(), wtnum)
@@ -7177,7 +7147,7 @@ server <- function(input, output, session) {
 
   # for threshold>0 and log-linear crf
   xpctxso3arsd1d <- reactive({
-    outer(summo3thrchg(), beta(input$o3_rtype3, input$o3_crf3, input$o3_incr3), afa)
+    outer(summo3thrchg(), beta(input$o3_rtype3, input$o3_crf3, input$o3_incr3, get_session_t("log-linear")), afa)
   })
   xpctxso3arsd2d <- reactive({
     thr2(xpctxso3arsd1d(), wtnum)
@@ -7207,19 +7177,19 @@ server <- function(input, output, session) {
   })
 
   xxpctxso3arsd <- reactive({
-    if (input$summero3thr == 0 & input$o3_rtype3 == i18n$t("linear")) {
-      xpctxso3arsd1 <- outer(summo3regchg(), beta(input$o3_rtype3, input$o3_crf3, input$o3_incr3), afb)
+    if (input$summero3thr == 0 & input$o3_rtype3 == get_session_t("linear")) {
+      xpctxso3arsd1 <- outer(summo3regchg(), beta(input$o3_rtype3, input$o3_crf3, input$o3_incr3, get_session_t("log-linear")), afb)
       xpctxso3arsd2 <- outer(summo3regchg(), quantile(bo3arsd(), 0.025), afb)
       xpctxso3arsd3 <- outer(summo3regchg(), quantile(bo3arsd(), 0.975), afb)
-    } else if (input$summero3thr == 0 & input$o3_rtype3 == i18n$t("log-linear")) {
-      xpctxso3arsd1 <- outer(summo3regchg(), beta(input$o3_rtype3, input$o3_crf3, input$o3_incr3), afa)
+    } else if (input$summero3thr == 0 & input$o3_rtype3 == get_session_t("log-linear")) {
+      xpctxso3arsd1 <- outer(summo3regchg(), beta(input$o3_rtype3, input$o3_crf3, input$o3_incr3, get_session_t("log-linear")), afa)
       xpctxso3arsd2 <- outer(summo3regchg(), quantile(bo3arsd(), 0.025), afa)
       xpctxso3arsd3 <- outer(summo3regchg(), quantile(bo3arsd(), 0.975), afa)
-    } else if (input$summero3thr > 0 & input$o3_rtype3 == i18n$t("linear")) {
+    } else if (input$summero3thr > 0 & input$o3_rtype3 == get_session_t("linear")) {
       xpctxso3arsd1 <- ypctxso3arsd1()
       xpctxso3arsd2 <- ypctxso3arsd2()
       xpctxso3arsd3 <- ypctxso3arsd3()
-    } else if (input$summero3thr > 0 & input$o3_rtype3 == i18n$t("log-linear")) {
+    } else if (input$summero3thr > 0 & input$o3_rtype3 == get_session_t("log-linear")) {
       xpctxso3arsd1 <- zpctxso3arsd1()
       xpctxso3arsd2 <- zpctxso3arsd2()
       xpctxso3arsd3 <- zpctxso3arsd3()
@@ -7303,16 +7273,16 @@ server <- function(input, output, session) {
   # O3 Summer - Asthma Symptom Days
   set.seed(100)
   bo3asd <- reactive({
-    chg2(rnorm(input$itn, beta(input$o3_rtype4, input$o3_crf4, input$o3_incr4), se(input$o3_rtype4, input$o3_u95_4, input$o3_l95_4, input$o3_incr4)))
+    chg2(rnorm(input$itn, beta(input$o3_rtype4, input$o3_crf4, input$o3_incr4, get_session_t("log-linear")), se(input$o3_rtype4, input$o3_u95_4, input$o3_l95_4, input$o3_incr4, get_session_t("log-linear"))))
   })
 
   set.seed(100)
   vo3asd <- reactive({
-    valdist(input$sourcevsl4c, input$itn, as.double(input$vsl4), as.double(input$lvsl4), as.double(input$uvsl4), input$pcvsl4, input$plvsl4)
+    valdist(input$sourcevsl4c, input$itn, as.double(input$vsl4), as.double(input$lvsl4), as.double(input$uvsl4), input$pcvsl4, input$plvsl4, get_session_t("normal"), get_session_t("discrete"), get_session_t("triangular"))
   })
 
   cpiy1o3asd <- reactive({
-    cpi[which(cpi_year() == input$sourcevsl4b), ]
+    get_session_cpi()[which(cpi_year() == input$sourcevsl4b), ]
   })
 
   cpiadjo3asd <- reactive({
@@ -7328,7 +7298,7 @@ server <- function(input, output, session) {
 
   # for threshold>0 and linear crf
   xpctxso3asd1a <- reactive({
-    outer(summo3thrchg(), beta(input$o3_rtype4, input$o3_crf4, input$o3_incr4), afb)
+    outer(summo3thrchg(), beta(input$o3_rtype4, input$o3_crf4, input$o3_incr4, get_session_t("log-linear")), afb)
   })
   xpctxso3asd2a <- reactive({
     thr2(xpctxso3asd1a(), wtnum)
@@ -7359,7 +7329,7 @@ server <- function(input, output, session) {
 
   # for threshold>0 and log-linear crf
   xpctxso3asd1d <- reactive({
-    outer(summo3thrchg(), beta(input$o3_rtype4, input$o3_crf4, input$o3_incr4), afa)
+    outer(summo3thrchg(), beta(input$o3_rtype4, input$o3_crf4, input$o3_incr4, get_session_t("log-linear")), afa)
   })
   xpctxso3asd2d <- reactive({
     thr2(xpctxso3asd1d(), wtnum)
@@ -7389,19 +7359,19 @@ server <- function(input, output, session) {
   })
 
   xxpctxso3asd <- reactive({
-    if (input$summero3thr == 0 & input$o3_rtype4 == i18n$t("linear")) {
-      xpctxso3asd1 <- outer(summo3regchg(), beta(input$o3_rtype4, input$o3_crf4, input$o3_incr4), afb)
+    if (input$summero3thr == 0 & input$o3_rtype4 == get_session_t("linear")) {
+      xpctxso3asd1 <- outer(summo3regchg(), beta(input$o3_rtype4, input$o3_crf4, input$o3_incr4, get_session_t("log-linear")), afb)
       xpctxso3asd2 <- outer(summo3regchg(), quantile(bo3asd(), 0.025), afb)
       xpctxso3asd3 <- outer(summo3regchg(), quantile(bo3asd(), 0.975), afb)
-    } else if (input$summero3thr == 0 & input$o3_rtype4 == i18n$t("log-linear")) {
-      xpctxso3asd1 <- outer(summo3regchg(), beta(input$o3_rtype4, input$o3_crf4, input$o3_incr4), afa)
+    } else if (input$summero3thr == 0 & input$o3_rtype4 == get_session_t("log-linear")) {
+      xpctxso3asd1 <- outer(summo3regchg(), beta(input$o3_rtype4, input$o3_crf4, input$o3_incr4, get_session_t("log-linear")), afa)
       xpctxso3asd2 <- outer(summo3regchg(), quantile(bo3asd(), 0.025), afa)
       xpctxso3asd3 <- outer(summo3regchg(), quantile(bo3asd(), 0.975), afa)
-    } else if (input$summero3thr > 0 & input$o3_rtype4 == i18n$t("linear")) {
+    } else if (input$summero3thr > 0 & input$o3_rtype4 == get_session_t("linear")) {
       xpctxso3asd1 <- ypctxso3asd1()
       xpctxso3asd2 <- ypctxso3asd2()
       xpctxso3asd3 <- ypctxso3asd3()
-    } else if (input$summero3thr > 0 & input$o3_rtype4 == i18n$t("log-linear")) {
+    } else if (input$summero3thr > 0 & input$o3_rtype4 == get_session_t("log-linear")) {
       xpctxso3asd1 <- zpctxso3asd1()
       xpctxso3asd2 <- zpctxso3asd2()
       xpctxso3asd3 <- zpctxso3asd3()
@@ -7447,15 +7417,15 @@ server <- function(input, output, session) {
   # O3 Summer  Respiratory Emergency Room Visits
   set.seed(100)
   bo3rerv <- reactive({
-    chg2(rnorm(input$itn, beta(input$o3_rtype6, input$o3_crf6, input$o3_incr6), se(input$o3_rtype6, input$o3_u95_6, input$o3_l95_6, input$o3_incr6)))
+    chg2(rnorm(input$itn, beta(input$o3_rtype6, input$o3_crf6, input$o3_incr6, get_session_t("log-linear")), se(input$o3_rtype6, input$o3_u95_6, input$o3_l95_6, input$o3_incr6, get_session_t("log-linear"))))
   })
   set.seed(100)
   vo3rerv <- reactive({
-    chg2(valdist(input$sourcevsl9c, input$itn, input$vsl9, input$lvsl9, input$uvsl9, input$pcvsl9, input$plvsl9))
+    chg2(valdist(input$sourcevsl9c, input$itn, input$vsl9, input$lvsl9, input$uvsl9, input$pcvsl9, input$plvsl9, get_session_t("normal"), get_session_t("discrete"), get_session_t("triangular")))
   })
 
   cpiy1o3rerv <- reactive({
-    cpi[which(cpi_year() == input$sourcevsl9b), ]
+    get_session_cpi()[which(cpi_year() == input$sourcevsl9b), ]
   })
 
   cpiadjo3rerv <- reactive({
@@ -7471,7 +7441,7 @@ server <- function(input, output, session) {
 
   # for threshold>0 and linear crf
   xpctxso3rerv1a <- reactive({
-    outer(summo3thrchg(), beta(input$o3_rtype6, input$o3_crf6, input$o3_incr6), afb)
+    outer(summo3thrchg(), beta(input$o3_rtype6, input$o3_crf6, input$o3_incr6, get_session_t("log-linear")), afb)
   })
   xpctxso3rerv2a <- reactive({
     thr2(xpctxso3rerv1a(), wtnum)
@@ -7502,7 +7472,7 @@ server <- function(input, output, session) {
 
   # for threshold>0 and log-linear crf
   xpctxso3rerv1d <- reactive({
-    outer(summo3thrchg(), beta(input$o3_rtype6, input$o3_crf6, input$o3_incr6), afa)
+    outer(summo3thrchg(), beta(input$o3_rtype6, input$o3_crf6, input$o3_incr6, get_session_t("log-linear")), afa)
   })
   xpctxso3rerv2d <- reactive({
     thr2(xpctxso3rerv1d(), wtnum)
@@ -7532,19 +7502,19 @@ server <- function(input, output, session) {
   })
 
   xxpctxso3rerv <- reactive({
-    if (input$summero3thr == 0 & input$o3_rtype6 == i18n$t("linear")) {
-      xpctxso3rerv1 <- outer(summo3regchg(), beta(input$o3_rtype6, input$o3_crf6, input$o3_incr6), afb)
+    if (input$summero3thr == 0 & input$o3_rtype6 == get_session_t("linear")) {
+      xpctxso3rerv1 <- outer(summo3regchg(), beta(input$o3_rtype6, input$o3_crf6, input$o3_incr6, get_session_t("log-linear")), afb)
       xpctxso3rerv2 <- outer(summo3regchg(), quantile(bo3rerv(), 0.025), afb)
       xpctxso3rerv3 <- outer(summo3regchg(), quantile(bo3rerv(), 0.975), afb)
-    } else if (input$summero3thr == 0 & input$o3_rtype6 == i18n$t("log-linear")) {
-      xpctxso3rerv1 <- outer(summo3regchg(), beta(input$o3_rtype6, input$o3_crf6, input$o3_incr6), afa)
+    } else if (input$summero3thr == 0 & input$o3_rtype6 == get_session_t("log-linear")) {
+      xpctxso3rerv1 <- outer(summo3regchg(), beta(input$o3_rtype6, input$o3_crf6, input$o3_incr6, get_session_t("log-linear")), afa)
       xpctxso3rerv2 <- outer(summo3regchg(), quantile(bo3rerv(), 0.025), afa)
       xpctxso3rerv3 <- outer(summo3regchg(), quantile(bo3rerv(), 0.975), afa)
-    } else if (input$summero3thr > 0 & input$o3_rtype6 == i18n$t("linear")) {
+    } else if (input$summero3thr > 0 & input$o3_rtype6 == get_session_t("linear")) {
       xpctxso3rerv1 <- ypctxso3rerv1()
       xpctxso3rerv2 <- ypctxso3rerv2()
       xpctxso3rerv3 <- ypctxso3rerv3()
-    } else if (input$summero3thr > 0 & input$o3_rtype6 == i18n$t("log-linear")) {
+    } else if (input$summero3thr > 0 & input$o3_rtype6 == get_session_t("log-linear")) {
       xpctxso3rerv1 <- zpctxso3rerv1()
       xpctxso3rerv2 <- zpctxso3rerv2()
       xpctxso3rerv3 <- zpctxso3rerv3()
@@ -7602,7 +7572,7 @@ server <- function(input, output, session) {
   # O3 Summer Respiratory Hospital Admissions
   set.seed(100)
   bo3rha <- reactive({
-    chg2(rnorm(input$itn, beta(input$o3_rtype7, input$o3_crf7, input$o3_incr7), se(input$o3_rtype7, input$o3_u95_7, input$o3_l95_7, input$o3_incr7)))
+    chg2(rnorm(input$itn, beta(input$o3_rtype7, input$o3_crf7, input$o3_incr7, get_session_t("log-linear")), se(input$o3_rtype7, input$o3_u95_7, input$o3_l95_7, input$o3_incr7, get_session_t("log-linear"))))
   })
 
   rtypeo3rha <- reactive({
@@ -7614,7 +7584,7 @@ server <- function(input, output, session) {
 
   # for threshold>0 and linear crf
   xpctxso3rha1a <- reactive({
-    outer(summo3thrchg(), beta(input$o3_rtype7, input$o3_crf7, input$o3_incr7), afb)
+    outer(summo3thrchg(), beta(input$o3_rtype7, input$o3_crf7, input$o3_incr7, get_session_t("log-linear")), afb)
   })
   xpctxso3rha2a <- reactive({
     thr2(xpctxso3rha1a(), wtnum)
@@ -7645,7 +7615,7 @@ server <- function(input, output, session) {
 
   # for threshold>0 and log-linear crf
   xpctxso3rha1d <- reactive({
-    outer(summo3thrchg(), beta(input$o3_rtype7, input$o3_crf7, input$o3_incr7), afa)
+    outer(summo3thrchg(), beta(input$o3_rtype7, input$o3_crf7, input$o3_incr7, get_session_t("log-linear")), afa)
   })
   xpctxso3rha2d <- reactive({
     thr2(xpctxso3rha1d(), wtnum)
@@ -7675,19 +7645,19 @@ server <- function(input, output, session) {
   })
 
   xxpctxso3rha <- reactive({
-    if (input$summero3thr == 0 & input$o3_rtype7 == i18n$t("linear")) {
-      xpctxso3rha1 <- outer(summo3regchg(), beta(input$o3_rtype7, input$o3_crf7, input$o3_incr7), afb)
+    if (input$summero3thr == 0 & input$o3_rtype7 == get_session_t("linear")) {
+      xpctxso3rha1 <- outer(summo3regchg(), beta(input$o3_rtype7, input$o3_crf7, input$o3_incr7, get_session_t("log-linear")), afb)
       xpctxso3rha2 <- outer(summo3regchg(), quantile(bo3rha(), 0.025), afb)
       xpctxso3rha3 <- outer(summo3regchg(), quantile(bo3rha(), 0.975), afb)
-    } else if (input$summero3thr == 0 & input$o3_rtype7 == i18n$t("log-linear")) {
-      xpctxso3rha1 <- outer(summo3regchg(), beta(input$o3_rtype7, input$o3_crf7, input$o3_incr7), afa)
+    } else if (input$summero3thr == 0 & input$o3_rtype7 == get_session_t("log-linear")) {
+      xpctxso3rha1 <- outer(summo3regchg(), beta(input$o3_rtype7, input$o3_crf7, input$o3_incr7, get_session_t("log-linear")), afa)
       xpctxso3rha2 <- outer(summo3regchg(), quantile(bo3rha(), 0.025), afa)
       xpctxso3rha3 <- outer(summo3regchg(), quantile(bo3rha(), 0.975), afa)
-    } else if (input$summero3thr > 0 & input$o3_rtype7 == i18n$t("linear")) {
+    } else if (input$summero3thr > 0 & input$o3_rtype7 == get_session_t("linear")) {
       xpctxso3rha1 <- ypctxso3rha1()
       xpctxso3rha2 <- ypctxso3rha2()
       xpctxso3rha3 <- ypctxso3rha3()
-    } else if (input$summero3thr > 0 & input$o3_rtype7 == i18n$t("log-linear")) {
+    } else if (input$summero3thr > 0 & input$o3_rtype7 == get_session_t("log-linear")) {
       xpctxso3rha1 <- zpctxso3rha1()
       xpctxso3rha2 <- zpctxso3rha2()
       xpctxso3rha3 <- zpctxso3rha3()
@@ -7725,18 +7695,18 @@ server <- function(input, output, session) {
   # SO2  Acute Exposure Mortality
   set.seed(100)
   bso2aem <- reactive({
-    chg2(rnorm(input$itn, beta(input$so2_rtype, input$so2_crf, input$so2_incr), se(input$so2_rtype, input$so2_u95, input$so2_l95, input$so2_incr)))
+    chg2(rnorm(input$itn, beta(input$so2_rtype, input$so2_crf, input$so2_incr, get_session_t("log-linear")), se(input$so2_rtype, input$so2_u95, input$so2_l95, input$so2_incr, get_session_t("log-linear"))))
   })
 
   set.seed(100)
   vso2aem <- reactive({
-    valdist(input$vslfm, input$itn, input$vsl, input$lvsl, input$uvsl, input$pcvsl, input$plvsl)
+    valdist(input$vslfm, input$itn, input$vsl, input$lvsl, input$uvsl, input$pcvsl, input$plvsl, get_session_t("normal"), get_session_t("discrete"), get_session_t("triangular"))
   })
   cpiyso2aem <- reactive({
-    cpi[which(cpi_year() == input$curr), ]
+    get_session_cpi()[which(cpi_year() == input$curr), ]
   })
   cpiyso2aem1 <- reactive({
-    cpi[which(cpi_year() == input$vslyr), ]
+    get_session_cpi()[which(cpi_year() == input$vslyr), ]
   })
 
   cpiadjso2aem <- reactive({
@@ -7752,7 +7722,7 @@ server <- function(input, output, session) {
 
   # for threshold>0 and linear crf
   xpctxsso2aem1a <- reactive({
-    outer(so2thrchg(), beta(input$so2_rtype, input$so2_crf, input$so2_incr), afb)
+    outer(so2thrchg(), beta(input$so2_rtype, input$so2_crf, input$so2_incr, get_session_t("log-linear")), afb)
   })
   xpctxsso2aem2a <- reactive({
     thr2(xpctxsso2aem1a(), wtnum)
@@ -7783,7 +7753,7 @@ server <- function(input, output, session) {
 
   # for threshold>0 and log-linear crf
   xpctxsso2aem1d <- reactive({
-    outer(so2thrchg(), beta(input$so2_rtype, input$so2_crf, input$so2_incr), afa)
+    outer(so2thrchg(), beta(input$so2_rtype, input$so2_crf, input$so2_incr, get_session_t("log-linear")), afa)
   })
   xpctxsso2aem2d <- reactive({
     thr2(xpctxsso2aem1d(), wtnum)
@@ -7813,19 +7783,19 @@ server <- function(input, output, session) {
   })
 
   xxpctxsso2aem <- reactive({
-    if (input$so2thr == 0 & input$so2_rtype == i18n$t("linear")) {
-      xpctxsso2aem1 <- outer(so2regchg(), beta(input$so2_rtype, input$so2_crf, input$so2_incr), afb)
+    if (input$so2thr == 0 & input$so2_rtype == get_session_t("linear")) {
+      xpctxsso2aem1 <- outer(so2regchg(), beta(input$so2_rtype, input$so2_crf, input$so2_incr, get_session_t("log-linear")), afb)
       xpctxsso2aem2 <- outer(so2regchg(), quantile(bso2aem(), 0.025), afb)
       xpctxsso2aem3 <- outer(so2regchg(), quantile(bso2aem(), 0.975), afb)
-    } else if (input$so2thr == 0 & input$so2_rtype == i18n$t("log-linear")) {
-      xpctxsso2aem1 <- outer(so2regchg(), beta(input$so2_rtype, input$so2_crf, input$so2_incr), afa)
+    } else if (input$so2thr == 0 & input$so2_rtype == get_session_t("log-linear")) {
+      xpctxsso2aem1 <- outer(so2regchg(), beta(input$so2_rtype, input$so2_crf, input$so2_incr, get_session_t("log-linear")), afa)
       xpctxsso2aem2 <- outer(so2regchg(), quantile(bso2aem(), 0.025), afa)
       xpctxsso2aem3 <- outer(so2regchg(), quantile(bso2aem(), 0.975), afa)
-    } else if (input$so2thr > 0 & input$so2_rtype == i18n$t("linear")) {
+    } else if (input$so2thr > 0 & input$so2_rtype == get_session_t("linear")) {
       xpctxsso2aem1 <- ypctxsso2aem1()
       xpctxsso2aem2 <- ypctxsso2aem2()
       xpctxsso2aem3 <- ypctxsso2aem3()
-    } else if (input$so2thr > 0 & input$so2_rtype == i18n$t("log-linear")) {
+    } else if (input$so2thr > 0 & input$so2_rtype == get_session_t("log-linear")) {
       xpctxsso2aem1 <- zpctxsso2aem1()
       xpctxsso2aem2 <- zpctxsso2aem2()
       xpctxsso2aem3 <- zpctxsso2aem3()
@@ -7884,18 +7854,18 @@ server <- function(input, output, session) {
   # CO (24 hour)  Acute Exposure Mortality
   set.seed(100)
   bco24aem <- reactive({
-    chg2(rnorm(input$itn, beta(input$co24_rtype, input$co24_crf, input$co24_incr), se(input$co24_rtype, input$co24_u95, input$co24_l95, input$co24_incr)))
+    chg2(rnorm(input$itn, beta(input$co24_rtype, input$co24_crf, input$co24_incr, get_session_t("log-linear")), se(input$co24_rtype, input$co24_u95, input$co24_l95, input$co24_incr, get_session_t("log-linear"))))
   })
   set.seed(100)
 
   vco24aem <- reactive({
-    valdist(input$vslfm, input$itn, input$vsl, input$lvsl, input$uvsl, input$pcvsl, input$plvsl)
+    valdist(input$vslfm, input$itn, input$vsl, input$lvsl, input$uvsl, input$pcvsl, input$plvsl, get_session_t("normal"), get_session_t("discrete"), get_session_t("triangular"))
   })
   cpiyco24aem <- reactive({
-    cpi[which(cpi_year() == input$curr), ]
+    get_session_cpi()[which(cpi_year() == input$curr), ]
   })
   cpiyco24aem1 <- reactive({
-    cpi[which(cpi_year() == input$vslyr), ]
+    get_session_cpi()[which(cpi_year() == input$vslyr), ]
   })
 
   cpiadjco24aem <- reactive({
@@ -7911,7 +7881,7 @@ server <- function(input, output, session) {
 
   # for threshold>0 and linear crf
   xpctxsco24aem1a <- reactive({
-    outer(co24thrchg(), beta(input$co24_rtype, input$co24_crf, input$co24_incr), afb)
+    outer(co24thrchg(), beta(input$co24_rtype, input$co24_crf, input$co24_incr, get_session_t("log-linear")), afb)
   })
   xpctxsco24aem2a <- reactive({
     thr2(xpctxsco24aem1a(), wtnum)
@@ -7942,7 +7912,7 @@ server <- function(input, output, session) {
 
   # for threshold>0 and log-linear crf
   xpctxsco24aem1d <- reactive({
-    outer(co24thrchg(), beta(input$co24_rtype, input$co24_crf, input$co24_incr), afa)
+    outer(co24thrchg(), beta(input$co24_rtype, input$co24_crf, input$co24_incr, get_session_t("log-linear")), afa)
   })
   xpctxsco24aem2d <- reactive({
     thr2(xpctxsco24aem1d(), wtnum)
@@ -7972,19 +7942,19 @@ server <- function(input, output, session) {
   })
 
   xxpctxsco24aem <- reactive({
-    if (input$cothr == 0 & input$co24_rtype == i18n$t("linear")) {
-      xpctxsco24aem1 <- outer(co24regchg(), beta(input$co24_rtype, input$co24_crf, input$co24_incr), afb)
+    if (input$cothr == 0 & input$co24_rtype == get_session_t("linear")) {
+      xpctxsco24aem1 <- outer(co24regchg(), beta(input$co24_rtype, input$co24_crf, input$co24_incr, get_session_t("log-linear")), afb)
       xpctxsco24aem2 <- outer(co24regchg(), quantile(bco24aem(), 0.025), afb)
       xpctxsco24aem3 <- outer(co24regchg(), quantile(bco24aem(), 0.975), afb)
-    } else if (input$cothr == 0 & input$co24_rtype == i18n$t("log-linear")) {
-      xpctxsco24aem1 <- outer(co24regchg(), beta(input$co24_rtype, input$co24_crf, input$co24_incr), afa)
+    } else if (input$cothr == 0 & input$co24_rtype == get_session_t("log-linear")) {
+      xpctxsco24aem1 <- outer(co24regchg(), beta(input$co24_rtype, input$co24_crf, input$co24_incr, get_session_t("log-linear")), afa)
       xpctxsco24aem2 <- outer(co24regchg(), quantile(bco24aem(), 0.025), afa)
       xpctxsco24aem3 <- outer(co24regchg(), quantile(bco24aem(), 0.975), afa)
-    } else if (input$cothr > 0 & input$co24_rtype == i18n$t("linear")) {
+    } else if (input$cothr > 0 & input$co24_rtype == get_session_t("linear")) {
       xpctxsco24aem1 <- ypctxsco24aem1()
       xpctxsco24aem2 <- ypctxsco24aem2()
       xpctxsco24aem3 <- ypctxsco24aem3()
-    } else if (input$cothr > 0 & input$co24_rtype == i18n$t("log-linear")) {
+    } else if (input$cothr > 0 & input$co24_rtype == get_session_t("log-linear")) {
       xpctxsco24aem1 <- zpctxsco24aem1()
       xpctxsco24aem2 <- zpctxsco24aem2()
       xpctxsco24aem3 <- zpctxsco24aem3()
@@ -8048,15 +8018,15 @@ server <- function(input, output, session) {
   # CO (1 hour) Elderly Cardiac Hospital Admissions
   set.seed(100)
   becha <- reactive({
-    chg2(rnorm(input$itn, beta(input$co1_rtype, input$co1_crf, input$co1_incr), se(input$co1_rtype, input$co1_u95, input$co1_l95, input$co1_incr)))
+    chg2(rnorm(input$itn, beta(input$co1_rtype, input$co1_crf, input$co1_incr, get_session_t("log-linear")), se(input$co1_rtype, input$co1_u95, input$co1_l95, input$co1_incr, get_session_t("log-linear"))))
   })
 
   set.seed(100)
   vecha <- reactive({
-    chg2(valdist(input$sourcevsl7c, input$itn, input$vsl7, input$lvsl7, input$uvsl7, input$pcvsl7, input$plvsl7))
+    chg2(valdist(input$sourcevsl7c, input$itn, input$vsl7, input$lvsl7, input$uvsl7, input$pcvsl7, input$plvsl7, get_session_t("normal"), get_session_t("discrete"), get_session_t("triangular")))
   })
   cpiy1echa <- reactive({
-    cpi[which(cpi_year() == input$sourcevsl7b), ]
+    get_session_cpi()[which(cpi_year() == input$sourcevsl7b), ]
   })
 
   cpiadjecha <- reactive({
@@ -8072,7 +8042,7 @@ server <- function(input, output, session) {
 
   # for threshold>0 and linear crf
   xpctxsco1aem1a <- reactive({
-    outer(co1thrchg(), beta(input$co1_rtype, input$co1_crf, input$co1_incr), afb)
+    outer(co1thrchg(), beta(input$co1_rtype, input$co1_crf, input$co1_incr, get_session_t("log-linear")), afb)
   })
   xpctxsco1aem2a <- reactive({
     thr2(xpctxsco1aem1a(), wtnum)
@@ -8103,7 +8073,7 @@ server <- function(input, output, session) {
 
   # for threshold>0 and log-linear crf
   xpctxsco1aem1d <- reactive({
-    outer(co1thrchg(), beta(input$co1_rtype, input$co1_crf, input$co1_incr), afa)
+    outer(co1thrchg(), beta(input$co1_rtype, input$co1_crf, input$co1_incr, get_session_t("log-linear")), afa)
   })
   xpctxsco1aem2d <- reactive({
     thr2(xpctxsco1aem1d(), wtnum)
@@ -8133,19 +8103,19 @@ server <- function(input, output, session) {
   })
 
   xxpctxsco1aem <- reactive({
-    if (input$cothr == 0 & input$co1_rtype == i18n$t("linear")) {
-      xpctxsco1aem1 <- outer(co1regchg(), beta(input$co1_rtype, input$co1_crf, input$co1_incr), afb)
+    if (input$cothr == 0 & input$co1_rtype == get_session_t("linear")) {
+      xpctxsco1aem1 <- outer(co1regchg(), beta(input$co1_rtype, input$co1_crf, input$co1_incr, get_session_t("log-linear")), afb)
       xpctxsco1aem2 <- outer(co1regchg(), quantile(becha(), 0.025), afb)
       xpctxsco1aem3 <- outer(co1regchg(), quantile(becha(), 0.975), afb)
-    } else if (input$cothr == 0 & input$co1_rtype == i18n$t("log-linear")) {
-      xpctxsco1aem1 <- outer(co1regchg(), beta(input$co1_rtype, input$co1_crf, input$co1_incr), afa)
+    } else if (input$cothr == 0 & input$co1_rtype == get_session_t("log-linear")) {
+      xpctxsco1aem1 <- outer(co1regchg(), beta(input$co1_rtype, input$co1_crf, input$co1_incr, get_session_t("log-linear")), afa)
       xpctxsco1aem2 <- outer(co1regchg(), quantile(becha(), 0.025), afa)
       xpctxsco1aem3 <- outer(co1regchg(), quantile(becha(), 0.975), afa)
-    } else if (input$cothr > 0 & input$co1_rtype == i18n$t("linear")) {
+    } else if (input$cothr > 0 & input$co1_rtype == get_session_t("linear")) {
       xpctxsco1aem1 <- ypctxsco1aem1()
       xpctxsco1aem2 <- ypctxsco1aem2()
       xpctxsco1aem3 <- ypctxsco1aem3()
-    } else if (input$cothr > 0 & input$co1_rtype == i18n$t("log-linear")) {
+    } else if (input$cothr > 0 & input$co1_rtype == get_session_t("log-linear")) {
       xpctxsco1aem1 <- zpctxsco1aem1()
       xpctxsco1aem2 <- zpctxsco1aem2()
       xpctxsco1aem3 <- zpctxsco1aem3()
@@ -8240,8 +8210,8 @@ server <- function(input, output, session) {
   eleventx_r2 <- reactive({
     txc1 <- eleventx_r1()
     colnames(txc1) <- c(
-      i18n$t("year"), i18n$t("scenario"), i18n$t("CDUID"), "province", i18n$t("pollutant"),
-      i18n$t("endpoint"), "counts", "counts_per_100k", "DALYs", "pop"
+      get_session_t("year"), get_session_t("scenario"), get_session_t("CDUID"), "province", get_session_t("pollutant"),
+      get_session_t("endpoint"), "counts", "counts_per_100k", "DALYs", "pop"
     )
     txc1
   })
@@ -8265,7 +8235,7 @@ server <- function(input, output, session) {
   caneleventx_r4 <- reactive({
     txc2 <- caneleventx_r3()
     colnames(txc2) <- c(
-      i18n$t("year"), i18n$t("scenario"), "region", i18n$t("pollutant"), i18n$t("endpoint"), "counts",
+      get_session_t("year"), get_session_t("scenario"), "region", get_session_t("pollutant"), get_session_t("endpoint"), "counts",
       "counts_per_100k", "DALYs"
     )
     txc2
@@ -8287,7 +8257,7 @@ server <- function(input, output, session) {
   proeleventx_r3 <- reactive({
     txc3 <- proeleventx_r2()
     colnames(txc3) <- c(
-      i18n$t("year"), i18n$t("scenario"), "region", i18n$t("pollutant"), i18n$t("endpoint"),
+      get_session_t("year"), get_session_t("scenario"), "region", get_session_t("pollutant"), get_session_t("endpoint"),
       "counts", "counts_per_100k", "DALYs"
     )
     txc3
@@ -8306,13 +8276,13 @@ server <- function(input, output, session) {
   })
 
   cdeleventx_r1 <- reactive({
-    cbind(eleventx_r2()[c(1, 2, 3, 4)], i18n$t("CD"), eleventx_r2()[c(5, 6, 7, 8, 9)])
+    cbind(eleventx_r2()[c(1, 2, 3, 4)], get_session_t("CD"), eleventx_r2()[c(5, 6, 7, 8, 9)])
   })
   cdeleventx_r2 <- reactive({
     txc4 <- cdeleventx_r1()
     colnames(txc4) <- c(
-      i18n$t("year"), i18n$t("scenario"), "geocode", "region", "geotype",
-      i18n$t("pollutant"), i18n$t("endpoint"), "counts", "counts_per_100k", "DALYs"
+      get_session_t("year"), get_session_t("scenario"), "geocode", "region", "geotype",
+      get_session_t("pollutant"), get_session_t("endpoint"), "counts", "counts_per_100k", "DALYs"
     )
     txc4
   })
@@ -8332,9 +8302,9 @@ server <- function(input, output, session) {
   xfinaleleventx_r2 <- reactive({
     xtxc4 <- finaleleventx_r2()
     colnames(xtxc4) <- c(
-      i18n$t("Year"), i18n$t("Scenario"), i18n$t("Geocode"), i18n$t("Region"), i18n$t("Type of Geography"),
-      i18n$t("Pollutant"), i18n$t("Endpoint"), i18n$t("Counts"), i18n$t("Counts per 100,000"),
-      i18n$t("Disability-Adjusted Life Years")
+      get_session_t("Year"), get_session_t("Scenario"), get_session_t("Geocode"), get_session_t("Region"), get_session_t("Type of Geography"),
+      get_session_t("Pollutant"), get_session_t("Endpoint"), get_session_t("Counts"), get_session_t("Counts per 100,000"),
+      get_session_t("Disability-Adjusted Life Years")
     )
     xtxc4
   })
@@ -8349,8 +8319,8 @@ server <- function(input, output, session) {
   x3finaleleventx_r2 <- reactive({
     x3tox1 <- x2finaleleventx_r2()
     colnames(x3tox1) <- c(
-      i18n$t("Year"), i18n$t("Scenario"), i18n$t("Geocode"), i18n$t("Type of Geography"), i18n$t("Region"), i18n$t("Pollutant"),
-      i18n$t("Endpoint"), i18n$t("Counts"), i18n$t("Counts per 100,000"), i18n$t("Disability-Adjusted Life Years")
+      get_session_t("Year"), get_session_t("Scenario"), get_session_t("Geocode"), get_session_t("Type of Geography"), get_session_t("Region"), get_session_t("Pollutant"),
+      get_session_t("Endpoint"), get_session_t("Counts"), get_session_t("Counts per 100,000"), get_session_t("Disability-Adjusted Life Years")
     )
     x3tox1
   })
@@ -8398,21 +8368,21 @@ server <- function(input, output, session) {
   eleventxa_r3 <- reactive({
     txa1 <- eleventxa_r2()
     colnames(txa1) <- c(
-      i18n$t("year"), i18n$t("scenario"), i18n$t("CDUID"), "province", i18n$t("pollutant"),
-      i18n$t("endpoint"), "Hazard_Quotient"
+      get_session_t("year"), get_session_t("scenario"), get_session_t("CDUID"), "province", get_session_t("pollutant"),
+      get_session_t("endpoint"), "Hazard_Quotient"
     )
     txa1
   })
 
   eleventxa_r4 <- reactive({
-    cbind(eleventxa_r3()[c(1, 2, 3, 4)], i18n$t("CD"), eleventxa_r3()[c(5, 6, 7)])
+    cbind(eleventxa_r3()[c(1, 2, 3, 4)], get_session_t("CD"), eleventxa_r3()[c(5, 6, 7)])
   })
 
   eleventxa_r5 <- reactive({
     txaa2 <- eleventxa_r4()
     colnames(txaa2) <- c(
-      i18n$t("year"), i18n$t("scenario"), "geocode", "region", "geotype", i18n$t("pollutant"),
-      i18n$t("endpoint"), "Hazard_Quotient"
+      get_session_t("year"), get_session_t("scenario"), "geocode", "region", "geotype", get_session_t("pollutant"),
+      get_session_t("endpoint"), "Hazard_Quotient"
     )
     txaa2
   })
@@ -8424,30 +8394,30 @@ server <- function(input, output, session) {
   })
 
   canpro_Benzene1 <- reactive({
-    cbind(Canprowexposure1()[c(1, 2, 3)], i18n$t("Benzene"), i18n$t("Hematological"), Canprowexposure1_Benzene() / input$bzanrfc)
+    cbind(Canprowexposure1()[c(1, 2, 3)], get_session_t("Benzene"), get_session_t("Hematological"), Canprowexposure1_Benzene() / input$bzanrfc)
   })
   canpro_Benzene2 <- reactive({
     ben1 <- canpro_Benzene1()
-    colnames(ben1) <- c(i18n$t("year"), i18n$t("scenario"), "region", i18n$t("pollutant"), i18n$t("endpoint"), "Hazard_Quotient")
+    colnames(ben1) <- c(get_session_t("year"), get_session_t("scenario"), "region", get_session_t("pollutant"), get_session_t("endpoint"), "Hazard_Quotient")
     ben1
   })
 
   canpro_Acetaldehyde1 <- reactive({
-    cbind(Canprowexposure1()[c(1, 2, 3)], i18n$t("Acetaldehyde"), i18n$t("Respiratory (histological)"), Canprowexposure1_Acetaldehyde() / input$acanrfc)
+    cbind(Canprowexposure1()[c(1, 2, 3)], get_session_t("Acetaldehyde"), get_session_t("Respiratory (histological)"), Canprowexposure1_Acetaldehyde() / input$acanrfc)
   })
   canpro_Acetaldehyde2 <- reactive({
     acet1 <- canpro_Acetaldehyde1()
-    colnames(acet1) <- c(i18n$t("year"), i18n$t("scenario"), "region", i18n$t("pollutant"), i18n$t("endpoint"), "Hazard_Quotient")
+    colnames(acet1) <- c(get_session_t("year"), get_session_t("scenario"), "region", get_session_t("pollutant"), get_session_t("endpoint"), "Hazard_Quotient")
     acet1
   })
 
   canpro_Formaldehyde1 <- reactive({
-    cbind(Canprowexposure1()[c(1, 2, 3)], i18n$t("Formaldehyde"), i18n$t("Respiratory (asthma)"), Canprowexposure1_Formaldehyde() / input$fmanrfc)
+    cbind(Canprowexposure1()[c(1, 2, 3)], get_session_t("Formaldehyde"), get_session_t("Respiratory (asthma)"), Canprowexposure1_Formaldehyde() / input$fmanrfc)
   })
 
   canpro_Formaldehyde2 <- reactive({
     forma1 <- canpro_Formaldehyde1()
-    colnames(forma1) <- c(i18n$t("year"), i18n$t("scenario"), "region", i18n$t("pollutant"), i18n$t("endpoint"), "Hazard_Quotient")
+    colnames(forma1) <- c(get_session_t("year"), get_session_t("scenario"), "region", get_session_t("pollutant"), get_session_t("endpoint"), "Hazard_Quotient")
     forma1
   })
 
@@ -8485,8 +8455,8 @@ server <- function(input, output, session) {
   x3toxicnoncancerfinal2 <- reactive({
     x3btox <- x2toxicnoncancerfinal2()
     colnames(x3btox) <- c(
-      i18n$t("Year"), i18n$t("Scenario"), i18n$t("Geocode"), i18n$t("Type of Geography"), i18n$t("Region"), i18n$t("Pollutant"),
-      i18n$t("Endpoint"), i18n$t("Hazard Quotient")
+      get_session_t("Year"), get_session_t("Scenario"), get_session_t("Geocode"), get_session_t("Type of Geography"), get_session_t("Region"), get_session_t("Pollutant"),
+      get_session_t("Endpoint"), get_session_t("Hazard Quotient")
     )
     x3btox
   })
@@ -8500,67 +8470,67 @@ server <- function(input, output, session) {
   })
 
   eleven1 <- reactive({
-    cbind(foura_year(), foura_scenario(), foura()[c(1, 2)], i18n$t("PM2.5"), i18n$t("Chronic Exposure Mortality"), five(), six(), seven(), eight(), nine(), ten(), tena(), pctxsmort(), pctxsmortl95(), pctxsmortu95(), leyr(), leyrl95(), leyru95(), i18n$t("mortality"), four_age25plus())
+    cbind(foura_year(), foura_scenario(), foura()[c(1, 2)], get_session_t("PM2.5"), get_session_t("Chronic Exposure Mortality"), five(), six(), seven(), eight(), nine(), ten(), tena(), pctxsmort(), pctxsmortl95(), pctxsmortu95(), leyr(), leyrl95(), leyru95(), get_session_t("mortality"), four_age25plus())
   })
   eleven2 <- reactive({
-    cbind(foura_year(), foura_scenario(), foura()[c(1, 2)], i18n$t("PM2.5"), i18n$t("Acute Respiratory Symptom Days"), fivearsd(), sixarsd(), sevenarsd(), eightarsd(), ninearsd(), tenarsd(), tenaarsd(), pctxsarsd(), pctxsarsdl95(), pctxsarsdu95(), NA, NA, NA, i18n$t("morbidity"), NA)
+    cbind(foura_year(), foura_scenario(), foura()[c(1, 2)], get_session_t("PM2.5"), get_session_t("Acute Respiratory Symptom Days"), fivearsd(), sixarsd(), sevenarsd(), eightarsd(), ninearsd(), tenarsd(), tenaarsd(), pctxsarsd(), pctxsarsdl95(), pctxsarsdu95(), NA, NA, NA, get_session_t("morbidity"), NA)
   })
   eleven3 <- reactive({
-    cbind(foura_year(), foura_scenario(), foura()[c(1, 2)], i18n$t("PM2.5"), i18n$t("Adult Chronic Bronchitis Cases"), fiveacbc(), sixacbc(), sevenacbc(), eightacbc(), nineacbc(), tenacbc(), tenaacbc(), pctxsacbc(), pctxsacbcl95(), pctxsacbcu95(), NA, NA, NA, i18n$t("morbidity"), NA)
+    cbind(foura_year(), foura_scenario(), foura()[c(1, 2)], get_session_t("PM2.5"), get_session_t("Adult Chronic Bronchitis Cases"), fiveacbc(), sixacbc(), sevenacbc(), eightacbc(), nineacbc(), tenacbc(), tenaacbc(), pctxsacbc(), pctxsacbcl95(), pctxsacbcu95(), NA, NA, NA, get_session_t("morbidity"), NA)
   })
   eleven4 <- reactive({
-    cbind(foura_year(), foura_scenario(), foura()[c(1, 2)], i18n$t("PM2.5"), i18n$t("Cardiac Emergency Room Visits"), fivecerv(), sixcerv(), sevencerv(), eightcerv(), ninecerv(), tencerv(), tenacerv(), pctxscerv(), pctxscervl95(), pctxscervu95(), NA, NA, NA, i18n$t("morbidity"), NA)
+    cbind(foura_year(), foura_scenario(), foura()[c(1, 2)], get_session_t("PM2.5"), get_session_t("Cardiac Emergency Room Visits"), fivecerv(), sixcerv(), sevencerv(), eightcerv(), ninecerv(), tencerv(), tenacerv(), pctxscerv(), pctxscervl95(), pctxscervu95(), NA, NA, NA, get_session_t("morbidity"), NA)
   })
   eleven5 <- reactive({
-    cbind(foura_year(), foura_scenario(), foura()[c(1, 2)], i18n$t("PM2.5"), i18n$t("Cardiac Hospital Admissions"), fivecha(), sixcha(), sevencha(), NA, NA, NA, tenacha(), pctxscha(), pctxschal95(), pctxschau95(), NA, NA, NA, i18n$t("morbidity"), NA)
+    cbind(foura_year(), foura_scenario(), foura()[c(1, 2)], get_session_t("PM2.5"), get_session_t("Cardiac Hospital Admissions"), fivecha(), sixcha(), sevencha(), NA, NA, NA, tenacha(), pctxscha(), pctxschal95(), pctxschau95(), NA, NA, NA, get_session_t("morbidity"), NA)
   })
   eleven6 <- reactive({
-    cbind(foura_year(), foura_scenario(), foura()[c(1, 2)], i18n$t("PM2.5"), i18n$t("Asthma Symptom Days"), fiveasd(), sixasd(), sevenasd(), eightasd(), nineasd(), tenasd(), tenaasd(), pctxsasd(), pctxsasdl95(), pctxsasdu95(), NA, NA, NA, i18n$t("morbidity"), NA)
+    cbind(foura_year(), foura_scenario(), foura()[c(1, 2)], get_session_t("PM2.5"), get_session_t("Asthma Symptom Days"), fiveasd(), sixasd(), sevenasd(), eightasd(), nineasd(), tenasd(), tenaasd(), pctxsasd(), pctxsasdl95(), pctxsasdu95(), NA, NA, NA, get_session_t("morbidity"), NA)
   })
   eleven7 <- reactive({
-    cbind(foura_year(), foura_scenario(), foura()[c(1, 2)], i18n$t("PM2.5"), i18n$t("Child Acute Bronchitis Episodes"), fivecabe(), sixcabe(), sevencabe(), eightcabe(), ninecabe(), tencabe(), tenacabe(), pctxscabe(), pctxscabel95(), pctxscabeu95(), NA, NA, NA, i18n$t("morbidity"), NA)
+    cbind(foura_year(), foura_scenario(), foura()[c(1, 2)], get_session_t("PM2.5"), get_session_t("Child Acute Bronchitis Episodes"), fivecabe(), sixcabe(), sevencabe(), eightcabe(), ninecabe(), tencabe(), tenacabe(), pctxscabe(), pctxscabel95(), pctxscabeu95(), NA, NA, NA, get_session_t("morbidity"), NA)
   })
   eleven8 <- reactive({
-    cbind(foura_year(), foura_scenario(), foura()[c(1, 2)], i18n$t("PM2.5"), i18n$t("Respiratory Emergency Room Visits"), fivererv(), sixrerv(), sevenrerv(), eightrerv(), ninererv(), tenrerv(), tenarerv(), pctxsrerv(), pctxsrervl95(), pctxsrervu95(), NA, NA, NA, i18n$t("morbidity"), NA)
+    cbind(foura_year(), foura_scenario(), foura()[c(1, 2)], get_session_t("PM2.5"), get_session_t("Respiratory Emergency Room Visits"), fivererv(), sixrerv(), sevenrerv(), eightrerv(), ninererv(), tenrerv(), tenarerv(), pctxsrerv(), pctxsrervl95(), pctxsrervu95(), NA, NA, NA, get_session_t("morbidity"), NA)
   })
   eleven9 <- reactive({
-    cbind(foura_year(), foura_scenario(), foura()[c(1, 2)], i18n$t("PM2.5"), i18n$t("Respiratory Hospital Admissions"), fiverha(), sixrha(), sevenrha(), NA, NA, NA, tenarha(), pctxsrha(), pctxsrhal95(), pctxsrhau95(), NA, NA, NA, i18n$t("morbidity"), NA)
+    cbind(foura_year(), foura_scenario(), foura()[c(1, 2)], get_session_t("PM2.5"), get_session_t("Respiratory Hospital Admissions"), fiverha(), sixrha(), sevenrha(), NA, NA, NA, tenarha(), pctxsrha(), pctxsrhal95(), pctxsrhau95(), NA, NA, NA, get_session_t("morbidity"), NA)
   })
   eleven10 <- reactive({
-    cbind(foura_year(), foura_scenario(), foura()[c(1, 2)], i18n$t("PM2.5"), i18n$t("Restricted Activity Days"), fiverad(), sixrad(), sevenrad(), eightrad(), ninerad(), tenrad(), tenarad(), pctxsrad(), pctxsradl95(), pctxsradu95(), NA, NA, NA, i18n$t("morbidity"), NA)
+    cbind(foura_year(), foura_scenario(), foura()[c(1, 2)], get_session_t("PM2.5"), get_session_t("Restricted Activity Days"), fiverad(), sixrad(), sevenrad(), eightrad(), ninerad(), tenrad(), tenarad(), pctxsrad(), pctxsradl95(), pctxsradu95(), NA, NA, NA, get_session_t("morbidity"), NA)
   })
   eleven11 <- reactive({
-    cbind(foura_year(), foura_scenario(), foura()[c(1, 2)], "NO2", i18n$t("Acute Exposure Mortality"), fiveaem(), sixaem(), sevenaem(), eightaem(), nineaem(), tenaem(), tenaaem(), pctxsno2aem(), pctxsno2aeml95(), pctxsno2aemu95(), NA, NA, NA, i18n$t("mortality"), NA)
+    cbind(foura_year(), foura_scenario(), foura()[c(1, 2)], "NO2", get_session_t("Acute Exposure Mortality"), fiveaem(), sixaem(), sevenaem(), eightaem(), nineaem(), tenaem(), tenaaem(), pctxsno2aem(), pctxsno2aeml95(), pctxsno2aemu95(), NA, NA, NA, get_session_t("mortality"), NA)
   })
   eleven12 <- reactive({
-    cbind(foura_year(), foura_scenario(), foura()[c(1, 2)], "O3", i18n$t("Acute Exposure Mortality"), fiveo3aem(), sixo3aem(), seveno3aem(), eighto3aem(), nineo3aem(), teno3aem(), tenao3aem(), pctxso3aem(), pctxso3aeml95(), pctxso3aemu95(), NA, NA, NA, i18n$t("mortality"), NA)
+    cbind(foura_year(), foura_scenario(), foura()[c(1, 2)], "O3", get_session_t("Acute Exposure Mortality"), fiveo3aem(), sixo3aem(), seveno3aem(), eighto3aem(), nineo3aem(), teno3aem(), tenao3aem(), pctxso3aem(), pctxso3aeml95(), pctxso3aemu95(), NA, NA, NA, get_session_t("mortality"), NA)
   })
   eleven13 <- reactive({
-    cbind(foura_year(), foura_scenario(), foura()[c(1, 2)], i18n$t("O3 Summer"), i18n$t("Chronic Exposure Respiratory Mortality"), fiveo3cerm(), sixo3cerm(), seveno3cerm(), eighto3cerm(), nineo3cerm(), teno3cerm(), tenao3cerm(), pctxso3cerm(), pctxso3cerml95(), pctxso3cermu95(), leyrrep(), leyrrepl95(), leyrrepu95(), i18n$t("mortality"), four_age30plus())
+    cbind(foura_year(), foura_scenario(), foura()[c(1, 2)], get_session_t("O3 Summer"), get_session_t("Chronic Exposure Respiratory Mortality"), fiveo3cerm(), sixo3cerm(), seveno3cerm(), eighto3cerm(), nineo3cerm(), teno3cerm(), tenao3cerm(), pctxso3cerm(), pctxso3cerml95(), pctxso3cermu95(), leyrrep(), leyrrepl95(), leyrrepu95(), get_session_t("mortality"), four_age30plus())
   })
   eleven14 <- reactive({
-    cbind(foura_year(), foura_scenario(), foura()[c(1, 2)], i18n$t("O3 Summer"), i18n$t("Minor Restricted Activity Days"), fivemrad(), sixmrad(), sevenmrad(), eightmrad(), ninemrad(), tenmrad(), tenamrad(), pctxsmrad(), pctxsmradl95(), pctxsmradu95(), NA, NA, NA, i18n$t("morbidity"), NA)
+    cbind(foura_year(), foura_scenario(), foura()[c(1, 2)], get_session_t("O3 Summer"), get_session_t("Minor Restricted Activity Days"), fivemrad(), sixmrad(), sevenmrad(), eightmrad(), ninemrad(), tenmrad(), tenamrad(), pctxsmrad(), pctxsmradl95(), pctxsmradu95(), NA, NA, NA, get_session_t("morbidity"), NA)
   })
   eleven15 <- reactive({
-    cbind(foura_year(), foura_scenario(), foura()[c(1, 2)], i18n$t("O3 Summer"), i18n$t("Acute Respiratory Symptom Days"), fiveo3arsd(), sixo3arsd(), seveno3arsd(), eighto3arsd(), nineo3arsd(), teno3arsd(), tenao3arsd(), pctxso3arsd(), pctxso3arsdl95(), pctxso3arsdu95(), NA, NA, NA, i18n$t("morbidity"), NA)
+    cbind(foura_year(), foura_scenario(), foura()[c(1, 2)], get_session_t("O3 Summer"), get_session_t("Acute Respiratory Symptom Days"), fiveo3arsd(), sixo3arsd(), seveno3arsd(), eighto3arsd(), nineo3arsd(), teno3arsd(), tenao3arsd(), pctxso3arsd(), pctxso3arsdl95(), pctxso3arsdu95(), NA, NA, NA, get_session_t("morbidity"), NA)
   })
   eleven16 <- reactive({
-    cbind(foura_year(), foura_scenario(), foura()[c(1, 2)], i18n$t("O3 Summer"), i18n$t("Asthma Symptom Days"), fiveo3asd(), sixo3asd(), seveno3asd(), eighto3asd(), nineo3asd(), teno3asd(), tenao3asd(), pctxso3asd(), pctxso3asdl95(), pctxso3asdu95(), NA, NA, NA, i18n$t("morbidity"), NA)
+    cbind(foura_year(), foura_scenario(), foura()[c(1, 2)], get_session_t("O3 Summer"), get_session_t("Asthma Symptom Days"), fiveo3asd(), sixo3asd(), seveno3asd(), eighto3asd(), nineo3asd(), teno3asd(), tenao3asd(), pctxso3asd(), pctxso3asdl95(), pctxso3asdu95(), NA, NA, NA, get_session_t("morbidity"), NA)
   })
   eleven17 <- reactive({
-    cbind(foura_year(), foura_scenario(), foura()[c(1, 2)], i18n$t("O3 Summer"), i18n$t("Respiratory Emergency Room Visits"), fiveo3rerv(), sixo3rerv(), seveno3rerv(), eighto3rerv(), nineo3rerv(), teno3rerv(), tenao3rerv(), pctxso3rerv(), pctxso3rervl95(), pctxso3rervu95(), NA, NA, NA, i18n$t("morbidity"), NA)
+    cbind(foura_year(), foura_scenario(), foura()[c(1, 2)], get_session_t("O3 Summer"), get_session_t("Respiratory Emergency Room Visits"), fiveo3rerv(), sixo3rerv(), seveno3rerv(), eighto3rerv(), nineo3rerv(), teno3rerv(), tenao3rerv(), pctxso3rerv(), pctxso3rervl95(), pctxso3rervu95(), NA, NA, NA, get_session_t("morbidity"), NA)
   })
   eleven18 <- reactive({
-    cbind(foura_year(), foura_scenario(), foura()[c(1, 2)], i18n$t("O3 Summer"), i18n$t("Respiratory Hospital Admissions"), fiveo3rha(), sixo3rha(), seveno3rha(), NA, NA, NA, tenao3rha(), pctxso3rha(), pctxso3rhal95(), pctxso3rhau95(), NA, NA, NA, i18n$t("morbidity"), NA)
+    cbind(foura_year(), foura_scenario(), foura()[c(1, 2)], get_session_t("O3 Summer"), get_session_t("Respiratory Hospital Admissions"), fiveo3rha(), sixo3rha(), seveno3rha(), NA, NA, NA, tenao3rha(), pctxso3rha(), pctxso3rhal95(), pctxso3rhau95(), NA, NA, NA, get_session_t("morbidity"), NA)
   })
   eleven19 <- reactive({
-    cbind(foura_year(), foura_scenario(), foura()[c(1, 2)], "SO2", i18n$t("Acute Exposure Mortality"), fiveso2aem(), sixso2aem(), sevenso2aem(), eightso2aem(), nineso2aem(), tenso2aem(), tenaso2aem(), pctxsso2aem(), pctxsso2aeml95(), pctxsso2aemu95(), NA, NA, NA, i18n$t("mortality"), NA)
+    cbind(foura_year(), foura_scenario(), foura()[c(1, 2)], "SO2", get_session_t("Acute Exposure Mortality"), fiveso2aem(), sixso2aem(), sevenso2aem(), eightso2aem(), nineso2aem(), tenso2aem(), tenaso2aem(), pctxsso2aem(), pctxsso2aeml95(), pctxsso2aemu95(), NA, NA, NA, get_session_t("mortality"), NA)
   })
   eleven20 <- reactive({
-    cbind(foura_year(), foura_scenario(), foura()[c(1, 2)], "CO 24h", i18n$t("Acute Exposure Mortality"), fiveco24aem(), sixco24aem(), sevenco24aem(), eightco24aem(), nineco24aem(), tenco24aem(), tenaco24aem(), pctxsco24aem(), pctxsco24aeml95(), pctxsco24aemu95(), NA, NA, NA, i18n$t("mortality"), NA)
+    cbind(foura_year(), foura_scenario(), foura()[c(1, 2)], "CO 24h", get_session_t("Acute Exposure Mortality"), fiveco24aem(), sixco24aem(), sevenco24aem(), eightco24aem(), nineco24aem(), tenco24aem(), tenaco24aem(), pctxsco24aem(), pctxsco24aeml95(), pctxsco24aemu95(), NA, NA, NA, get_session_t("mortality"), NA)
   })
   eleven21 <- reactive({
-    cbind(foura_year(), foura_scenario(), foura()[c(1, 2)], "CO 1h", i18n$t("Elderly Cardiac Hospital Admissions"), fiveecha(), sixecha(), sevenecha(), eightecha(), nineecha(), tenecha(), tenaecha(), pctxsecha(), pctxsechal95(), pctxsechau95(), NA, NA, NA, i18n$t("morbidity"), NA)
+    cbind(foura_year(), foura_scenario(), foura()[c(1, 2)], "CO 1h", get_session_t("Elderly Cardiac Hospital Admissions"), fiveecha(), sixecha(), sevenecha(), eightecha(), nineecha(), tenecha(), tenaecha(), pctxsecha(), pctxsechal95(), pctxsechau95(), NA, NA, NA, get_session_t("morbidity"), NA)
   })
 
 
@@ -8635,7 +8605,7 @@ server <- function(input, output, session) {
   twelveb0 <- reactive({
     a <- reqvars()
     colnames(a) <- c(
-      i18n$t("year"), i18n$t("scenario"), i18n$t("CDUID"), "province", i18n$t("pollutant"), i18n$t("endpoint"), "counts",
+      get_session_t("year"), get_session_t("scenario"), get_session_t("CDUID"), "province", get_session_t("pollutant"), get_session_t("endpoint"), "counts",
       "L95CI_counts", "U95CI_counts", "valuation", "L95CI_val", "U95CI_val", "counts_per_100K",
       "proportional_change", "L95CI_p", "U95CI_p", "life_year", "L95CI_le", "U95CI_le", "mort", "pop"
     )
@@ -8665,23 +8635,23 @@ server <- function(input, output, session) {
   # })
 
   # plong2 <- reactive({
-  #   merge(plong1(), pollnames, by = i18n$t("pollutant"))
+  #   merge(plong1(), pollnames, by = get_session_t("pollutant"))
   # })
   # plong3 <- reactive({
-  #   cbind(plong2()[c(2:4, 6)], i18n$t("None"), i18n$t("Pollutant concentration"), plong2()[c(5)])
+  #   cbind(plong2()[c(2:4, 6)], get_session_t("None"), get_session_t("Pollutant concentration"), plong2()[c(5)])
   # })
   # plong <- reactive({
   #   a <- plong3()
-  #   colnames(a) <- c(i18n$t("year"), i18n$t("scenario"), i18n$t("CDUID"), i18n$t("pollutant"), i18n$t("endpoint"), i18n$t("metric"), i18n$t("value"))
+  #   colnames(a) <- c(get_session_t("year"), get_session_t("scenario"), get_session_t("CDUID"), get_session_t("pollutant"), get_session_t("endpoint"), get_session_t("metric"), get_session_t("value"))
   #   a
   # })
   # obtain counts/100k
   # map1a <- reactive({
-  #   cbind(twelveb()[c(1:3, 5, 6)], i18n$t("Counts/100k"), twelveb()[c(13)])
+  #   cbind(twelveb()[c(1:3, 5, 6)], get_session_t("Counts/100k"), twelveb()[c(13)])
   # })
   # map1 <- reactive({
   #   a <- map1a()
-  #   colnames(a) <- c(i18n$t("year"), i18n$t("scenario"), i18n$t("CDUID"), i18n$t("pollutant"), i18n$t("endpoint"), i18n$t("metric"), i18n$t("value"))
+  #   colnames(a) <- c(get_session_t("year"), get_session_t("scenario"), get_session_t("CDUID"), get_session_t("pollutant"), get_session_t("endpoint"), get_session_t("metric"), get_session_t("value"))
   #   a
   # })
   # obtain valuation, population, merge
@@ -8692,7 +8662,7 @@ server <- function(input, output, session) {
   #   popdata()[c(1, 2, 10)]
   # })
   # vp <- reactive({
-  #   merge(vals(), pops(), by = c(i18n$t("year"), i18n$t("CDUID")))
+  #   merge(vals(), pops(), by = c(get_session_t("year"), get_session_t("CDUID")))
   # })
   # # calculate per capita valuation
   # map2a <- reactive({
@@ -8704,20 +8674,20 @@ server <- function(input, output, session) {
   # })
   #
   # map2b <- reactive({
-  #   cbind(map2a()[c(1, 3, 2, 4, 5)], i18n$t("Per capita valuation"), map2a()[c(8)])
+  #   cbind(map2a()[c(1, 3, 2, 4, 5)], get_session_t("Per capita valuation"), map2a()[c(8)])
   # })
   # map2 <- reactive({
   #   a <- map2b()
-  #   colnames(a) <- c(i18n$t("year"), i18n$t("scenario"), i18n$t("CDUID"), i18n$t("pollutant"), i18n$t("endpoint"), i18n$t("metric"), i18n$t("value"))
+  #   colnames(a) <- c(get_session_t("year"), get_session_t("scenario"), get_session_t("CDUID"), get_session_t("pollutant"), get_session_t("endpoint"), get_session_t("metric"), get_session_t("value"))
   #   a
   # })
   # obtain life years
   # map3a <- reactive({
-  #   cbind(twelveb()[c(1:3, 5, 6)], i18n$t("Change in life expectancy"), twelveb()[c(17)])
+  #   cbind(twelveb()[c(1:3, 5, 6)], get_session_t("Change in life expectancy"), twelveb()[c(17)])
   # })
   # map3 <- reactive({
   #   a <- map3a()
-  #   colnames(a) <- c(i18n$t("year"), i18n$t("scenario"), i18n$t("CDUID"), i18n$t("pollutant"), i18n$t("endpoint"), i18n$t("metric"), i18n$t("value"))
+  #   colnames(a) <- c(get_session_t("year"), get_session_t("scenario"), get_session_t("CDUID"), get_session_t("pollutant"), get_session_t("endpoint"), get_session_t("metric"), get_session_t("value"))
   #   a
   # })
 
@@ -8746,7 +8716,7 @@ server <- function(input, output, session) {
   #   popdata()[c(1, 2, 10)]
   # })
   # cdaggmort2b <- reactive({
-  #   merge(cdaggmort2(), cdaggmort2a(), by = c(i18n$t("year"), i18n$t("CDUID")))
+  #   merge(cdaggmort2(), cdaggmort2a(), by = c(get_session_t("year"), get_session_t("CDUID")))
   # })
 
   # cdaggmort2c <- reactive({
@@ -8763,7 +8733,7 @@ server <- function(input, output, session) {
   #
   # cdaggmort4 <- reactive({
   #   mtot <- cdaggmort3()
-  #   colnames(mtot) <- c(i18n$t("year"), i18n$t("scenario"), i18n$t("CDUID"), i18n$t("pollutant"), i18n$t("endpoint"), i18n$t("metric"), i18n$t("value"))
+  #   colnames(mtot) <- c(get_session_t("year"), get_session_t("scenario"), get_session_t("CDUID"), get_session_t("pollutant"), get_session_t("endpoint"), get_session_t("metric"), get_session_t("value"))
   #   mtot
   # })
 
@@ -8784,7 +8754,7 @@ server <- function(input, output, session) {
   #   popdata()[c(1, 2, 10)]
   # })
   # cdaggval2b <- reactive({
-  #   merge(cdaggval2(), cdaggval2a(), by = c(i18n$t("year"), i18n$t("CDUID")))
+  #   merge(cdaggval2(), cdaggval2a(), by = c(get_session_t("year"), get_session_t("CDUID")))
   # })
   #
   # cdaggval2c <- reactive({
@@ -8802,50 +8772,50 @@ server <- function(input, output, session) {
   #
   # cdaggval4 <- reactive({
   #   vtot <- cdaggval3()
-  #   colnames(vtot) <- c(i18n$t("year"), i18n$t("scenario"), i18n$t("CDUID"), i18n$t("pollutant"), i18n$t("endpoint"), i18n$t("metric"), i18n$t("value"))
+  #   colnames(vtot) <- c(get_session_t("year"), get_session_t("scenario"), get_session_t("CDUID"), get_session_t("pollutant"), get_session_t("endpoint"), get_session_t("metric"), get_session_t("value"))
   #   vtot
   # })
   #
   # mapbz1 <- reactive({
-  #   cbind(elevenbzc()[c(1, 2, 3, 5, 6)], i18n$t("Counts/100k"), elevenbzc()[c(8)])
+  #   cbind(elevenbzc()[c(1, 2, 3, 5, 6)], get_session_t("Counts/100k"), elevenbzc()[c(8)])
   # })
   # mapbz <- reactive({
   #   a <- mapbz1()
-  #   colnames(a) <- c(i18n$t("year"), i18n$t("scenario"), i18n$t("CDUID"), i18n$t("pollutant"), i18n$t("endpoint"), i18n$t("metric"), i18n$t("value"))
+  #   colnames(a) <- c(get_session_t("year"), get_session_t("scenario"), get_session_t("CDUID"), get_session_t("pollutant"), get_session_t("endpoint"), get_session_t("metric"), get_session_t("value"))
   #   a
   # })
   # mapbt1 <- reactive({
-  #   cbind(elevenbtc()[c(1, 2, 3, 5, 6)], i18n$t("Counts/100k"), elevenbtc()[c(8)])
+  #   cbind(elevenbtc()[c(1, 2, 3, 5, 6)], get_session_t("Counts/100k"), elevenbtc()[c(8)])
   # })
   # mapbt <- reactive({
   #   a <- mapbt1()
-  #   colnames(a) <- c(i18n$t("year"), i18n$t("scenario"), i18n$t("CDUID"), i18n$t("pollutant"), i18n$t("endpoint"), i18n$t("metric"), i18n$t("value"))
+  #   colnames(a) <- c(get_session_t("year"), get_session_t("scenario"), get_session_t("CDUID"), get_session_t("pollutant"), get_session_t("endpoint"), get_session_t("metric"), get_session_t("value"))
   #   a
   # })
 
   # mapbznc1 <- reactive({
-  #   cbind(elevenbznc()[c(1, 2, 3, 5, 6)], i18n$t("Hazard Quotient"), elevenbznc()[c(7)])
+  #   cbind(elevenbznc()[c(1, 2, 3, 5, 6)], get_session_t("Hazard Quotient"), elevenbznc()[c(7)])
   # })
   # mapbznc <- reactive({
   #   a <- mapbznc1()
-  #   colnames(a) <- c(i18n$t("year"), i18n$t("scenario"), i18n$t("CDUID"), i18n$t("pollutant"), i18n$t("endpoint"), i18n$t("metric"), i18n$t("value"))
+  #   colnames(a) <- c(get_session_t("year"), get_session_t("scenario"), get_session_t("CDUID"), get_session_t("pollutant"), get_session_t("endpoint"), get_session_t("metric"), get_session_t("value"))
   #   a
   # })
   # mapacc1 <- reactive({
-  #   cbind(elevenacc()[c(1, 2, 3, 5, 6)], i18n$t("Hazard Quotient"), elevenacc()[c(7)])
+  #   cbind(elevenacc()[c(1, 2, 3, 5, 6)], get_session_t("Hazard Quotient"), elevenacc()[c(7)])
   # })
   # mapacc <- reactive({
   #   a <- mapacc1()
-  #   colnames(a) <- c(i18n$t("year"), i18n$t("scenario"), i18n$t("CDUID"), i18n$t("pollutant"), i18n$t("endpoint"), i18n$t("metric"), i18n$t("value"))
+  #   colnames(a) <- c(get_session_t("year"), get_session_t("scenario"), get_session_t("CDUID"), get_session_t("pollutant"), get_session_t("endpoint"), get_session_t("metric"), get_session_t("value"))
   #   a
   # })
   #
   # mapfmc1 <- reactive({
-  #   cbind(elevenfmc()[c(1, 2, 3, 5, 6)], i18n$t("Hazard Quotient"), elevenfmc()[c(7)])
+  #   cbind(elevenfmc()[c(1, 2, 3, 5, 6)], get_session_t("Hazard Quotient"), elevenfmc()[c(7)])
   # })
   # mapfmc <- reactive({
   #   a <- mapfmc1()
-  #   colnames(a) <- c(i18n$t("year"), i18n$t("scenario"), i18n$t("CDUID"), i18n$t("pollutant"), i18n$t("endpoint"), i18n$t("metric"), i18n$t("value"))
+  #   colnames(a) <- c(get_session_t("year"), get_session_t("scenario"), get_session_t("CDUID"), get_session_t("pollutant"), get_session_t("endpoint"), get_session_t("metric"), get_session_t("value"))
   #   a
   # })
   #
@@ -8862,20 +8832,20 @@ server <- function(input, output, session) {
   # })
   #
   # mapbzbt3 <- reactive({
-  #   cbind(mapbzbt2()[c(1:3)], i18n$t("All Toxics (cancer)"), "Cancer", i18n$t("Counts/100k"), mapbzbt2()[c(4)])
+  #   cbind(mapbzbt2()[c(1:3)], get_session_t("All Toxics (cancer)"), "Cancer", get_session_t("Counts/100k"), mapbzbt2()[c(4)])
   # })
   # mapbzbt <- reactive({
   #   a <- mapbzbt3()
-  #   colnames(a) <- c(i18n$t("year"), i18n$t("scenario"), i18n$t("CDUID"), i18n$t("pollutant"), i18n$t("endpoint"), i18n$t("metric"), i18n$t("value"))
+  #   colnames(a) <- c(get_session_t("year"), get_session_t("scenario"), get_session_t("CDUID"), get_session_t("pollutant"), get_session_t("endpoint"), get_session_t("metric"), get_session_t("value"))
   #   a
   # })
   #
   # mapbmr1 <- reactive({
-  #   cbind(three[c(4)], i18n$t("None"), three[c(1)], i18n$t("None"), i18n$t("Non-accidental mortality"), i18n$t("Baseline rate/100k"), three[c(5)] / 10)
+  #   cbind(three[c(4)], get_session_t("None"), three[c(1)], get_session_t("None"), get_session_t("Non-accidental mortality"), get_session_t("Baseline rate/100k"), three[c(5)] / 10)
   # })
   # mapbmr <- reactive({
   #   a <- mapbmr1()
-  #   colnames(a) <- c(i18n$t("year"), i18n$t("scenario"), i18n$t("CDUID"), i18n$t("pollutant"), i18n$t("endpoint"), i18n$t("metric"), i18n$t("value"))
+  #   colnames(a) <- c(get_session_t("year"), get_session_t("scenario"), get_session_t("CDUID"), get_session_t("pollutant"), get_session_t("endpoint"), get_session_t("metric"), get_session_t("value"))
   #   a
   # })
   #
@@ -8886,20 +8856,20 @@ server <- function(input, output, session) {
   #
   #
   # mapep <- reactive({
-  #   ifelse(input$mdp == i18n$t("PM2.5"), input$mde1,
+  #   ifelse(input$mdp == get_session_t("PM2.5"), input$mde1,
   #     ifelse(input$mdp == "NO2", input$mde2,
   #       ifelse(input$mdp == "CO 24h", input$mde3,
-  #         ifelse(input$mdp == i18n$t("1,3-Butadiene"), input$mde6,
+  #         ifelse(input$mdp == get_session_t("1,3-Butadiene"), input$mde6,
   #           ifelse(input$mdp == "SO2", input$mde11,
   #             ifelse(input$mdp == "O3", input$mde12,
-  #               ifelse(input$mdp == i18n$t("O3 Summer"), input$mde13,
-  #                 ifelse(input$mdp == i18n$t("All (CO, NO2, O3, PM2.5, SO2)"), input$mde4,
-  #                   ifelse(input$mdp == i18n$t("Benzene"), input$mde5,
-  #                     ifelse(input$mdp == i18n$t("Formaldehyde"), input$mde7,
-  #                       ifelse(input$mdp == i18n$t("Acetaldehyde"), input$mde8,
-  #                         ifelse(input$mdp == i18n$t("All Toxics (cancer)"), input$mde9,
-  #                           ifelse(input$mdp == i18n$t("All Toxics (non-cancer)"), input$mde10,
-  #                             ifelse(input$mdp == i18n$t("None"), input$mde14)
+  #               ifelse(input$mdp == get_session_t("O3 Summer"), input$mde13,
+  #                 ifelse(input$mdp == get_session_t("All (CO, NO2, O3, PM2.5, SO2)"), input$mde4,
+  #                   ifelse(input$mdp == get_session_t("Benzene"), input$mde5,
+  #                     ifelse(input$mdp == get_session_t("Formaldehyde"), input$mde7,
+  #                       ifelse(input$mdp == get_session_t("Acetaldehyde"), input$mde8,
+  #                         ifelse(input$mdp == get_session_t("All Toxics (cancer)"), input$mde9,
+  #                           ifelse(input$mdp == get_session_t("All Toxics (non-cancer)"), input$mde10,
+  #                             ifelse(input$mdp == get_session_t("None"), input$mde14)
   #                           )
   #                         )
   #                       )
@@ -8915,33 +8885,33 @@ server <- function(input, output, session) {
   #   )
   # })
   # mapmt <- reactive({
-  #   ifelse(input$mdp == i18n$t("PM2.5"),
-  #     ifelse(input$mde1 == i18n$t("None"), input$mdc1, input$mdm1),
+  #   ifelse(input$mdp == get_session_t("PM2.5"),
+  #     ifelse(input$mde1 == get_session_t("None"), input$mdc1, input$mdm1),
   #     ifelse(input$mdp == "NO2",
-  #       ifelse(input$mde2 == i18n$t("None"), input$mdc2, input$mdm2),
-  #       ifelse(input$mdp == i18n$t("Benzene"),
-  #         ifelse(input$mde5 == i18n$t("None"), input$mdc3, ifelse(input$mde5 == "Cancer", input$mdm5, input$mdm6)),
-  #         ifelse(input$mdp == i18n$t("1,3-Butadiene"),
-  #           ifelse(input$mde6 == i18n$t("None"), input$mdc4, input$mdm7),
-  #           ifelse(input$mdp == i18n$t("Formaldehyde"),
-  #             ifelse(input$mde7 == i18n$t("None"), input$mdc5, input$mdm9),
-  #             ifelse(input$mdp == i18n$t("Acetaldehyde"),
-  #               ifelse(input$mde8 == i18n$t("None"), input$mdc6, input$mdm8),
+  #       ifelse(input$mde2 == get_session_t("None"), input$mdc2, input$mdm2),
+  #       ifelse(input$mdp == get_session_t("Benzene"),
+  #         ifelse(input$mde5 == get_session_t("None"), input$mdc3, ifelse(input$mde5 == "Cancer", input$mdm5, input$mdm6)),
+  #         ifelse(input$mdp == get_session_t("1,3-Butadiene"),
+  #           ifelse(input$mde6 == get_session_t("None"), input$mdc4, input$mdm7),
+  #           ifelse(input$mdp == get_session_t("Formaldehyde"),
+  #             ifelse(input$mde7 == get_session_t("None"), input$mdc5, input$mdm9),
+  #             ifelse(input$mdp == get_session_t("Acetaldehyde"),
+  #               ifelse(input$mde8 == get_session_t("None"), input$mdc6, input$mdm8),
   #               ifelse(input$mdp == "CO 24h",
-  #                 ifelse(input$mde3 == i18n$t("None"), input$mdc7, input$mdm13),
+  #                 ifelse(input$mde3 == get_session_t("None"), input$mdc7, input$mdm13),
   #                 ifelse(input$mdp == "SO2",
-  #                   ifelse(input$mde11 == i18n$t("None"), input$mdc8, input$mdm14),
+  #                   ifelse(input$mde11 == get_session_t("None"), input$mdc8, input$mdm14),
   #                   ifelse(input$mdp == "O3",
-  #                     ifelse(input$mde12 == i18n$t("None"), input$mdc9, input$mdm15),
-  #                     ifelse(input$mdp == i18n$t("O3 Summer"),
-  #                       ifelse(input$mde13 == i18n$t("None"), input$mdc10, input$mdm12),
-  #                       ifelse(input$mdp == i18n$t("All (CO, NO2, O3, PM2.5, SO2)"),
-  #                         ifelse(input$mde4 == i18n$t("Total Mortality"), input$mdm3, input$mdm4),
-  #                         ifelse(input$mdp == i18n$t("All Toxics (cancer)"),
+  #                     ifelse(input$mde12 == get_session_t("None"), input$mdc9, input$mdm15),
+  #                     ifelse(input$mdp == get_session_t("O3 Summer"),
+  #                       ifelse(input$mde13 == get_session_t("None"), input$mdc10, input$mdm12),
+  #                       ifelse(input$mdp == get_session_t("All (CO, NO2, O3, PM2.5, SO2)"),
+  #                         ifelse(input$mde4 == get_session_t("Total Mortality"), input$mdm3, input$mdm4),
+  #                         ifelse(input$mdp == get_session_t("All Toxics (cancer)"),
   #                           ifelse(input$mde9 == "Cancer", input$mdm10),
-  #                           ifelse(input$mdp == i18n$t("All Toxics (non-cancer)"),
-  #                             ifelse(input$mde10 == i18n$t("Non-cancer"), input$mdm11),
-  #                             ifelse(input$mdp == i18n$t("None"), input$mdm16)
+  #                           ifelse(input$mdp == get_session_t("All Toxics (non-cancer)"),
+  #                             ifelse(input$mde10 == get_session_t("Non-cancer"), input$mdm11),
+  #                             ifelse(input$mdp == get_session_t("None"), input$mdm16)
   #                           )
   #                         )
   #                       )
@@ -8975,7 +8945,7 @@ server <- function(input, output, session) {
 
   # prov2 <- reactive({
   #   a <- prov1()
-  #   colnames(a) <- c(i18n$t("CDUID"), "PRUID")
+  #   colnames(a) <- c(get_session_t("CDUID"), "PRUID")
   #   a
   # })
   #
@@ -8987,17 +8957,17 @@ server <- function(input, output, session) {
   # })
   # provn <- reactive({
   #   a <- prov4()
-  #   colnames(a) <- c(i18n$t("CDUID"), "Province")
+  #   colnames(a) <- c(get_session_t("CDUID"), "Province")
   #   a
   # })
   # mapdata2 <- reactive({
-  #   merge(mapdata1(), provn(), by = i18n$t("CDUID"))
+  #   merge(mapdata1(), provn(), by = get_session_t("CDUID"))
   # })
   # mapdata3 <- reactive({
   #   mapdata2()[c(2, 3, 1, 8, 4:7)]
   # })
   # mapdata <- reactive({
-  #   merge(cdmap, mapdata3(), by = i18n$t("CDUID"))
+  #   merge(cdmap, mapdata3(), by = get_session_t("CDUID"))
   # })
 
   # mapdatap1 <- reactive({
@@ -9021,17 +8991,17 @@ server <- function(input, output, session) {
   })
 
   xtwelveb1 <- reactive({
-    subset(twelveb(), twelveb_endpoint() == i18n$t("Chronic Exposure Mortality") | twelveb_endpoint() == i18n$t("Chronic Exposure Respiratory Mortality"), select = c(1:19))
+    subset(twelveb(), twelveb_endpoint() == get_session_t("Chronic Exposure Mortality") | twelveb_endpoint() == get_session_t("Chronic Exposure Respiratory Mortality"), select = c(1:19))
   })
 
   xxtwelveb1 <- reactive({
     xhh2 <- xtwelveb1()
     colnames(xhh2) <- c(
-      i18n$t("Year"), i18n$t("Scenario"), i18n$t("CDUID"), "Province", i18n$t("Pollutant"), i18n$t("Endpoint"), i18n$t("Counts"),
-      i18n$t("L95CI Counts"), i18n$t("U95CI Counts"), i18n$t("Valuation"), i18n$t("L95CI Valuation"), i18n$t("U95CI Valuation"),
-      i18n$t("Counts per 100,000"), i18n$t("Proportional Change"), i18n$t("L95CI Proportional Change"),
-      i18n$t("U95CI Proportional Change"), i18n$t("Life Expectancy Change"),
-      i18n$t("L95CI Life Expectancy Change"), i18n$t("U95CI Life Expectancy Change")
+      get_session_t("Year"), get_session_t("Scenario"), get_session_t("CDUID"), "Province", get_session_t("Pollutant"), get_session_t("Endpoint"), get_session_t("Counts"),
+      get_session_t("L95CI Counts"), get_session_t("U95CI Counts"), get_session_t("Valuation"), get_session_t("L95CI Valuation"), get_session_t("U95CI Valuation"),
+      get_session_t("Counts per 100,000"), get_session_t("Proportional Change"), get_session_t("L95CI Proportional Change"),
+      get_session_t("U95CI Proportional Change"), get_session_t("Life Expectancy Change"),
+      get_session_t("L95CI Life Expectancy Change"), get_session_t("U95CI Life Expectancy Change")
     )
     xhh2
   })
@@ -9048,7 +9018,7 @@ server <- function(input, output, session) {
     }
   })
   xtwelveb2 <- reactive({
-    subset(twelveb(), twelveb_endpoint() != i18n$t("Chronic Exposure Mortality") & twelveb_endpoint() != i18n$t("Chronic Exposure Respiratory Mortality"), select = c(1:16))
+    subset(twelveb(), twelveb_endpoint() != get_session_t("Chronic Exposure Mortality") & twelveb_endpoint() != get_session_t("Chronic Exposure Respiratory Mortality"), select = c(1:16))
   })
   xtwelveb2b <- reactive({
     cbind(xtwelveb2(), NA, NA, NA)
@@ -9056,7 +9026,7 @@ server <- function(input, output, session) {
   xtwelveb2c <- reactive({
     hh2 <- xtwelveb2b()
     colnames(hh2) <- c(
-      i18n$t("year"), i18n$t("scenario"), i18n$t("CDUID"), "province", i18n$t("pollutant"), i18n$t("endpoint"), "counts", "L95CI_counts", "U95CI_counts",
+      get_session_t("year"), get_session_t("scenario"), get_session_t("CDUID"), "province", get_session_t("pollutant"), get_session_t("endpoint"), "counts", "L95CI_counts", "U95CI_counts",
       "valuation", "L95CI_val", "U95CI_val", "counts_per_100K", "proportional_change", "L95CI_p", "U95CI_p", "life_year", "L95CI_le", "U95CI_le"
     )
     hh2
@@ -9072,7 +9042,7 @@ server <- function(input, output, session) {
   twelveb3i <- reactive({
     hh3 <- xtwelveb3b()
     colnames(hh3) <- c(
-      i18n$t("year"), i18n$t("scenario"), i18n$t("CDUID"), "province", i18n$t("pollutant"), i18n$t("endpoint"), "counts", "L95CI_counts", "U95CI_counts",
+      get_session_t("year"), get_session_t("scenario"), get_session_t("CDUID"), "province", get_session_t("pollutant"), get_session_t("endpoint"), "counts", "L95CI_counts", "U95CI_counts",
       "valuation", "L95CI_val", "U95CI_val", "counts_per_100K", "proportional_change", "L95CI_p", "U95CI_p", "life_expectancy_chg", "L95CI_le", "U95CI_le"
     )
     hh3
@@ -9104,10 +9074,10 @@ server <- function(input, output, session) {
   x3outresultcd <- reactive({
     x3cd <- x2outresultcd()
     colnames(x3cd) <- c(
-      i18n$t("Year"), i18n$t("Scenario"), i18n$t("CDUID"), "Province", i18n$t("Pollutant"), i18n$t("Endpoint"), i18n$t("Counts"), i18n$t("L95CI Counts"),
-      i18n$t("U95CI Counts"), i18n$t("Valuation"), i18n$t("L95CI Valuation"), i18n$t("U95CI Valuation"), i18n$t("Counts per 100,000"),
-      i18n$t("Proportional Change"), i18n$t("L95CI Proportional Change"), i18n$t("U95CI Proportional Change"), i18n$t("Life Expectancy Change"),
-      i18n$t("L95CI Life Expectancy Change"), i18n$t("U95CI Life Expectancy Change")
+      get_session_t("Year"), get_session_t("Scenario"), get_session_t("CDUID"), "Province", get_session_t("Pollutant"), get_session_t("Endpoint"), get_session_t("Counts"), get_session_t("L95CI Counts"),
+      get_session_t("U95CI Counts"), get_session_t("Valuation"), get_session_t("L95CI Valuation"), get_session_t("U95CI Valuation"), get_session_t("Counts per 100,000"),
+      get_session_t("Proportional Change"), get_session_t("L95CI Proportional Change"), get_session_t("U95CI Proportional Change"), get_session_t("Life Expectancy Change"),
+      get_session_t("L95CI Life Expectancy Change"), get_session_t("U95CI Life Expectancy Change")
     )
     x3cd
   })
@@ -9146,14 +9116,14 @@ server <- function(input, output, session) {
   Canaggcountval6 <- reactive({
     k <- Canaggcountval5()
     colnames(k) <- c(
-      i18n$t("year"), i18n$t("scenario"), "region", i18n$t("pollutant"), i18n$t("endpoint"), "counts", "L95CI_counts", "U95CI_counts",
+      get_session_t("year"), get_session_t("scenario"), "region", get_session_t("pollutant"), get_session_t("endpoint"), "counts", "L95CI_counts", "U95CI_counts",
       "valuation", "L95CI_val", "U95CI_val", "proportional_change", "L95CI_p", "U95CI_p"
     )
     k
   })
 
   Canagglifeyr1 <- reactive({
-    subset(twelveb(), twelveb_endpoint() == i18n$t("Chronic Exposure Mortality") | twelveb_endpoint() == i18n$t("Chronic Exposure Respiratory Mortality"), select = c(1:6, 17:21))
+    subset(twelveb(), twelveb_endpoint() == get_session_t("Chronic Exposure Mortality") | twelveb_endpoint() == get_session_t("Chronic Exposure Respiratory Mortality"), select = c(1:6, 17:21))
   })
 
   Canagglifeyr2 <- reactive({
@@ -9184,7 +9154,7 @@ server <- function(input, output, session) {
 
   Canagglifeyr4 <- reactive({
     le <- Canagglifeyr3()
-    colnames(le) <- c(i18n$t("year"), i18n$t("scenario"), "region", i18n$t("pollutant"), i18n$t("endpoint"), "life_year", "L95CI_le", "U95CI_le")
+    colnames(le) <- c(get_session_t("year"), get_session_t("scenario"), "region", get_session_t("pollutant"), get_session_t("endpoint"), "life_year", "L95CI_le", "U95CI_le")
     le
   })
 
@@ -9207,14 +9177,14 @@ server <- function(input, output, session) {
   paggcountval4 <- reactive({
     ac <- paggcountval3()
     colnames(ac) <- c(
-      i18n$t("year"), i18n$t("scenario"), "region", i18n$t("pollutant"), i18n$t("endpoint"), "counts", "L95CI_counts", "U95CI_counts",
+      get_session_t("year"), get_session_t("scenario"), "region", get_session_t("pollutant"), get_session_t("endpoint"), "counts", "L95CI_counts", "U95CI_counts",
       "valuation", "L95CI_val", "U95CI_val", "proportional_change", "L95CI_p", "U95CI_p"
     )
     ac
   })
 
   Proagglifeyr1 <- reactive({
-    subset(twelveb(), twelveb_endpoint() == i18n$t("Chronic Exposure Mortality") | twelveb_endpoint() == i18n$t("Chronic Exposure Respiratory Mortality"), select = c(1:6, 17:21))
+    subset(twelveb(), twelveb_endpoint() == get_session_t("Chronic Exposure Mortality") | twelveb_endpoint() == get_session_t("Chronic Exposure Respiratory Mortality"), select = c(1:6, 17:21))
   })
 
   Proagglifeyr2 <- reactive({
@@ -9231,7 +9201,7 @@ server <- function(input, output, session) {
 
   Proagglifeyr4 <- reactive({
     le <- Proagglifeyr3()
-    colnames(le) <- c(i18n$t("year"), i18n$t("scenario"), "region", i18n$t("pollutant"), i18n$t("endpoint"), "life_year", "L95CI_le", "U95CI_le")
+    colnames(le) <- c(get_session_t("year"), get_session_t("scenario"), "region", get_session_t("pollutant"), get_session_t("endpoint"), "life_year", "L95CI_le", "U95CI_le")
     le
   })
 
@@ -9249,7 +9219,7 @@ server <- function(input, output, session) {
 
   CanProagglifeyr3 <- reactive({
     le2 <- CanProagglifeyr2()
-    colnames(le2) <- c(i18n$t("year"), i18n$t("scenario"), "region", i18n$t("pollutant"), i18n$t("endpoint"), "life_year", "L95CI_le", "U95CI_le")
+    colnames(le2) <- c(get_session_t("year"), get_session_t("scenario"), "region", get_session_t("pollutant"), get_session_t("endpoint"), "life_year", "L95CI_le", "U95CI_le")
     le2
   })
 
@@ -9260,11 +9230,11 @@ server <- function(input, output, session) {
   })
 
   canproresults1a <- reactive({
-    left_join(canprocountval1(), CanProagglifeyr3(), by = c(i18n$t("year"), i18n$t("scenario"), "region", i18n$t("pollutant"), i18n$t("endpoint")))
+    left_join(canprocountval1(), CanProagglifeyr3(), by = c(get_session_t("year"), get_session_t("scenario"), "region", get_session_t("pollutant"), get_session_t("endpoint")))
   })
 
   canproresults1b <- reactive({
-    subset(canproresults1a(), canproresults1a_endpoint() != i18n$t("Chronic Exposure Mortality") & canproresults1a_endpoint() != i18n$t("Chronic Exposure Respiratory Mortality"), select = c(1:14))
+    subset(canproresults1a(), canproresults1a_endpoint() != get_session_t("Chronic Exposure Mortality") & canproresults1a_endpoint() != get_session_t("Chronic Exposure Respiratory Mortality"), select = c(1:14))
   })
   canproresults1c <- reactive({
     cbind(canproresults1b(), NA, NA, NA)
@@ -9272,14 +9242,14 @@ server <- function(input, output, session) {
   canproresults1d <- reactive({
     re2 <- canproresults1c()
     colnames(re2) <- c(
-      i18n$t("year"), i18n$t("scenario"), "region", i18n$t("pollutant"), i18n$t("endpoint"), "counts", "L95CI_counts", "U95CI_counts",
+      get_session_t("year"), get_session_t("scenario"), "region", get_session_t("pollutant"), get_session_t("endpoint"), "counts", "L95CI_counts", "U95CI_counts",
       "valuation", "L95CI_val", "U95CI_val", "proportional_change", "L95CI_p", "U95CI_p", "life_year", "L95CI_le", "U95CI_le"
     )
     re2
   })
 
   canproresults1e <- reactive({
-    subset(canproresults1a(), canproresults1a_endpoint() == i18n$t("Chronic Exposure Mortality") | canproresults1a_endpoint() == i18n$t("Chronic Exposure Respiratory Mortality"))
+    subset(canproresults1a(), canproresults1a_endpoint() == get_session_t("Chronic Exposure Mortality") | canproresults1a_endpoint() == get_session_t("Chronic Exposure Respiratory Mortality"))
   })
   xcanproresults1 <- reactive({
     rbind(canproresults1e(), canproresults1d())
@@ -9288,7 +9258,7 @@ server <- function(input, output, session) {
   xcanproresults1i <- reactive({
     hh5 <- xcanproresults1()
     colnames(hh5) <- c(
-      i18n$t("year"), i18n$t("scenario"), "region", i18n$t("pollutant"), i18n$t("endpoint"), "counts", "L95CI_counts", "U95CI_counts", "valuation",
+      get_session_t("year"), get_session_t("scenario"), "region", get_session_t("pollutant"), get_session_t("endpoint"), "counts", "L95CI_counts", "U95CI_counts", "valuation",
       "L95CI_val", "U95CI_val", "proportional_change", "L95CI_p", "U95CI_p", "life_expectancy_chg", "L95CI_le", "U95CI_le"
     )
     hh5
@@ -9320,9 +9290,9 @@ server <- function(input, output, session) {
   x3outresultcanpro3 <- reactive({
     x3pt <- x2outresultcanpro3()
     colnames(x3pt) <- c(
-      i18n$t("Year"), i18n$t("Scenario"), "Province", i18n$t("Pollutant"), i18n$t("Endpoint"), i18n$t("Counts"), i18n$t("L95CI Counts"), i18n$t("U95CI Counts"),
-      i18n$t("Valuation"), i18n$t("L95CI Valuation"), i18n$t("U95CI Valuation"), i18n$t("Proportional Change"), i18n$t("L95CI Proportional Change"),
-      i18n$t("U95CI Proportional Change"), i18n$t("Life Expectancy Change"), i18n$t("L95CI Life Expectancy Change"), i18n$t("U95CI Life Expectancy Change")
+      get_session_t("Year"), get_session_t("Scenario"), "Province", get_session_t("Pollutant"), get_session_t("Endpoint"), get_session_t("Counts"), get_session_t("L95CI Counts"), get_session_t("U95CI Counts"),
+      get_session_t("Valuation"), get_session_t("L95CI Valuation"), get_session_t("U95CI Valuation"), get_session_t("Proportional Change"), get_session_t("L95CI Proportional Change"),
+      get_session_t("U95CI Proportional Change"), get_session_t("Life Expectancy Change"), get_session_t("L95CI Life Expectancy Change"), get_session_t("U95CI Life Expectancy Change")
     )
     x3pt
   })
@@ -9358,7 +9328,7 @@ server <- function(input, output, session) {
   provsummary3 <- reactive({
     p1 <- provsummary2()
     colnames(p1) <- c(
-      i18n$t("year"), i18n$t("scenario"), "region", i18n$t("endpoint"), "counts", "L95CI_counts", "U95CI_counts",
+      get_session_t("year"), get_session_t("scenario"), "region", get_session_t("endpoint"), "counts", "L95CI_counts", "U95CI_counts",
       "valuation", "L95CI_val", "U95CI_val"
     )
     p1
@@ -9389,7 +9359,7 @@ server <- function(input, output, session) {
   cansummary5 <- reactive({
     can1 <- cansummary4()
     colnames(can1) <- c(
-      i18n$t("year"), i18n$t("scenario"), "region", i18n$t("endpoint"), "counts", "L95CI_counts", "U95CI_counts",
+      get_session_t("year"), get_session_t("scenario"), "region", get_session_t("endpoint"), "counts", "L95CI_counts", "U95CI_counts",
       "valuation", "L95CI_val", "U95CI_val"
     )
     can1
@@ -9402,12 +9372,12 @@ server <- function(input, output, session) {
   })
 
   canprovsummort <- reactive({
-    subset(canprovsummary(), canprovsummary_endpoint() == i18n$t("mortality"))
+    subset(canprovsummary(), canprovsummary_endpoint() == get_session_t("mortality"))
   })
 
   # for summary morbidity
   canprovsummorb <- reactive({
-    subset(canprovsummary(), canprovsummary_endpoint() == i18n$t("morbidity"))
+    subset(canprovsummary(), canprovsummary_endpoint() == get_session_t("morbidity"))
   })
 
   canprovsummorb1 <- reactive({
@@ -9416,7 +9386,7 @@ server <- function(input, output, session) {
   canprovsummorb2 <- reactive({
     morb <- canprovsummorb1()
     colnames(morb) <- c(
-      i18n$t("year"), i18n$t("scenario"), "region", i18n$t("endpoint"), "counts", "L95CI_counts", "U95CI_counts",
+      get_session_t("year"), get_session_t("scenario"), "region", get_session_t("endpoint"), "counts", "L95CI_counts", "U95CI_counts",
       "valuation", "L95CI_val", "U95CI_val"
     )
     morb
@@ -9446,12 +9416,12 @@ server <- function(input, output, session) {
   })
 
   sumallendpoint2 <- reactive({
-    cbind(sumallendpoint1()[c(1, 2, 3)], i18n$t("allendpoints"), NA, NA, NA, sumallendpoint1()[c(4, 5, 6)])
+    cbind(sumallendpoint1()[c(1, 2, 3)], get_session_t("allendpoints"), NA, NA, NA, sumallendpoint1()[c(4, 5, 6)])
   })
   sumallendpoint3 <- reactive({
     allendp <- sumallendpoint2()
     colnames(allendp) <- c(
-      i18n$t("year"), i18n$t("scenario"), "region", i18n$t("endpoint"), "counts", "L95CI_counts", "U95CI_counts",
+      get_session_t("year"), get_session_t("scenario"), "region", get_session_t("endpoint"), "counts", "L95CI_counts", "U95CI_counts",
       "valuation", "L95CI_val", "U95CI_val"
     )
     allendp
@@ -9480,8 +9450,8 @@ server <- function(input, output, session) {
   x3summaryresults <- reactive({
     x3sum <- x2summaryresults()
     colnames(x3sum) <- c(
-      i18n$t("Year"), i18n$t("Scenario"), "Province", i18n$t("Endpoint"), i18n$t("Counts"), i18n$t("L95CI Counts"), i18n$t("U95CI Counts"),
-      i18n$t("Valuation"), i18n$t("L95CI Valuation"), i18n$t("U95CI Valuation")
+      get_session_t("Year"), get_session_t("Scenario"), "Province", get_session_t("Endpoint"), get_session_t("Counts"), get_session_t("L95CI Counts"), get_session_t("U95CI Counts"),
+      get_session_t("Valuation"), get_session_t("L95CI Valuation"), get_session_t("U95CI Valuation")
     )
     x3sum
   })
@@ -9516,7 +9486,7 @@ server <- function(input, output, session) {
 
   output$d2 <- downloadHandler(
     filename = function() {
-      i18n$t("AllResults.xlsx")
+      get_session_t("AllResults.xlsx")
     },
     content = function(file) {
       write_xlsx(data_list1(), path = file)
@@ -9549,7 +9519,7 @@ server <- function(input, output, session) {
 
   output$d6 <- downloadHandler(
     filename = function() {
-      i18n$t("Toxics.xlsx")
+      get_session_t("Toxics.xlsx")
     },
     content = function(file) {
       write_xlsx(data_listtx(), path = file)
@@ -9558,7 +9528,7 @@ server <- function(input, output, session) {
 
   output$d7 <- downloadHandler(
     filename = function() {
-      i18n$t("basedata.xlsx")
+      get_session_t("basedata.xlsx")
     },
     content = function(file) {
       write_xlsx(x4outbasedata(), path = file)
@@ -9654,8 +9624,8 @@ server <- function(input, output, session) {
   xxpnametoxic <- reactive({
     xthh2 <- xpnametoxic()
     colnames(xthh2) <- c(
-      i18n$t("Year"), i18n$t("Scenario"), i18n$t("Geocode"), "Province", i18n$t("Pollutant"), i18n$t("Endpoint"), i18n$t("Counts"),
-      i18n$t("Counts per 100,000"), i18n$t("Disability-Adjusted Life Years")
+      get_session_t("Year"), get_session_t("Scenario"), get_session_t("Geocode"), "Province", get_session_t("Pollutant"), get_session_t("Endpoint"), get_session_t("Counts"),
+      get_session_t("Counts per 100,000"), get_session_t("Disability-Adjusted Life Years")
     )
     xthh2
   })
@@ -9680,15 +9650,15 @@ server <- function(input, output, session) {
   xxxoutbasedata <- reactive({
     xbase <- xxoutbasedata()
     colnames(xbase) <- c(
-      i18n$t("Year"), i18n$t("CDUID"), "Province", i18n$t("Acute Exposure Mortality"), i18n$t("Chronic Exposure Mortality"),
-      i18n$t("Respiratory Mortality"), i18n$t("Cardiovascular Mortality"), i18n$t("Cerebrovascular Mortality"),
-      i18n$t("COPD Mortality"), i18n$t("Ischemic Heart Disease Mortality"), i18n$t("Lung Cancer Mortality"),
-      i18n$t("Acute Respiratory Symptom Days"), i18n$t("Adult Chronic Bronchitis Cases"), i18n$t("Asthma Symptom Days"),
-      i18n$t("Cardiac Emergency Room Visits"), i18n$t("Cardiac Hospital Admissions"), i18n$t("Child Acute Bronchitis"),
-      i18n$t("Elderly Cardiac Hospital Admissions"), i18n$t("Minor Restricted Activity Days"),
-      i18n$t("Respiratory Emergency Room Visits"), i18n$t("Respiratory Hospital Admissions"), i18n$t("Restricted Activity Days"),
-      i18n$t("Aged 5 to 19"), i18n$t("Aged 5 to 19 non-asthma"), i18n$t("Aged 20 plus"), i18n$t("Aged 25 plus"),
-      i18n$t("Aged 30 plus"), i18n$t("Aged 65 plus"), i18n$t("All Ages")
+      get_session_t("Year"), get_session_t("CDUID"), "Province", get_session_t("Acute Exposure Mortality"), get_session_t("Chronic Exposure Mortality"),
+      get_session_t("Respiratory Mortality"), get_session_t("Cardiovascular Mortality"), get_session_t("Cerebrovascular Mortality"),
+      get_session_t("COPD Mortality"), get_session_t("Ischemic Heart Disease Mortality"), get_session_t("Lung Cancer Mortality"),
+      get_session_t("Acute Respiratory Symptom Days"), get_session_t("Adult Chronic Bronchitis Cases"), get_session_t("Asthma Symptom Days"),
+      get_session_t("Cardiac Emergency Room Visits"), get_session_t("Cardiac Hospital Admissions"), get_session_t("Child Acute Bronchitis"),
+      get_session_t("Elderly Cardiac Hospital Admissions"), get_session_t("Minor Restricted Activity Days"),
+      get_session_t("Respiratory Emergency Room Visits"), get_session_t("Respiratory Hospital Admissions"), get_session_t("Restricted Activity Days"),
+      get_session_t("Aged 5 to 19"), get_session_t("Aged 5 to 19 non-asthma"), get_session_t("Aged 20 plus"), get_session_t("Aged 25 plus"),
+      get_session_t("Aged 30 plus"), get_session_t("Aged 65 plus"), get_session_t("All Ages")
     )
     xbase
   })
@@ -9730,8 +9700,8 @@ server <- function(input, output, session) {
   xxpnamebaseline <- reactive({
     xbphh2 <- xpnamebaseline()
     colnames(xbphh2) <- c(
-      i18n$t("Year"), i18n$t("Geocode"), "Province", i18n$t("Acute Exposure Mortality"), i18n$t("Chronic Exposure Mortality"), i18n$t("Respiratory Mortality"),
-      i18n$t("Cardiovascular Mortality"), i18n$t("Cerebrovascular Mortality"), i18n$t("COPD Mortality")
+      get_session_t("Year"), get_session_t("Geocode"), "Province", get_session_t("Acute Exposure Mortality"), get_session_t("Chronic Exposure Mortality"), get_session_t("Respiratory Mortality"),
+      get_session_t("Cardiovascular Mortality"), get_session_t("Cerebrovascular Mortality"), get_session_t("COPD Mortality")
     )
     xbphh2
   })
@@ -9748,15 +9718,15 @@ server <- function(input, output, session) {
   )
   df <- eventReactive(input$genmap, {
     tm_shape(mapdata()) + tm_fill(
-      col = i18n$t("value"), title = paste(
-        input$mdy, ifelse(input$scenario == i18n$t("None"), "", paste(i18n$t("Scenario"), input$scenario)), ifelse(input$mdp == i18n$t("None"), "", input$mdp),
-        ifelse(mapep() == i18n$t("None"), "", mapep()), ifelse(mapmt() == i18n$t("Pollutant concentration"), "", mapmt()), ifelse(!mapep() == i18n$t("None"), "",
+      col = get_session_t("value"), title = paste(
+        input$mdy, ifelse(input$scenario == get_session_t("None"), "", paste(get_session_t("Scenario"), input$scenario)), ifelse(input$mdp == get_session_t("None"), "", input$mdp),
+        ifelse(mapep() == get_session_t("None"), "", mapep()), ifelse(mapmt() == get_session_t("Pollutant concentration"), "", mapmt()), ifelse(!mapep() == get_session_t("None"), "",
           ifelse(input$mdp == "CO 24h", "(ppm)",
-            ifelse(input$mdp == "NO2" | input$mdp == "O3" | input$mdp == i18n$t("O3 Summer") | input$mdp == "SO2", "(ppb)", "(ug/m3)")
+            ifelse(input$mdp == "NO2" | input$mdp == "O3" | input$mdp == get_session_t("O3 Summer") | input$mdp == "SO2", "(ppb)", "(ug/m3)")
           )
         )
       ),
-      palette = "Reds", n = 6, alpha = 0.5, id = i18n$t("CDNAME"), popup.vars = c(i18n$t("year"), i18n$t("scenario"), i18n$t("CDUID"), i18n$t("CDNAME"), "Province", i18n$t("pollutant"), i18n$t("endpoint"), i18n$t("metric"), i18n$t("value")),
+      palette = "Reds", n = 6, alpha = 0.5, id = get_session_t("CDNAME"), popup.vars = c(get_session_t("year"), get_session_t("scenario"), get_session_t("CDUID"), get_session_t("CDNAME"), "Province", get_session_t("pollutant"), get_session_t("endpoint"), get_session_t("metric"), get_session_t("value")),
       popup.format = popup_workaround()
     ) + tm_view(set.view = 4) + tm_layout(legend.format = legend_workaround(), legend.outside = TRUE) + tmap_options(qtm.minimap = TRUE) + tm_borders(col = "Black", lwd = 1, lty = "solid", alpha = NA, zindex = NA, group = NA)
   })
@@ -9795,10 +9765,10 @@ server <- function(input, output, session) {
   # generate national map for download
   output$downm <- downloadHandler(
     filename = function() {
-      paste0(input$mdy, ifelse(input$scenario == i18n$t("None"), "", paste(i18n$t("Scenario"), input$scenario)), ifelse(input$mdp == i18n$t("None"), "", input$mdp), ifelse(mapep() == i18n$t("None"), "", mapep()), ifelse(mapmt() == i18n$t("Pollutant concentration"), "", mapmt()), i18n$t("map"), ".jpg")
+      paste0(input$mdy, ifelse(input$scenario == get_session_t("None"), "", paste(get_session_t("Scenario"), input$scenario)), ifelse(input$mdp == get_session_t("None"), "", input$mdp), ifelse(mapep() == get_session_t("None"), "", mapep()), ifelse(mapmt() == get_session_t("Pollutant concentration"), "", mapmt()), get_session_t("map"), ".jpg")
     },
     content = function(file) {
-      m <- tm_shape(mapdata()) + tm_fill(col = i18n$t("value"), title = paste(input$mdy, ifelse(input$scenario == i18n$t("None"), "", paste(i18n$t("Scenario"), input$scenario)), ifelse(input$mdp == i18n$t("None"), "", input$mdp), ifelse(mapep() == i18n$t("None"), "", mapep()), ifelse(mapmt() == i18n$t("Pollutant concentration"), "", mapmt()), ifelse(!mapep() == i18n$t("None"), "", ifelse(input$mdp == "CO 24h", "(ppm)", ifelse(input$mdp == "NO2" | input$mdp == "O3" | input$mdp == i18n$t("O3 Summer") | input$mdp == "SO2", "(ppb)", "(ug/m3)")))), palette = "Reds", id = i18n$t("value")) + tm_borders(col = "Grey", lwd = 1, lty = "solid", zindex = NA, group = NA)
+      m <- tm_shape(mapdata()) + tm_fill(col = get_session_t("value"), title = paste(input$mdy, ifelse(input$scenario == get_session_t("None"), "", paste(get_session_t("Scenario"), input$scenario)), ifelse(input$mdp == get_session_t("None"), "", input$mdp), ifelse(mapep() == get_session_t("None"), "", mapep()), ifelse(mapmt() == get_session_t("Pollutant concentration"), "", mapmt()), ifelse(!mapep() == get_session_t("None"), "", ifelse(input$mdp == "CO 24h", "(ppm)", ifelse(input$mdp == "NO2" | input$mdp == "O3" | input$mdp == get_session_t("O3 Summer") | input$mdp == "SO2", "(ppb)", "(ug/m3)")))), palette = "Reds", id = get_session_t("value")) + tm_borders(col = "Grey", lwd = 1, lty = "solid", zindex = NA, group = NA)
       tmap_save(m, file = file)
     }
   )
@@ -9812,10 +9782,10 @@ server <- function(input, output, session) {
 
   output$downmp <- downloadHandler(
     filename = function() {
-      paste0(input$mdg, input$mdy, ifelse(input$scenario == i18n$t("None"), "", paste(i18n$t("Scenario"), input$scenario)), ifelse(input$mdp == i18n$t("None"), "", input$mdp), ifelse(mapep() == i18n$t("None"), "", mapep()), ifelse(mapmt() == i18n$t("Pollutant concentration"), "", mapmt()), i18n$t("map"), ".jpg")
+      paste0(input$mdg, input$mdy, ifelse(input$scenario == get_session_t("None"), "", paste(get_session_t("Scenario"), input$scenario)), ifelse(input$mdp == get_session_t("None"), "", input$mdp), ifelse(mapep() == get_session_t("None"), "", mapep()), ifelse(mapmt() == get_session_t("Pollutant concentration"), "", mapmt()), get_session_t("map"), ".jpg")
     },
     content = function(file) {
-      mp <- tm_shape(mapdatap()) + tm_fill(col = i18n$t("value"), title = paste(input$mdy, ifelse(input$scenario == i18n$t("None"), "", paste(i18n$t("Scenario"), input$scenario)), ifelse(input$mdp == i18n$t("None"), "", input$mdp), ifelse(mapep() == i18n$t("None"), "", mapep()), ifelse(mapmt() == i18n$t("Pollutant concentration"), "", mapmt()), ifelse(!mapep() == i18n$t("None"), "", ifelse(input$mdp == "CO 24h", "(ppm)", ifelse(input$mdp == "NO2" | input$mdp == "O3" | input$mdp == i18n$t("O3 Summer") | input$mdp == "SO2", "(ppb)", "(ug/m3)")))), palette = "Reds", id = i18n$t("value")) + tm_borders(col = "Grey", lwd = 1, lty = "solid", zindex = NA, group = NA)
+      mp <- tm_shape(mapdatap()) + tm_fill(col = get_session_t("value"), title = paste(input$mdy, ifelse(input$scenario == get_session_t("None"), "", paste(get_session_t("Scenario"), input$scenario)), ifelse(input$mdp == get_session_t("None"), "", input$mdp), ifelse(mapep() == get_session_t("None"), "", mapep()), ifelse(mapmt() == get_session_t("Pollutant concentration"), "", mapmt()), ifelse(!mapep() == get_session_t("None"), "", ifelse(input$mdp == "CO 24h", "(ppm)", ifelse(input$mdp == "NO2" | input$mdp == "O3" | input$mdp == get_session_t("O3 Summer") | input$mdp == "SO2", "(ppb)", "(ug/m3)")))), palette = "Reds", id = get_session_t("value")) + tm_borders(col = "Grey", lwd = 1, lty = "solid", zindex = NA, group = NA)
       tmap_save(mp, file = file)
     }
   )
