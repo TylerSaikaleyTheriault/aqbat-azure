@@ -2268,7 +2268,11 @@ ui <- function(request = NULL) {
         h3(i18n$t("Instructions for new users")),
         p(i18n$t("Pollutant concentrations are annual averages of daily values (24 hours), except for O3 and summer O3 (May to September), which use daily 1-hour maximum averages for the annual and summer periods, respectively. CO includes both annual daily averages and daily 1-hour maximum averages."), class = ""),
         p(i18n$t("Before using AQBAT, you need to prepare your pollutant data so you can upload it onto the tool. We provide a sample file you can use to help structure your data for upload. It includes sample air quality data for PM2.5, O3, and NO2 for 2016. These data were derived from multiple national sources and mapped to 293 census divisions in Canada. We use data from the sample file if you do not input your own data."), class = ""),
-        downloadButton("xsample", i18n$t("Download sample input file"), class = "btn-primary"),
+        if (lang == "fr") {
+          downloadButton("xsample_fr", i18n$t("Download sample input file"), class = "btn-primary")
+        } else {
+          downloadButton("xsample_en", i18n$t("Download sample input file"), class = "btn-primary")
+        },
         br(),
         br(),
         p(i18n$t("Please ensure that the formatting of your data matches the sample data provided. The following variables are included in the sample data:")),
@@ -3726,7 +3730,7 @@ server <- function(input, output, session) {
       shinyjs::removeClass(selector = "#sampleDataUploadedInfo", class = "hidden")
       # Use language from hidden input (set when this session's UI was built)
       return(if (get_session_lang() == "fr") xsample1_fr else xsample1_en)
-s     } else {
+    } else {
       return(pollutantdata0()) # Avoid circular dependency
     }
   })
@@ -9519,16 +9523,14 @@ s     } else {
     }
   )
 
-  output$xsample <- downloadHandler(
-    filename = function() {
-      paste0(i18n$t("sample_inputs"), ".csv")
-    },
-    content = function(file) {
-      # session$userData$lang is set once per session from initial URL; other tabs cannot change it
-      lang <- get_session_lang()
-      data <- if (lang == "fr") xsample1_fr else xsample1_en
-      write.csv(data, file, row.names = FALSE)
-    }
+  # Two handlers so language is fixed by which button was rendered (works in iframe / cross-tab)
+  output$xsample_en <- downloadHandler(
+    filename = function() "sample_inputs.csv",
+    content = function(file) write.csv(xsample1_en, file, row.names = FALSE)
+  )
+  output$xsample_fr <- downloadHandler(
+    filename = function() "donnees_exemple.csv",
+    content = function(file) write.csv(xsample1_fr, file, row.names = FALSE)
   )
 
   data_listtx <- reactive({
