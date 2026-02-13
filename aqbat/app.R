@@ -2616,12 +2616,9 @@ server <- function(input, output, session) {
     }
   })
 
-  # Get language for this session (for downloads / sample data). Uses session$userData$lang set once above.
+  # Get language for this session. Prefer (1) URL, (2) hidden input from page build,
+  # (3) cache. So downloads match the current tab even when URL is stripped by proxy.
   get_session_lang <- function() {
-    if (!is.null(session$userData$lang) && session$userData$lang %in% c("en", "fr")) {
-      return(session$userData$lang)
-    }
-    # Fallback if observer hasn't run yet: read from URL now and cache
     url_search <- session$clientData$url_search
     if (!is.null(url_search) && nzchar(url_search)) {
       query <- parseQueryString(url_search)
@@ -2629,6 +2626,13 @@ server <- function(input, output, session) {
         session$userData$lang <- query$lang
         return(session$userData$lang)
       }
+    }
+    if (!is.null(input$session_lang) && input$session_lang %in% c("en", "fr")) {
+      session$userData$lang <- input$session_lang
+      return(session$userData$lang)
+    }
+    if (!is.null(session$userData$lang) && session$userData$lang %in% c("en", "fr")) {
+      return(session$userData$lang)
     }
     session$userData$lang <- "en"
     "en"
