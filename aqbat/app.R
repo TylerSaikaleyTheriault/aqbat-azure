@@ -2259,14 +2259,7 @@ ui <- function(request = NULL) {
         h3(i18n$t("Instructions for new users")),
         p(i18n$t("Pollutant concentrations are annual averages of daily values (24 hours), except for O3 and summer O3 (May to September), which use daily 1-hour maximum averages for the annual and summer periods, respectively. CO includes both annual daily averages and daily 1-hour maximum averages."), class = ""),
         p(i18n$t("Before using AQBAT, you need to prepare your pollutant data so you can upload it onto the tool. We provide a sample file you can use to help structure your data for upload. It includes sample air quality data for PM2.5, O3, and NO2 for 2016. These data were derived from multiple national sources and mapped to 293 census divisions in Canada. We use data from the sample file if you do not input your own data."), class = ""),
-        conditionalPanel(
-          condition = "input.session_lang == 'en'",
-          downloadButton("xsample_en", i18n$t("Download sample input file"), class = "btn-primary")
-        ),
-        conditionalPanel(
-          condition = "input.session_lang == 'fr'",
-          downloadButton("xsample_fr", i18n$t("Download sample input file"), class = "btn-primary")
-        ),
+        downloadButton("xsample", i18n$t("Download sample input file"), class = "btn-primary"),
         br(),
         br(),
         p(i18n$t("Please ensure that the formatting of your data matches the sample data provided. The following variables are included in the sample data:")),
@@ -2599,10 +2592,37 @@ server <- function(input, output, session) {
   # Pass URL query string to ui(request) so ?lang=fr works for French
   enableBookmarking(store = "url")
 
-  # Session language comes from hidden input session_lang (set when UI was built); use for downloads
+  # Set this session's language once from the initial URL; never overwrite (so other tabs can't poison it)
+  observe({
+    if (is.null(session$userData$lang)) {
+      url_search <- session$clientData$url_search
+      if (!is.null(url_search) && nzchar(url_search)) {
+        query <- parseQueryString(url_search)
+        if (!is.null(query$lang) && query$lang %in% c("en", "fr")) {
+          session$userData$lang <- query$lang
+          return()
+        }
+      }
+      session$userData$lang <- "en"
+    }
+  })
+
+  # Get language for this session (for downloads / sample data). Uses session$userData$lang set once above.
   get_session_lang <- function() {
-    l <- input$session_lang
-    if (is.null(l) || !l %in% c("en", "fr")) "en" else l
+    if (!is.null(session$userData$lang) && session$userData$lang %in% c("en", "fr")) {
+      return(session$userData$lang)
+    }
+    # Fallback if observer hasn't run yet: read from URL now and cache
+    url_search <- session$clientData$url_search
+    if (!is.null(url_search) && nzchar(url_search)) {
+      query <- parseQueryString(url_search)
+      if (!is.null(query$lang) && query$lang %in% c("en", "fr")) {
+        session$userData$lang <- query$lang
+        return(session$userData$lang)
+      }
+    }
+    session$userData$lang <- "en"
+    "en"
   }
 
   # understand whether the user uploaded data, or we uploaded sample data
@@ -9472,20 +9492,15 @@ s     } else {
     }
   )
 
-  output$xsample_en <- downloadHandler(
+  output$xsample <- downloadHandler(
     filename = function() {
       paste0(i18n$t("sample_inputs"), ".csv")
     },
     content = function(file) {
-      write.csv(xsample1_en, file, row.names = FALSE)
-    }
-  )
-  output$xsample_fr <- downloadHandler(
-    filename = function() {
-      paste0(i18n$t("sample_inputs"), ".csv")
-    },
-    content = function(file) {
-      write.csv(xsample1_fr, file, row.names = FALSE)
+      # session$userData$lang is set once per session from initial URL; other tabs cannot change it
+      lang <- get_session_lang()
+      data <- if (lang == "fr") xsample1_fr else xsample1_en
+      write.csv(data, file, row.names = FALSE)
     }
   )
 
