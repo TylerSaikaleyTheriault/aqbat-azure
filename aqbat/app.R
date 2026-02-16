@@ -3652,7 +3652,10 @@ server <- function(input, output, session) {
     }
   )
 
+  dataUploadError <- reactiveVal(NULL)
+
   pollutantdata0 <- reactive({
+    dataUploadError(NULL)
     req(input$pollutants) # Ensure files are uploaded
 
     # Validate file extensions
@@ -3662,12 +3665,12 @@ server <- function(input, output, session) {
 
     if (length(valid_files) == 0) {
       shinyjs::addClass(selector = ".download-button", class = "hidden")
-      # do not hide #dataPreviewTable so renderUI can show the translated error message
-      stop(get_session_t("No valid CSV files uploaded."))
+      dataUploadError(get_session_t("No valid CSV files uploaded."))
+      return(data.frame())
     }
 
-    # Read and combine the files
-    tryCatch(
+    # Read and combine the files (do not throw on error; store message so preview can show translated text)
+    out <- tryCatch(
       {
         rbindlist(
           lapply(valid_files, fread),
@@ -3675,12 +3678,12 @@ server <- function(input, output, session) {
         )
       },
       error = function(e) {
-        # shinyjs::runjs('$(".download-button").addClass("hidden")',)
         shinyjs::addClass(selector = ".download-button", class = "hidden")
-        # do not hide #dataPreviewTable so renderUI can show the translated error message
-        stop(get_session_t("Error reading file. The file may not be UTF-8 encoded or may contain special characters. Please save your CSV with UTF-8 encoding and try again."))
+        dataUploadError(get_session_t("Error reading file. The file may not be UTF-8 encoded or may contain special characters. Please save your CSV with UTF-8 encoding and try again."))
+        data.frame()
       }
     )
+    out
   })
   # fill=TRUE: if files have unequal length and filling with blank
 
@@ -3715,25 +3718,24 @@ server <- function(input, output, session) {
     na_replace(pollutantdata1(), 0)
   })
 
-  # preview user input file with user specified number of rows to preview (catch errors so French users see translated message, not Shiny default)
+  # preview user input file with user specified number of rows to preview (show translated error when read fails)
   output$dataPreviewTable <- renderUI({
-    out <- tryCatch(
-      {
-        data <- pollutantdata0()
-        df <- head(data, n = 3)
-        tags$table(
-          class = "table table-bordered table-condensed",
-          tags$thead(tags$tr(lapply(names(df), function(x) tags$th(x)))),
-          tags$tbody(lapply(seq_len(nrow(df)), function(i) {
-            tags$tr(lapply(df[i, , drop = FALSE], function(cell) tags$td(as.character(cell))))
-          }))
-        )
-      },
-      error = function(e) {
-        tags$p(conditionMessage(e), class = "text-danger", role = "alert")
-      }
+    req(pollutantdata0())
+    err <- dataUploadError()
+    if (!is.null(err)) {
+      return(tags$p(err, class = "text-danger", role = "alert"))
+    }
+    df <- head(pollutantdata0(), n = 3)
+    if (nrow(df) == 0) {
+      return(NULL)
+    }
+    tags$table(
+      class = "table table-bordered table-condensed",
+      tags$thead(tags$tr(lapply(names(df), function(x) tags$th(x)))),
+      tags$tbody(lapply(seq_len(nrow(df)), function(i) {
+        tags$tr(lapply(df[i, , drop = FALSE], function(cell) tags$td(as.character(cell))))
+      }))
     )
-    out
   })
 
 
