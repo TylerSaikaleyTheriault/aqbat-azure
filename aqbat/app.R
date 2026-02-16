@@ -520,7 +520,6 @@ ui <- function(request = NULL) {
             tags$li(tags$a(
               i18n$t("Threshold concentration"),
               href = "#threshold",
-              class = "scroll-link"
             )),
             tags$li(tags$a(
               i18n$t("PM2.5 CRFs"),
