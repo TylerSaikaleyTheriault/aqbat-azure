@@ -1937,6 +1937,14 @@
     {    
         "en": "Only CSV files are supported. UTF-8 encoding is recommended.",
         "fr": "Seuls les fichiers CSV sont pris en charge. L'encodage UTF-8 est requis."
+    },
+    {
+        "en": "No valid CSV files uploaded.",
+        "fr": "Aucun fichier CSV valide n'a été téléversé."
+    },
+    {
+        "en": "Error reading file. The file may not be UTF-8 encoded or may contain special characters. Please save your CSV with UTF-8 encoding and try again.",
+        "fr": "Erreur lors de la lecture du fichier. Le fichier n'est peut-être pas encodé en UTF-8 ou contient des caractères spéciaux. Veuillez enregistrer votre fichier CSV en encodage UTF-8 et réessayer."
     }
   ]
 }
