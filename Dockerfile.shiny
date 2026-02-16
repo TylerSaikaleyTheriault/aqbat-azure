@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1
-# Use BuildKit for cache mounts (faster rebuilds): DOCKER_BUILDKIT=1
+# BuildKit required for cache mounts. In CI, set DOCKER_BUILDKIT=1 before docker build.
 FROM rocker/shiny:4.4.1
 
 # Install system dependencies (cache mount speeds repeated builds)
