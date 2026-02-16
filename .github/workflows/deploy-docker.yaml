@@ -1,4 +1,4 @@
-name: minimal-workflow-adam
+name: deploy-docker
 
 # Controls when the workflow will run
 on:
