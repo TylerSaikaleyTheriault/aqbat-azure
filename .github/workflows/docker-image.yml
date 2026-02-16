@@ -49,6 +49,7 @@ jobs:
 
       - name: Build and push Docker image to ACR
         run: |
+          export DOCKER_BUILDKIT=1
           # Set subscription just to be explicit
           az account set --subscription "$AZ_SUBSCRIPTION_ID"
 
