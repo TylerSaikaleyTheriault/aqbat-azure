@@ -32,6 +32,7 @@ jobs:
     # Add timeout to prevent indefinite waiting (ephemeral runner setup can take 5-10 minutes)
     timeout-minutes: 30
     env:
+      DOCKER_BUILDKIT: 1
       ACR_NAME: "hcsccrrc"
       ACR_LOGIN_SERVER: "hcsccrrc.azurecr.io"
       ACR_IMAGE_REPOSITORY: "dtb/aqbat/shiny"
@@ -95,9 +96,11 @@ jobs:
           echo "Pulling latest image for cache..."
           if docker pull "${LATEST_NAME}" 2>/dev/null; then
             echo "Successfully pulled latest image for cache"
+            CACHE_AVAILABLE=true
           else
             echo "Warning: Could not pull latest image (may need AcrPull permission or image doesn't exist)"
             echo "Building from scratch without cache..."
+            CACHE_AVAILABLE=false
           fi
 
           # Determine which Dockerfile to use
