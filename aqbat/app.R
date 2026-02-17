@@ -468,6 +468,7 @@ ui <- function(request = NULL) {
     tags$script(src = "scripts/save-load-url.js", type = "application/javascript"),
     tags$script(src = "scripts/utilities.js", type = "application/javascript"),
     tags$script(src = "scripts/jquery.magnific-popup.min.js", type = "application/javascript"),
+    tags$script(src = "scripts/error-message-i18n.js", type = "application/javascript"),
     # tags$script(src = "scripts/handle-internal-anchor.js", type = "application/javascript"),
     tags$link(rel = "stylesheet", href = "styles/theme.min.css", type = "text/css"), # Canada.ca theming
     tags$link(rel = "stylesheet", href = "styles/aqbat.css", type = "text/css") # Custom styles
@@ -2252,7 +2253,7 @@ ui <- function(request = NULL) {
         fileInput("pollutants", label = "", accept = c(".csv", ".tsv"), multiple = TRUE, width = "350px"),
         textOutput("message1"),
         h3(i18n$t("Preview of the uploaded data"), id = "data-preview", class = "hidden"),
-        uiOutput("dataPreviewTable"),
+        tableOutput("dataPreviewTable"),
         p(i18n$t("If you have previously uploaded data (including the sample data), please clear all data and restart the app before uploading new pollutant data. You will return to the \"CRFs\" tab of the website. Data in all tabs in and results will be reset to defaults.")),
         createClearDataButton("upload", i18n),
         h3(i18n$t("Instructions for new users")),
@@ -3652,10 +3653,7 @@ server <- function(input, output, session) {
     }
   )
 
-  dataUploadError <- reactiveVal(NULL)
-
   pollutantdata0 <- reactive({
-    dataUploadError(NULL)
     req(input$pollutants) # Ensure files are uploaded
 
     # Validate file extensions
@@ -3665,12 +3663,12 @@ server <- function(input, output, session) {
 
     if (length(valid_files) == 0) {
       shinyjs::addClass(selector = ".download-button", class = "hidden")
-      dataUploadError(get_session_t("No valid CSV files uploaded."))
-      return(data.frame())
+      shinyjs::addClass(selector = "#dataPreviewTable", class = "hidden")
+      stop("No valid CSV files uploaded.")
     }
 
-    # Read and combine the files (do not throw on error; store message so preview can show translated text)
-    out <- tryCatch(
+    # Read and combine the files
+    tryCatch(
       {
         rbindlist(
           lapply(valid_files, fread),
@@ -3679,11 +3677,10 @@ server <- function(input, output, session) {
       },
       error = function(e) {
         shinyjs::addClass(selector = ".download-button", class = "hidden")
-        dataUploadError(get_session_t("Error reading file. The file may not be UTF-8 encoded or may contain special characters. Please save your CSV with UTF-8 encoding and try again."))
-        data.frame()
+        shinyjs::addClass(selector = "#dataPreviewTable", class = "hidden")
+        stop("Error reading files. Please ensure all files are valid CSVs.")
       }
     )
-    out
   })
   # fill=TRUE: if files have unequal length and filling with blank
 
@@ -3718,24 +3715,10 @@ server <- function(input, output, session) {
     na_replace(pollutantdata1(), 0)
   })
 
-  # preview user input file with user specified number of rows to preview (show translated error when read fails)
-  output$dataPreviewTable <- renderUI({
+  # preview user input file with user specified number of rows to preview
+  output$dataPreviewTable <- renderTable({
     req(pollutantdata0())
-    err <- dataUploadError()
-    if (!is.null(err)) {
-      return(tags$p(err, class = "text-danger", role = "alert"))
-    }
-    df <- head(pollutantdata0(), n = 3)
-    if (nrow(df) == 0) {
-      return(NULL)
-    }
-    tags$table(
-      class = "table table-bordered table-condensed",
-      tags$thead(tags$tr(lapply(names(df), function(x) tags$th(x)))),
-      tags$tbody(lapply(seq_len(nrow(df)), function(i) {
-        tags$tr(lapply(df[i, , drop = FALSE], function(cell) tags$td(as.character(cell))))
-      }))
-    )
+    head(pollutantdata0(), n = 3)
   })
 
 
