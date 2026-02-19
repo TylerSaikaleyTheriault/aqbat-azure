@@ -95,11 +95,6 @@ valuationReferences <- valuationReferences_en
 # setup app reload
 jscode <- "shinyjs.reload = function() { location.reload(); }"
 
-setLang <- HTML(paste0("
-  $(document).ready(function() {
-    $('#aqbat').attr('lang', '", currentlanguage, "');
-  });
-"))
 
 # load files of pollutant and province names for maps
 pollnames_en <- read.csv("pollnames.csv", stringsAsFactors = FALSE)
@@ -447,6 +442,7 @@ ui <- function(request = NULL) {
   otherRefs <- if (lang == "en") otherReferences_en else otherReferences_fr
   valuationRefs <- if (lang == "en") valuationReferences_en else valuationReferences_fr
   fluidPage(
+  lang = lang, # root <html lang="..."> for screen readers (correct voice for FR/EN)
   # Hidden input: language for this session (set when UI is built; avoids URL reactive / cross-session issues)
   tags$div(style = "display: none;", textInput("session_lang", label = NULL, value = lang)),
   # add_loading_state(
@@ -463,7 +459,6 @@ ui <- function(request = NULL) {
   title = i18n$t("AQBAT"),
   tags$head(
     tags$title(i18n$t("Air Quality Benefits Assessment Tool"), "|", i18n$t("Health Canada"), i18n$t("Infobase")),
-    tags$script(setLang, type = "application/javascript"),
     tags$script(src = "scripts/iframeResizer.contentWindow.min.js", type = "application/javascript"),
     tags$script(src = "scripts/save-load-url.js", type = "application/javascript"),
     tags$script(src = "scripts/utilities.js", type = "application/javascript"),

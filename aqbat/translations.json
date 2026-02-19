@@ -1907,8 +1907,8 @@
         "fr": "Prolonger la session"
     },
     {
-        "en": "You have been disconnected from the server. All data has been lost. This can happen for the following reasons: exceeding 3 hours of inactivity or the application has been updated on the server. Please refresh the page to restart the app. You may press F5 to refresh.",
-        "fr": "Vous avez été déconnecté du serveur. Toutes les données ont été perdues. Cela peut se produire pour les raisons suivantes : dépassement de 3 heures d'inactivité ou l'application a été mise à jour sur le serveur. Veuillez recharger la page pour redémarrer l'application. Vous pouvez presser F5 pour recharger."
+        "en": "You have been disconnected from the server. All data has been lost. This can happen if the application has been updated on the server. Please refresh the page to restart the app. You may press F5 to refresh.",
+        "fr": "Vous avez été déconnecté du serveur. Toutes les données ont été perdues. Cela peut se produire si l'application a été mise à jour sur le serveur. Veuillez recharger la page pour redémarrer l'application. Vous pouvez presser F5 pour recharger."
     },
     {
         "en": "Restart application",
