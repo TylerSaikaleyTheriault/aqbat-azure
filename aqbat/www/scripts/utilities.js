@@ -94,6 +94,7 @@ $(document).ready(function() {
         Shiny.onInputChange('jsError', {message: message, source: source});
         return true;
       }
+      setCitationLang();
     });
 
     $('input[type="file"]').css({
@@ -118,14 +119,23 @@ $(document).ready(function() {
       });
     }
 
+    // Ensure citation links are read in the correct language by screen readers (set lang from class so it survives any sanitization)
+    function setCitationLang() {
+      document.querySelectorAll('.cite-lang-en').forEach(function(el) { el.setAttribute('lang', 'en'); });
+      document.querySelectorAll('.cite-lang-fr').forEach(function(el) { el.setAttribute('lang', 'fr'); });
+    }
+    setCitationLang();
+
     document.addEventListener('DOMContentLoaded', function() {
       updateTabIndex(); // Initial setting on page load
+      setCitationLang();
 
       // Listen for tab change events and update tabindex
       const tabLinks = document.querySelectorAll('a[data-toggle=\"tab\"]');
       tabLinks.forEach(link => {
         link.addEventListener('shown.bs.tab', function() {
           updateTabIndex(); // Reset tabindex after each tab switch
+          setCitationLang();
         });
       });
     });

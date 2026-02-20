@@ -54,18 +54,33 @@ summary_ui <- function(i18n) {
     # ),
     h2(i18n$t("Recent applications of AQBAT")),
     tags$ul(
-      tags$li(HTML(
-        i18n$t("Stieb DM, Smith-Doiron M, Quick M, Christidis T, Xi G, Miles RM, van Donkelaar A, Martin RV, Hystad P, Tjepkema M. <a target='_parent' href='https://agupubs.onlinelibrary.wiley.com/doi/10.1029/2023GH000816' lang='en'>Inequality in the Distribution of Air Pollution Attributable Mortality Within Canadian Cities</a>. Geohealth. 2023 Aug 29;7(9):e2023GH000816.")
-      )),
-      tags$li(HTML(
-        i18n$t("Egyed M, Blagden P, Plummer D, Makar P, Matz CJ, Flannigan M, MacNeill M, Lavigne E, Ling B, Lopez, DV, Edwards B, Pavlovic R, Racine J, Raymond P, Rittmaster R, Wilson A, Xi G. 2022. Air Quality. In P. Berry & R. Schnitter (Eds.), <a target='_parent' href='https://changingclimate.ca/health-in-a-changing-climate/chapter/5-0/' lang='en'>Health of Canadians in a Changing Climate: Advancing our Knowledge for Action</a>. Ottawa, ON: Government of Canada.")
-      )),
-      tags$li(HTML(
-        i18n$t("Matz CJ, Egyed M, Xi G, Racine J, Pavlovic R, Rittmaster R, Henderson SB, Stieb DM. <a target='_parent' href='https://doi.org/10.1016/j.scitotenv.2020.138506' lang='en'>Health impact analysis of PM2.5 from wildfire smoke in Canada (2013-2015, 2017-2018)</a>. Sci Total Environ. 2020 Jul 10;725:138506. <a href='https://health-infobase.canada.ca/datalab/wildfire-blog.html' lang='en'>See an interactive map of results</a>.")
-      )),
-      tags$li(HTML(
-        i18n$t("Health Canada. 2024. <a target='_parent' href='https://www.canada.ca/en/health-canada/services/publications/healthy-living/health-impacts-air-pollution-2018.html' lang='en'>Health Impacts of Air Pollution in Canada in 2018</a>.")
-      ))
+      # Citations built with tags$a(..., lang=) so screen readers use correct language (same pattern as reference template)
+      local({
+        cur_lang <- i18n$get_translation_language()
+        list(
+          tags$li(
+            HTML(i18n$t("Stieb DM, Smith-Doiron M, Quick M, Christidis T, Xi G, Miles RM, van Donkelaar A, Martin RV, Hystad P, Tjepkema M. ")),
+            tags$a(target = "_parent", href = "https://agupubs.onlinelibrary.wiley.com/doi/10.1029/2023GH000816", lang = "en", i18n$t("Inequality in the Distribution of Air Pollution Attributable Mortality Within Canadian Cities")),
+            HTML(i18n$t(". Geohealth. 2023 Aug 29;7(9):e2023GH000816."))
+          ),
+          tags$li(
+            HTML(i18n$t("Egyed M, Blagden P, Plummer D, Makar P, Matz CJ, Flannigan M, MacNeill M, Lavigne E, Ling B, Lopez, DV, Edwards B, Pavlovic R, Racine J, Raymond P, Rittmaster R, Wilson A, Xi G. 2022. Air Quality. In P. Berry & R. Schnitter (Eds.), ")),
+            tags$a(target = "_parent", href = if (cur_lang == "en") "https://changingclimate.ca/health-in-a-changing-climate/chapter/5-0/" else "https://changingclimate.ca/health-in-a-changing-climate/fr/chapter/5-0/", lang = cur_lang, i18n$t("Health of Canadians in a Changing Climate: Advancing our Knowledge for Action")),
+            HTML(i18n$t(". Ottawa, ON: Government of Canada."))
+          ),
+          tags$li(
+            HTML(i18n$t("Matz CJ, Egyed M, Xi G, Racine J, Pavlovic R, Rittmaster R, Henderson SB, Stieb DM. ")),
+            tags$a(target = "_parent", href = "https://doi.org/10.1016/j.scitotenv.2020.138506", lang = "en", i18n$t("Health impact analysis of PM2.5 from wildfire smoke in Canada (2013-2015, 2017-2018)")),
+            HTML(i18n$t(". Sci Total Environ. 2020 Jul 10;725:138506. ")),
+            tags$a(href = if (cur_lang == "en") "https://health-infobase.canada.ca/datalab/wildfire-blog.html" else "https://sante-infobase.canada.ca/labo-de-donnees/blogue-feux-de-friches.html", lang = cur_lang, i18n$t("See an interactive map of results"))
+          ),
+          tags$li(
+            HTML(i18n$t("Health Canada. 2024. ")),
+            tags$a(target = "_parent", href = if (cur_lang == "en") "https://www.canada.ca/en/health-canada/services/publications/healthy-living/health-impacts-air-pollution-2018.html" else "https://www.canada.ca/fr/sante-canada/services/publications/vie-saine/impacts-pollution-atmospherique-2018.html", lang = cur_lang, i18n$t("Health Impacts of Air Pollution in Canada in 2018")),
+            "."
+          )
+        )
+      })
     ),
     # Contact Us
     h2(i18n$t("Contact us")),
