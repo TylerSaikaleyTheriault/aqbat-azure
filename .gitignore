@@ -22,3 +22,5 @@ aqbat/renv/settings.json
 # OS specific files
 .DS_Store
 Thumbs.db
+# Local development
+docker-compose.yml
