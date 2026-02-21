@@ -59,6 +59,40 @@
     .spinner {
       display: none;
     }
+
+    #spin-container {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background-color: rgba(255, 255, 255, 0.9);
+      z-index: 10;
+    }
+
+    #spin-container .loader {
+      display: block;
+      border: 8px solid #f3f3f3;
+      border-radius: 50%;
+      border-top: 8px solid #26374a;
+      width: 80px;
+      height: 80px;
+      animation: spin 2s linear infinite;
+    }
+
+    @keyframes spin {
+      0% {
+        transform: rotate(0deg);
+      }
+
+      100% {
+        transform: rotate(360deg);
+      }
+    }
   </style>
 </head>
 
@@ -215,11 +249,12 @@
 
     <div>
       <!-- RSHINY APP -->
-      <div id="spin-container">
-        <div id="spinner"></div>
-        <span id="spinner-text">Chargement...</span>
-      </div>
-      <div class="main" style="display: flex; justify-content: center; padding: 0">
+      <div class="main"
+        style="display: flex; justify-content: center; padding: 0; position: relative; min-height: 400px;">
+        <div id="spin-container">
+          <div class="loader"></div>
+          <span id="spinner-text">Chargement...</span>
+        </div>
         <iframe id="shinyIframe" title="Iframe de l'outil d'évaluation de la qualité de l'air" lang="fr"
           style="width: 100%; border: none" allow="autoplay; encrypted-media" allowfullscreen></iframe>
       </div>
@@ -413,13 +448,16 @@
     const iframe = document.getElementById('shinyIframe');
     const spinnerContainer = document.getElementById('spin-container');
 
+    // Set the src attribute of the iframe based on the URL
     if (currentUrl.includes('localhost') || currentUrl.includes('127.0.0.1')) {
       iframe.src = devUrl;
-      spinnerContainer.style.display = 'none';
     } else {
       iframe.src = productionUrl;
-      spinnerContainer.style.display = 'none';
     }
+
+    iframe.onload = function () {
+      spinnerContainer.style.display = 'none';
+    };
 
   </script>
   <!-- instantiate iframeResizer -->

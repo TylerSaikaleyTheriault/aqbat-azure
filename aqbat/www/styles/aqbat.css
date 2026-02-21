@@ -10,7 +10,7 @@ html {
 }
 
 .container-fluid:first-of-type {
-  padding:0
+  padding: 0
 }
 
 li {
@@ -66,6 +66,7 @@ progress::-webkit-progress-bar {
   width: 100%;
   border: 1px solid gray;
 }
+
 progress {
   background-color: transparent;
 }
@@ -74,9 +75,11 @@ progress {
 progress::-webkit-progress-value {
   background-color: var(--primary) !important;
 }
+
 progress::-moz-progress-bar {
   background-color: var(--primary) !important;
 }
+
 progress {
   color: var(--primary);
 }
@@ -104,11 +107,11 @@ body {
   background-color: #f5f5f5;
 }
 
-#alltabpanel > li {
+#alltabpanel>li {
   margin-right: 15px;
 }
 
-#alltabpanel .active > a {
+#alltabpanel .active>a {
   color: var(--secondary) !important;
   background-color: var(--primary) !important;
 }
@@ -116,7 +119,7 @@ body {
 #alltabpanel a {
   color: var(--primary) !important;
   background-color: #f5f5f5,
-  padding: 10px 14px;
+    padding: 10px 14px;
   font-size: 20px;
   border: none !important;
   margin: 0 !important;
@@ -161,27 +164,27 @@ body {
   margin-top: 0 !important;
 }
 
-.nav-tabs > li {
+.nav-tabs>li {
   padding: 0 !important;
   border: none !important;
 }
 
-.nav-tabs > li > a {
+.nav-tabs>li>a {
   margin-top: 0 !important;
 }
 
-.subtab > .tabbable > .nav.nav-tabs > li > a {
+.subtab>.tabbable>.nav.nav-tabs>li>a {
   border: none !important;
   border-bottom: 10px solid transparent !important;
 }
 
-.subtab > .tabbable > .nav.nav-tabs > li > a {
+.subtab>.tabbable>.nav.nav-tabs>li>a {
   border: none !important;
   color: black !important;
   font-weight: 600;
 }
 
-.subtab .nav > .active {
+.subtab .nav>.active {
   border-bottom: 5px solid var(--ternary) !important;
 }
 
@@ -197,16 +200,16 @@ body {
   border: unset !important;
 }
 
-.subtab > .tabbable > .nav-tabs {
+.subtab>.tabbable>.nav-tabs {
   justify-content: start;
   margin-bottom: 20px;
 }
 
-.subtab > .tabbable > .nav-tabs > li {
+.subtab>.tabbable>.nav-tabs>li {
   margin-right: 15px;
 }
 
-.nav > li > a:hover {
+.nav>li>a:hover {
   background-color: unset !important;
   color: black;
 }
@@ -227,14 +230,16 @@ body {
 }
 
 .selectize-control .selectize-input {
-  min-height: 41px; /* Adjust the value as needed */
+  min-height: 41px;
+  /* Adjust the value as needed */
   display: flex;
   align-items: center;
   box-sizing: border-box;
 }
 
 .selectize-dropdown {
-  min-height: 41px; /* Adjust the value as needed */
+  min-height: 41px;
+  /* Adjust the value as needed */
   display: flex;
   align-items: center;
 }
@@ -246,9 +251,7 @@ body {
   flex-direction: column;
 }
 
-.left-parameter-box {
-
-}
+.left-parameter-box {}
 
 .center-parameter-box {
   border-left: 1px solid black;
@@ -262,7 +265,8 @@ body {
   width: 100%;
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  grid-template-rows: auto auto; /* Two rows: first row auto height, second row auto height */
+  grid-template-rows: auto auto;
+  /* Two rows: first row auto height, second row auto height */
   /* gap: 20px; */
 }
 
@@ -270,7 +274,8 @@ body {
   width: 100%;
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  grid-template-rows: auto auto; /* Two rows: first row auto height, second row auto height */
+  grid-template-rows: auto auto;
+  /* Two rows: first row auto height, second row auto height */
   /* gap: 20px; */
 }
 
@@ -278,7 +283,8 @@ body {
   width: 100%;
   display: grid;
   grid-template-columns: 1fr 2fr;
-  grid-template-rows: auto auto; /* Two rows: first row auto height, second row auto height */
+  grid-template-rows: auto auto;
+  /* Two rows: first row auto height, second row auto height */
   /* gap: 20px; */
 }
 
@@ -290,10 +296,11 @@ body {
 }
 
 .grid-heading {
-  grid-column: 1 / span 3; /* Span across all 3 columns */
+  grid-column: 1 / span 3;
+  /* Span across all 3 columns */
 }
 
-.mt-32{
+.mt-32 {
   margin-top: 32px;
 }
 
@@ -310,8 +317,13 @@ body {
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 .loader-container {
@@ -323,11 +335,15 @@ body {
 }
 
 @media (max-width: 1200px) {
-  .grid-discrete, .grid-normal, .grid-linear {
+
+  .grid-discrete,
+  .grid-normal,
+  .grid-linear {
     width: 100%;
     display: flex;
     flex-direction: column;
   }
+
   .parameter-box {
     margin-left: 0;
     display: flex;
@@ -343,11 +359,12 @@ body {
   flex-wrap: wrap;
 }
 
-.map-options{
+.map-options {
   width: 200px;
 }
 
-th, td {
+th,
+td {
   min-width: 150px !important;
 }
 
@@ -361,19 +378,25 @@ body {
 
 /* Style spans with the scroll-link class to look like anchor tags */
 .scroll-link {
-  color: #284162; /* Default link color */
-  text-decoration: underline; /* Underline text like a link */
-  cursor: pointer; /* Pointer cursor to indicate clickability */
+  color: #284162;
+  /* Default link color */
+  text-decoration: underline;
+  /* Underline text like a link */
+  cursor: pointer;
+  /* Pointer cursor to indicate clickability */
 }
 
 .scroll-link:hover {
-  color: #0535d2; /* Change color on hover to indicate interaction */
-  text-decoration: underline; /* Maintain underline on hover */
+  color: #0535d2;
+  /* Change color on hover to indicate interaction */
+  text-decoration: underline;
+  /* Maintain underline on hover */
 }
 
 /* Style for clicked links */
 .scroll-link.clicked {
-  color: #7834bc; /* Purple color for clicked links */
+  color: #7834bc;
+  /* Purple color for clicked links */
 }
 
 #pollutants_progress {
@@ -386,9 +409,9 @@ body {
 
 .input-group-btn.input-group-prepend:focus-within .btn-file {
   background-color: #1c578a;
-}h
+}
 
-.shiny-output-error{
+.shiny-output-error {
   display: none !important;
 }
 
@@ -405,5 +428,15 @@ html body #ss-overlay {
 }
 
 .spinner {
-  display: none;
+  /* display: none; */
+}
+
+.aqbat-loader-container {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  margin: 20px 0;
+  min-height: 150px;
+  width: 100%;
 }
