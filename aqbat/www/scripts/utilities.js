@@ -143,14 +143,19 @@ $(document).ready(function () {
   // --- Loading indicators management ---
   $(document).on('shiny:outputinvalidated', function (event) {
     // Show loader and hide the element currently recalculating
-    $(event.target).hide().parent().find('.aqbat-loader-container').show();
+    var $target = $(event.target);
+    $target.hide();
+    // Use .closest() to reliably find the container, bypassing any wrappers added by wet-boew
+    $target.closest('.section, [class*="col-"]').find('.aqbat-loader-container').show();
   });
 
   $(document).on('shiny:value', function (event) {
     // Hide loader and show the recalculated element
     // setTimeout 0 ensures this runs after Shiny's rendering but before user interaction
     setTimeout(function () {
-      $(event.target).show().parent().find('.aqbat-loader-container').hide();
+      var $target = $(event.target);
+      $target.show();
+      $target.closest('.section, [class*="col-"]').find('.aqbat-loader-container').hide();
     }, 0);
   });
 
