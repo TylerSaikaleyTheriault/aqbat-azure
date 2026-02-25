@@ -731,6 +731,14 @@
         "en": "To upload new data, please click \"Clear all data and restart\".",
         "fr": "Pour télécharger de nouvelles données, veuillez cliquer sur « Effacer toutes les données et recommencer »."
     },
+    {
+        "en": "Error: Invalid file encoding.",
+        "fr": "Erreur : Encodage de fichier invalide."
+    },
+    {
+        "en": "Please ensure your CSV file is UTF-8 encoded. If you are using Excel, save as 'CSV UTF-8 (comma delimited)'.",
+        "fr": "Veuillez vous assurer que votre fichier CSV est encodé en UTF-8. Si vous utilisez Excel, enregistrez-le sous le nom « CSV UTF-8 (délimité par des virgules) »."
+    },
 
     {
 	"en": "Preview of the uploaded data",

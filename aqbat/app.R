@@ -442,1852 +442,1852 @@ ui <- function(request = NULL) {
   otherRefs <- if (lang == "en") otherReferences_en else otherReferences_fr
   valuationRefs <- if (lang == "en") valuationReferences_en else valuationReferences_fr
   fluidPage(
-  lang = lang, # root <html lang="..."> for screen readers (correct voice for FR/EN)
-  # Hidden input: language for this session (set when UI is built; avoids URL reactive / cross-session issues)
-  tags$div(style = "display: none;", textInput("session_lang", label = NULL, value = lang)),
-  # add_loading_state(
-  #   ".shiny-plot-output", # selector
-  #   spinner = "circle",
-  #   text = i18n$t("Please wait..."),
-  #   timeout = 600,
-  #   svgColor = "#383838",
-  #   svgSize = "45px",
-  #   messageColor = "#383838",
-  #   messageFontSize = "14px",
-  #   backgroundColor = "#ffffff"
-  # ),
-  title = i18n$t("AQBAT"),
-  tags$head(
-    tags$title(i18n$t("Air Quality Benefits Assessment Tool"), "|", i18n$t("Health Canada"), i18n$t("Infobase")),
-    tags$script(src = "scripts/iframeResizer.contentWindow.min.js", type = "application/javascript"),
-    tags$script(src = "scripts/save-load-url.js", type = "application/javascript"),
-    tags$script(src = "scripts/utilities.js", type = "application/javascript"),
-    tags$script(src = "scripts/jquery.magnific-popup.min.js", type = "application/javascript"),
-    # tags$script(src = "scripts/handle-internal-anchor.js", type = "application/javascript"),
-    tags$link(rel = "stylesheet", href = "styles/theme.min.css", type = "text/css"), # Canada.ca theming
-    tags$link(rel = "stylesheet", href = "styles/aqbat.css", type = "text/css") # Custom styles
-  ),
-  useShinyjs(),
-  extendShinyjs(text = jscode, functions = "reload"),
+    lang = lang, # root <html lang="..."> for screen readers (correct voice for FR/EN)
+    # Hidden input: language for this session (set when UI is built; avoids URL reactive / cross-session issues)
+    tags$div(style = "display: none;", textInput("session_lang", label = NULL, value = lang)),
+    # add_loading_state(
+    #   ".shiny-plot-output", # selector
+    #   spinner = "circle",
+    #   text = i18n$t("Please wait..."),
+    #   timeout = 600,
+    #   svgColor = "#383838",
+    #   svgSize = "45px",
+    #   messageColor = "#383838",
+    #   messageFontSize = "14px",
+    #   backgroundColor = "#ffffff"
+    # ),
+    title = i18n$t("AQBAT"),
+    tags$head(
+      tags$title(i18n$t("Air Quality Benefits Assessment Tool"), "|", i18n$t("Health Canada"), i18n$t("Infobase")),
+      tags$script(src = "scripts/iframeResizer.contentWindow.min.js", type = "application/javascript"),
+      tags$script(src = "scripts/save-load-url.js", type = "application/javascript"),
+      tags$script(src = "scripts/utilities.js", type = "application/javascript"),
+      tags$script(src = "scripts/jquery.magnific-popup.min.js", type = "application/javascript"),
+      # tags$script(src = "scripts/handle-internal-anchor.js", type = "application/javascript"),
+      tags$link(rel = "stylesheet", href = "styles/theme.min.css", type = "text/css"), # Canada.ca theming
+      tags$link(rel = "stylesheet", href = "styles/aqbat.css", type = "text/css") # Custom styles
+    ),
+    useShinyjs(),
+    extendShinyjs(text = jscode, functions = "reload"),
 
-  # format error messages in bold red font
-  tags$head(
-    tags$style(HTML("
+    # format error messages in bold red font
+    tags$head(
+      tags$style(HTML("
       .shiny-output-error-validation {
         color: #ff0000;
         font-weight: bold;
       }
     "))
-  ),
-  tags$style(HTML("
+    ),
+    tags$style(HTML("
     #shiny-disconnected-overlay {
       z-index: 2 !important;
     }
   ")),
-  tags$body(class = "container hidden test"), # the container class from theme.min.css perfectly replicates the width of Canada.c
-  # createDisconnectMessage(i18n),
-  createErrorMessage("An error occurred. Please refresh the page and start again.", i18n),
-  useShinyjs(),
-  tags$head(
-    tags$style(HTML("hr {border-top: 1px solid #000000;}"))
-  ),
-  createDisconnectNoticeModal(i18n$t("You have been disconnected from the server. All data has been lost. This can happen if the application has been updated on the server. Please refresh the page to restart the app. You may press F5 to refresh."), "disconnect-warning", i18n),
-  createWarningModal(i18n$t("You are about to reset this application, along with all of its data."), "data-warning", i18n),
-  tags$nav(
-    class = "btn-tabs",
-    tabsetPanel(
-      id = "alltabpanel",
-      tabPanel(
-        i18n$t("Summary"),
-        value = i18n$t("summary"),
-        tabindex = "-1",
-        summary_ui(i18n),
-      ),
-      tabPanel(
-        i18n$t("CRFs"),
-        value = i18n$t("crfs"),
-        tabindex = "-1",
-        createStepUI(i18n, stepNumber = 1, totalSteps = 4, progressMax = 4),
-        p(i18n$t("Review concentration response functions (CRFs) and other parameters. The default values provided below are Health Canada-endorsed concentration-response functions to support the health impact assessment of air pollution. Change them as needed for your scenario by entering your desired values.")),
-        tags$nav(
-          h3(i18n$t("On this page")),
-          tags$ul(
-            tags$li(tags$a(
-              i18n$t("Threshold concentration"),
-              href = "#threshold",
-            )),
-            tags$li(tags$a(
-              i18n$t("PM2.5 CRFs"),
-              href = "#pm25",
-            )),
-            tags$li(tags$a(
-              i18n$t("CRFs (O3, CO, SO2, NO2)"),
-              href = "#crfs",
-            )),
-            tags$li(tags$a(
-              i18n$t("Toxics"),
-              href = "#toxics",
-            )),
-            tags$li(tags$a(
-              i18n$t("Other parameters"),
-              href = "#other",
-            ))
-          )
+    tags$body(class = "container hidden test"), # the container class from theme.min.css perfectly replicates the width of Canada.c
+    # createDisconnectMessage(i18n),
+    createErrorMessage("An error occurred. Please refresh the page and start again.", i18n),
+    useShinyjs(),
+    tags$head(
+      tags$style(HTML("hr {border-top: 1px solid #000000;}"))
+    ),
+    createDisconnectNoticeModal(i18n$t("You have been disconnected from the server. All data has been lost. This can happen if the application has been updated on the server. Please refresh the page to restart the app. You may press F5 to refresh."), "disconnect-warning", i18n),
+    createWarningModal(i18n$t("You are about to reset this application, along with all of its data."), "data-warning", i18n),
+    tags$nav(
+      class = "btn-tabs",
+      tabsetPanel(
+        id = "alltabpanel",
+        tabPanel(
+          i18n$t("Summary"),
+          value = i18n$t("summary"),
+          tabindex = "-1",
+          summary_ui(i18n),
         ),
-        h2(i18n$t("Threshold concentration"), id = "threshold"),
-        p(i18n$t("Use this section to specify concentrations below which there is no association between air pollution and adverse health effects."), class = "crf-description"),
-        tabindex = "0",
-        useShinyjs(),
-        createRestoreInstructions(i18n),
-        p(i18n$t("The default value for each pollutant's threshold concentration is zero.")),
-        actionButton("resetthreshold", i18n$t("Restore default values"), class = "btn-primary", tabindex = "0"),
-        br(),
-        br(),
-        p(i18n$t("Click \"Clear all data and restart\" to restart the app for a new scenario. Data in all tabs will be reset to defaults. The default value for each pollutant is zero.")),
-        createClearDataButton("crfs", i18n),
-        br(),
-        br(),
-        div(
-          id = "formthreshold",
-          class = "parameter-box",
-          fluidRow(
-            column(4, numericInput("pmthr", i18n$t("PM2.5 (ug/m3)"), value = 0, min = 0, step = 0.001, max = 3)),
-            column(4, numericInput("o3thr", i18n$t("O3 (ppb)"), 0, min = 0, step = 0.1, max = 30)),
-            column(4, numericInput("summero3thr", i18n$t("Summer O3 (ppb)"), 0, min = 0, step = 0.1, max = 30))
+        tabPanel(
+          i18n$t("CRFs"),
+          value = i18n$t("crfs"),
+          tabindex = "-1",
+          createStepUI(i18n, stepNumber = 1, totalSteps = 4, progressMax = 4),
+          p(i18n$t("Review concentration response functions (CRFs) and other parameters. The default values provided below are Health Canada-endorsed concentration-response functions to support the health impact assessment of air pollution. Change them as needed for your scenario by entering your desired values.")),
+          tags$nav(
+            h3(i18n$t("On this page")),
+            tags$ul(
+              tags$li(tags$a(
+                i18n$t("Threshold concentration"),
+                href = "#threshold",
+              )),
+              tags$li(tags$a(
+                i18n$t("PM2.5 CRFs"),
+                href = "#pm25",
+              )),
+              tags$li(tags$a(
+                i18n$t("CRFs (O3, CO, SO2, NO2)"),
+                href = "#crfs",
+              )),
+              tags$li(tags$a(
+                i18n$t("Toxics"),
+                href = "#toxics",
+              )),
+              tags$li(tags$a(
+                i18n$t("Other parameters"),
+                href = "#other",
+              ))
+            )
           ),
+          h2(i18n$t("Threshold concentration"), id = "threshold"),
+          p(i18n$t("Use this section to specify concentrations below which there is no association between air pollution and adverse health effects."), class = "crf-description"),
+          tabindex = "0",
+          useShinyjs(),
+          createRestoreInstructions(i18n),
+          p(i18n$t("The default value for each pollutant's threshold concentration is zero.")),
+          actionButton("resetthreshold", i18n$t("Restore default values"), class = "btn-primary", tabindex = "0"),
           br(),
-          fluidRow(
-            column(4, numericInput("no2thr", i18n$t("NO2 (ppb)"), 0, min = 0, step = 0.001, max = 1)),
-            column(4, numericInput("so2thr", i18n$t("SO2 (ppb)"), 0, min = 0, step = 0.001, max = 1)),
-            column(4, numericInput("cothr", i18n$t("CO (ppm)"), 0, min = 0, step = 0.001, max = 1)),
-          ),
-        ),
-        hr(),
-        h2(i18n$t("PM2.5 CRFs"), id = "pm25"),
-        p(i18n$t("This section provides concentration response functions (CRFs) for fine particulate matter (with a 10 ug/m3 change) and ten associated health endpoints. You may edit and use your own values."), class = "crf-description"),
-        tabindex = "0",
-        useShinyjs(),
-        createRestoreInstructions(i18n),
-        div(
-          id = "formpm25",
-          fluidRow(
-            column(4, actionButton("resetpm25", i18n$t("Restore default values"), tabindex = "0", class = "btn-primary")),
-            # column(4, numericInput("pmthr", "PM2.5 Threshold Concentration (ug/m3)", 0, min = 0, step=0.001,max = 2.5)),
-          ),
           br(),
-          fluidRow(
-            column(
-              12,
-              p(i18n$t("\"L95%CI\" refers to the lower 95% confidence interval and \"U95%CI\" refers to the upper 95% confidence interval."), )
-            )
-          ),
+          p(i18n$t("Click \"Clear all data and restart\" to restart the app for a new scenario. Data in all tabs will be reset to defaults. The default value for each pollutant is zero.")),
+          createClearDataButton("crfs", i18n),
+          br(),
+          br(),
           div(
-            class = "grid-linear",
-            h3(strong(i18n$t("Chronic exposure mortality")), class = "grid-heading"),
-            div(
-              class = "parameter-box left-parameter-box",
-              div(
-                column(
-                  12,
-                  div(
-                    class = "",
-                    tags$label(i18n$t("Source"), class = "control-label"),
-                    p(i18n$t("Crouse et al. 2012")),
-                  ),
-                ),
-                column(
-                  12,
-                  div(
-                    class = "form-group shiny-input-container",
-                    tags$label(i18n$t("Regression type"), class = "control-label"),
-                    p(i18n$t("Log-linear")),
-                    # hidden select with default choice log-linear
-                    hidden(selectInput("rtype", i18n$t("Regression type"), c(i18n$t("log-linear"), i18n$t("linear")))),
-                  ),
-                ),
-              ),
+            id = "formthreshold",
+            class = "parameter-box",
+            fluidRow(
+              column(4, numericInput("pmthr", i18n$t("PM2.5 (ug/m3)"), value = 0, min = 0, step = 0.001, max = 3)),
+              column(4, numericInput("o3thr", i18n$t("O3 (ppb)"), 0, min = 0, step = 0.1, max = 30)),
+              column(4, numericInput("summero3thr", i18n$t("Summer O3 (ppb)"), 0, min = 0, step = 0.1, max = 30))
             ),
-            div(
-              class = "parameter-box right-parameter-box",
-              fluidRow(
-                column(6, numericInput("crf", i18n$t("HR/RR/OR"), 1.1, min = 1, step = 0.01, max = 5)),
-                column(6, numericInput("incr", i18n$t("Increment (ug/m3)"), 10, min = 1, step = 1, max = 100)),
-              ),
-              fluidRow(
-                column(6, numericInput("l95", i18n$t("L95%CI"), 1.05, min = 1, step = 0.01, max = 5)),
-                column(6, numericInput("u95", i18n$t("U95%CI"), 1.15, min = 1, step = 0.01, max = 5)),
-              ),
+            br(),
+            fluidRow(
+              column(4, numericInput("no2thr", i18n$t("NO2 (ppb)"), 0, min = 0, step = 0.001, max = 1)),
+              column(4, numericInput("so2thr", i18n$t("SO2 (ppb)"), 0, min = 0, step = 0.001, max = 1)),
+              column(4, numericInput("cothr", i18n$t("CO (ppm)"), 0, min = 0, step = 0.001, max = 1)),
             ),
-          ),
-          div(
-            class = "grid-linear",
-            # Title Header
-            h3(strong(i18n$t("Acute respiratory symptom days")), class = "grid-heading"),
-            # Left parameter box containing Source and Regression type
-            div(
-              class = "parameter-box left-parameter-box",
-              div(
-                column(
-                  12,
-                  div(
-                    class = "",
-                    tags$label(i18n$t("Source"), class = "control-label"),
-                    # Source information
-                    p(i18n$t("Krupnick et al. 1990")),
-                  )
-                ),
-                column(
-                  12,
-                  div(
-                    class = "form-group shiny-input-container",
-                    tags$label(i18n$t("Regression type"), class = "control-label"),
-                    # Regression type information
-                    p(i18n$t("Linear")),
-                    # Hidden select input for regression type, default choice set to linear
-                    hidden(selectInput("pm25_rtype2", i18n$t("Regression type"), c(i18n$t("linear"), i18n$t("log-linear")))),
-                  )
-                )
-              )
-            ),
-            # Right parameter box containing numeric inputs
-            div(
-              class = "parameter-box right-parameter-box",
-              # First row with HR/RR/OR and Increment inputs
-              fluidRow(
-                column(6, numericInput("pm25_crf2", i18n$t("HR/RR/OR"), 1.0266, min = 0, step = 0.001, max = 5)),
-                column(6, numericInput("pm25_incr2", i18n$t("Increment (ug/m3)"), 10, min = 1, step = 1, max = 100))
-              ),
-              # Second row with L95%CI and U95%CI inputs
-              fluidRow(
-                column(6, numericInput("pm25_l95_2", i18n$t("L95%CI"), 0.9994, min = 0.8, step = 0.01, max = 5)),
-                column(6, numericInput("pm25_u95_2", i18n$t("U95%CI"), 1.0538, min = 0, step = 0.01, max = 5))
-              )
-            )
-          ),
-          div(
-            class = "grid-linear",
-            # Title Header
-            h3(strong(i18n$t("Adult chronic bronchitis cases")), class = "grid-heading"),
-            # Left parameter box containing Source and Regression type
-            div(
-              class = "parameter-box left-parameter-box",
-              div(
-                column(
-                  12,
-                  div(
-                    class = "",
-                    tags$label(i18n$t("Source"), class = "control-label"),
-                    # Source information
-                    p(i18n$t("Abbey et al. 1995")),
-                  )
-                ),
-                column(
-                  12,
-                  div(
-                    class = "form-group shiny-input-container",
-                    tags$label(i18n$t("Regression type"), class = "control-label"),
-                    # Regression type information
-                    p(i18n$t("Log-linear")),
-                    # Hidden select input for regression type, default choice set to log-linear
-                    hidden(selectInput("pm25_rtype3", i18n$t("Regression type"), c(i18n$t("log-linear"), i18n$t("linear")))),
-                  )
-                )
-              )
-            ),
-            # Right parameter box containing numeric inputs
-            div(
-              class = "parameter-box right-parameter-box",
-              # First row with HR/RR/OR and Increment inputs
-              fluidRow(
-                column(6, numericInput("pm25_crf3", i18n$t("HR/RR/OR"), 1.14, min = 1, step = 0.01, max = 5)),
-                column(6, numericInput("pm25_incr3", i18n$t("Increment (ug/m3)"), 10, min = 1, step = 1, max = 100))
-              ),
-              # Second row with L95%CI and U95%CI inputs
-              fluidRow(
-                column(6, numericInput("pm25_l95_3", i18n$t("L95%CI"), 1, min = 1, step = 0.01, max = 5)),
-                column(6, numericInput("pm25_u95_3", i18n$t("U95%CI"), 1.3, min = 1, step = 0.01, max = 5))
-              )
-            )
-          ),
-          div(
-            class = "grid-linear",
-            # Title Header
-            h3(strong(i18n$t("Asthma symptom days")), class = "grid-heading"),
-            # Left parameter box containing Source and Regression type
-            div(
-              class = "parameter-box left-parameter-box",
-              div(
-                column(
-                  12,
-                  div(
-                    class = "",
-                    tags$label(i18n$t("Source"), class = "control-label"),
-                    # Source information
-                    p(i18n$t("Weinmayr et al. 2010; Ward and Ayres 2004; Dell et al. 2010")),
-                  )
-                ),
-                column(
-                  12,
-                  div(
-                    class = "form-group shiny-input-container",
-                    tags$label(i18n$t("Regression type"), class = "control-label"),
-                    # Regression type information
-                    p(i18n$t("Log-linear")),
-                    # Hidden select input for regression type, default choice set to log-linear
-                    hidden(selectInput("pm25_rtype4", i18n$t("Regression type"), c(i18n$t("log-linear"), i18n$t("linear")))),
-                  )
-                )
-              )
-            ),
-            # Right parameter box containing numeric inputs
-            div(
-              class = "parameter-box right-parameter-box",
-              # First row with HR/RR/OR and Increment inputs
-              fluidRow(
-                column(6, numericInput("pm25_crf4", i18n$t("HR/RR/OR"), 1.0676, min = 1, step = 0.001, max = 5)),
-                column(6, numericInput("pm25_incr4", i18n$t("Increment (ug/m3)"), 10, min = 1, step = 1, max = 100))
-              ),
-              # Second row with L95%CI and U95%CI inputs
-              fluidRow(
-                column(6, numericInput("pm25_l95_4", i18n$t("L95%CI"), 1.0137, min = 1, step = 0.001, max = 5)),
-                column(6, numericInput("pm25_u95_4", i18n$t("U95%CI"), 1.125, min = 1, step = 0.001, max = 5))
-              )
-            )
-          ),
-          div(
-            class = "grid-linear",
-            # Title Header
-            h3(strong(i18n$t("Cardiac emergency room visits")), class = "grid-heading"),
-            # Left parameter box containing Source and Regression type
-            div(
-              class = "parameter-box left-parameter-box",
-              div(
-                column(
-                  12,
-                  div(
-                    class = "",
-                    tags$label(i18n$t("Source"), class = "control-label"),
-                    # Source information
-                    p(i18n$t("Burnett et al. 1995; Stieb et al. 2000")),
-                  )
-                ),
-                column(
-                  12,
-                  div(
-                    class = "form-group shiny-input-container",
-                    tags$label(i18n$t("Regression type"), class = "control-label"),
-                    # Regression type information
-                    p(i18n$t("Linear")),
-                    # Hidden select input for regression type, default choice set to linear
-                    hidden(selectInput("pm25_rtype5", i18n$t("Regression type"), c(i18n$t("linear"), i18n$t("log-linear")))),
-                  )
-                )
-              )
-            ),
-            # Right parameter box containing numeric inputs
-            div(
-              class = "parameter-box right-parameter-box",
-              # First row with HR/RR/OR and Increment inputs
-              fluidRow(
-                column(6, numericInput("pm25_crf5", i18n$t("HR/RR/OR"), 1.00711, min = 1, step = 0.0001, max = 5)),
-                column(6, numericInput("pm25_incr5", i18n$t("Increment (ug/m3)"), 10, min = 1, step = 1, max = 100))
-              ),
-              # Second row with L95%CI and U95%CI inputs
-              fluidRow(
-                column(6, numericInput("pm25_l95_5", i18n$t("L95%CI"), 1.00378, min = 0, step = 0.0001, max = 5)),
-                column(6, numericInput("pm25_u95_5", i18n$t("U95%CI"), 1.0104, min = 0, step = 0.0001, max = 5))
-              )
-            )
-          ),
-          div(
-            class = "grid-linear",
-            # Title Header
-            h3(strong(i18n$t("Cardiac hospital admissions")), class = "grid-heading"),
-            # Left parameter box containing Source and Regression type
-            div(
-              class = "parameter-box left-parameter-box",
-              div(
-                column(
-                  12,
-                  div(
-                    class = "",
-                    tags$label(i18n$t("Source"), class = "control-label"),
-                    # Source information
-                    p(i18n$t("Burnett et al. 1995")),
-                  )
-                ),
-                column(
-                  12,
-                  div(
-                    class = "form-group shiny-input-container",
-                    tags$label(i18n$t("Regression type"), class = "control-label"),
-                    # Regression type information
-                    p(i18n$t("Linear")),
-                    # Hidden select input for regression type, default choice set to linear
-                    hidden(selectInput("pm25_rtype6", i18n$t("Regression type"), c(i18n$t("linear"), i18n$t("log-linear")))),
-                  )
-                )
-              )
-            ),
-            # Right parameter box containing numeric inputs
-            div(
-              class = "parameter-box right-parameter-box",
-              # First row with HR/RR/OR and Increment inputs
-              fluidRow(
-                column(6, numericInput("pm25_crf6", i18n$t("HR/RR/OR"), 1.00711, min = 0, step = 0.0001, max = 5)),
-                column(6, numericInput("pm25_incr6", i18n$t("Increment (ug/m3)"), 10, min = 1, step = 1, max = 100))
-              ),
-              # Second row with L95%CI and U95%CI inputs
-              fluidRow(
-                column(6, numericInput("pm25_l95_6", i18n$t("L95%CI"), 1.00378, min = 0, step = 0.0001, max = 5)),
-                column(6, numericInput("pm25_u95_6", i18n$t("U95%CI"), 1.0104, min = 0, step = 0.0001, max = 5))
-              )
-            )
-          ),
-          div(
-            class = "grid-linear",
-            # Title Header
-            h3(strong(i18n$t("Child acute bronchitis episodes")), class = "grid-heading"),
-            # Left parameter box containing Source and Regression type
-            div(
-              class = "parameter-box left-parameter-box",
-              div(
-                column(
-                  12,
-                  div(
-                    class = "",
-                    tags$label(i18n$t("Source"), class = "control-label"),
-                    # Source information
-                    p(i18n$t("Heok et al. 2012; Dockery et al. 1996")),
-                  )
-                ),
-                column(
-                  12,
-                  div(
-                    class = "form-group shiny-input-container",
-                    tags$label(i18n$t("Regression type"), class = "control-label"),
-                    # Regression type information
-                    p(i18n$t("Log-linear")),
-                    # Hidden select input for regression type, default choice set to log-linear
-                    hidden(selectInput("pm25_rtype7", i18n$t("Regression type"), c(i18n$t("log-linear"), i18n$t("linear")))),
-                  )
-                )
-              )
-            ),
-            # Right parameter box containing numeric inputs
-            div(
-              class = "parameter-box right-parameter-box",
-              # First row with HR/RR/OR and Increment inputs
-              fluidRow(
-                column(6, numericInput("pm25_crf7", i18n$t("HR/RR/OR"), 1.0934, min = 1, step = 0.01, max = 5)),
-                column(6, numericInput("pm25_incr7", i18n$t("Increment (ug/m3)"), 10, min = 1, step = 1, max = 100))
-              ),
-              # Second row with L95%CI and U95%CI inputs
-              fluidRow(
-                column(6, numericInput("pm25_l95_7", i18n$t("L95%CI"), 0.977, min = 0.9, step = 0.01, max = 5)),
-                column(6, numericInput("pm25_u95_7", i18n$t("U95%CI"), 1.224, min = 1, step = 0.01, max = 5))
-              )
-            )
-          ),
-          div(
-            class = "grid-linear",
-            # Title Header
-            h3(strong(i18n$t("Respiratory emergency room visits")), class = "grid-heading"),
-            # Left parameter box containing Source and Regression type
-            div(
-              class = "parameter-box left-parameter-box",
-              div(
-                column(
-                  12,
-                  div(
-                    class = "",
-                    tags$label(i18n$t("Source"), class = "control-label"),
-                    # Source information
-                    p(i18n$t("Burnett et al. 1995; Stieb et al. 2000")),
-                  )
-                ),
-                column(
-                  12,
-                  div(
-                    class = "form-group shiny-input-container",
-                    tags$label(i18n$t("Regression type"), class = "control-label"),
-                    # Regression type information
-                    p(i18n$t("Log-linear")),
-                    # Hidden select input for regression type, default choice set to log-linear
-                    hidden(selectInput("pm25_rtype8", i18n$t("Regression type"), c(i18n$t("linear"), i18n$t("log-linear")))),
-                  )
-                )
-              )
-            ),
-            # Right parameter box containing numeric inputs
-            div(
-              class = "parameter-box right-parameter-box",
-              # First row with HR/RR/OR and Increment inputs
-              fluidRow(
-                column(6, numericInput("pm25_crf8", i18n$t("HR/RR/OR"), 1.00754, min = 0, step = 0.0001, max = 5)),
-                column(6, numericInput("pm25_incr8", i18n$t("Increment (ug/m3)"), 10, min = 1, step = 1, max = 100))
-              ),
-              # Second row with L95%CI and U95%CI inputs
-              fluidRow(
-                column(6, numericInput("pm25_l95_8", i18n$t("L95%CI"), 1.00495, min = 0, step = 0.0001, max = 5)),
-                column(6, numericInput("pm25_u95_8", i18n$t("U95%CI"), 1.01013, min = 0, step = 0.0001, max = 5))
-              )
-            )
-          ),
-          div(
-            class = "grid-linear",
-            # Title Header
-            h3(strong(i18n$t("Respiratory hospital admissions")), class = "grid-heading"),
-            # Left parameter box containing Source and Regression type
-            div(
-              class = "parameter-box left-parameter-box",
-              div(
-                column(
-                  12,
-                  div(
-                    class = "",
-                    tags$label(i18n$t("Source"), class = "control-label"),
-                    # Source information
-                    p(i18n$t("Burnett et al. 1995")),
-                  )
-                ),
-                column(
-                  12,
-                  div(
-                    class = "form-group shiny-input-container",
-                    tags$label(i18n$t("Regression type"), class = "control-label"),
-                    # Regression type information
-                    p(i18n$t("Log-linear")),
-                    # Hidden select input for regression type, default choice set to log-linear
-                    hidden(selectInput("pm25_rtype9", i18n$t("Regression type"), c(i18n$t("linear"), i18n$t("log-linear")))),
-                  )
-                )
-              )
-            ),
-            # Right parameter box containing numeric inputs
-            div(
-              class = "parameter-box right-parameter-box",
-              # First row with HR/RR/OR and Increment inputs
-              fluidRow(
-                column(6, numericInput("pm25_crf9", i18n$t("HR/RR/OR"), 1.00754, min = 0, step = 0.0001, max = 5)),
-                column(6, numericInput("pm25_incr9", i18n$t("Increment (ug/m3)"), 10, min = 1, step = 1, max = 100))
-              ),
-              # Second row with L95%CI and U95%CI inputs
-              fluidRow(
-                column(6, numericInput("pm25_l95_9", i18n$t("L95%CI"), 1.00495, min = 0, step = 0.0001, max = 5)),
-                column(6, numericInput("pm25_u95_9", i18n$t("U95%CI"), 1.01013, min = 0, step = 0.0001, max = 5))
-              )
-            )
-          ),
-          div(
-            class = "grid-linear",
-            # Title Header
-            h3(strong(i18n$t("Restricted activity days")), class = "grid-heading"),
-            # Left parameter box containing Source and Regression type
-            div(
-              class = "parameter-box left-parameter-box",
-              div(
-                column(
-                  12,
-                  div(
-                    class = "",
-                    tags$label(i18n$t("Source"), class = "control-label"),
-                    # Source information
-                    p("Ostro 1987"),
-                  )
-                ),
-                column(
-                  12,
-                  div(
-                    class = "form-group shiny-input-container",
-                    tags$label(i18n$t("Regression type"), class = "control-label"),
-                    # Regression type information
-                    p(i18n$t("Log-linear")),
-                    # Hidden select input for regression type, default choice set to log-linear
-                    hidden(selectInput("pm25_rtype10", i18n$t("Regression type"), c(i18n$t("log-linear"), i18n$t("linear")))),
-                  )
-                )
-              )
-            ),
-            # Right parameter box containing numeric inputs
-            div(
-              class = "parameter-box right-parameter-box",
-              # First row with HR/RR/OR and Increment inputs
-              fluidRow(
-                column(6, numericInput("pm25_crf10", i18n$t("HR/RR/OR"), 1.05, min = 1, step = 0.01, max = 5)),
-                column(6, numericInput("pm25_incr10", i18n$t("Increment (ug/m3)"), 10, min = 1, step = 1, max = 100))
-              ),
-              # Second row with L95%CI and U95%CI inputs
-              fluidRow(
-                column(6, numericInput("pm25_l95_10", i18n$t("L95%CI"), 1.03, min = 1, step = 0.01, max = 5)),
-                column(6, numericInput("pm25_u95_10", i18n$t("U95%CI"), 1.07, min = 1, step = 0.01, max = 5))
-              )
-            )
-          ),
-
-          # chronic exposure lung cancer
-          div(
-            class = "grid-linear",
-            h3(strong(i18n$t("Chronic exposure lung cancer mortality")), class = "grid-heading"),
-            div(
-              class = "parameter-box left-parameter-box",
-              div(
-                column(
-                  12,
-                  div(
-                    class = "",
-                    tags$label(i18n$t("Source"), class = "control-label"),
-                    p(paste(i18n$t("Health Canada"), "2022"))
-                  ),
-                ),
-                column(
-                  12,
-                  div(
-                    class = "form-group shiny-input-container",
-                    tags$label(i18n$t("Regression type"), class = "control-label"),
-                    p(i18n$t("Log-linear")),
-                    # hidden select with default choice log-linear
-                    hidden(selectInput("rtypelung", i18n$t("Regression type"), c(i18n$t("log-linear"), i18n$t("linear")))),
-                  ),
-                ),
-              ),
-            ),
-            div(
-              class = "parameter-box right-parameter-box",
-              fluidRow(
-                column(6, numericInput("crflung", i18n$t("HR/RR/OR"), 1.127, min = 1, step = 0.01, max = 5)),
-                column(6, numericInput("incrlung", i18n$t("Increment (ug/m3)"), 10, min = 1, step = 1, max = 100)),
-              ),
-              fluidRow(
-                column(6, numericInput("l95lung", i18n$t("L95%CI"), 1.085, min = 1, step = 0.01, max = 5)),
-                column(6, numericInput("u95lung", i18n$t("U95%CI"), 1.17, min = 1, step = 0.01, max = 5)),
-              ),
-            ),
-          ),
-
-
-          # Chronic exposure cerebrovascular mortality
-          div(
-            class = "grid-normal",
-            h3(strong(i18n$t("Chronic exposure cerebrovascular mortality")), class = "grid-heading"),
-            div(
-              class = "parameter-box left-parameter-box",
-              column(
-                12,
-                div(
-                  column(
-                    12,
-                    div(
-                      class = "",
-                      tags$label(i18n$t("Source"), class = "control-label"),
-                      p(i18n$t("Shin et al. 2014")),
-                    ),
-                  ),
-                  column(
-                    12,
-                    div(
-                      class = "form-group shiny-input-container",
-                      tags$label(i18n$t("Regression type"), class = "control-label"),
-                      p("Gamma"),
-                      hidden(selectInput("rtypecerebro", i18n$t("Regression type"), c("Gamma", "")))
-                    ),
-                  ),
-                ),
-              ),
-            ),
-            div(
-              class = "parameter-box right-parameter-box",
-              column(12, numericInput("crfcerebro", i18n$t("Shape"), 4.884, min = 1, step = 0.01, max = 50)),
-              column(12, numericInput("scalecerebro", i18n$t("Scale"), 0.03375, min = 0, step = 0.0001, max = 1)),
-              column(12, numericInput("incrcerebro", i18n$t("Increment (ug/m3)"), 10, min = 1, step = 1, max = 100))
-            ),
-          ),
-          # Chronic exposure COPD mortality
-          div(
-            class = "grid-normal",
-            h3(strong(i18n$t("Chronic exposure COPD mortality")), class = "grid-heading"),
-            div(
-              class = "parameter-box left-parameter-box",
-              column(
-                12,
-                div(
-                  column(
-                    12,
-                    div(
-                      class = "",
-                      tags$label(i18n$t("Source"), class = "control-label"),
-                      p(i18n$t("Shin et al. 2014")),
-                    )
-                  ),
-                  column(
-                    12,
-                    div(
-                      class = "form-group shiny-input-container",
-                      tags$label(i18n$t("Regression type"), class = "control-label"),
-                      p("Gamma"),
-                      hidden(selectInput("rtypcopd", i18n$t("Regression type"), c("Gamma", "", "")))
-                    )
-                  )
-                )
-              )
-            ),
-            div(
-              class = "parameter-box right-parameter-box",
-              column(12, numericInput("crfcopd", i18n$t("Shape"), 14.57, min = 1, step = 0.01, max = 150)),
-              column(12, numericInput("scalecopd", i18n$t("Scale"), 0.00601, min = 0, step = 0.0001, max = 1)),
-              column(12, numericInput("incrcopd", i18n$t("Increment (ug/m3)"), 10, min = 1, step = 1, max = 100))
-            )
-          ),
-          # Chronic exposure ischemic heart disease mortality
-          div(
-            class = "grid-normal",
-            h3(strong(i18n$t("Chronic exposure ischemic heart disease mortality")), class = "grid-heading"),
-            div(
-              class = "parameter-box left-parameter-box",
-              column(
-                12,
-                div(
-                  column(
-                    12,
-                    div(
-                      class = "",
-                      tags$label(i18n$t("Source"), class = "control-label"),
-                      p(i18n$t("Shin et al. 2014")),
-                    )
-                  ),
-                  column(
-                    12,
-                    div(
-                      class = "form-group shiny-input-container",
-                      tags$label(i18n$t("Regression type"), class = "control-label"),
-                      p("Gamma"),
-                      hidden(selectInput("rtypIschem", i18n$t("Regression type"), c("Gamma", "", "")))
-                    )
-                  )
-                )
-              )
-            ),
-            div(
-              class = "parameter-box right-parameter-box",
-              column(12, numericInput("crfIschem", i18n$t("Shape"), 1.156, min = 1, step = 0.01, max = 50)),
-              column(12, numericInput("scaleIschem", i18n$t("Scale"), 0.2117, min = 0, step = 0.0001, max = 1)),
-              column(12, numericInput("incrIschem", i18n$t("Increment (ug/m3)"), 10, min = 1, step = 1, max = 100))
-            )
           ),
           hr(),
-        ),
-        # CRFs (O3, CO, SO2, NO2)
-        h2(i18n$t("CRFs (O3, CO, SO2, NO2)"), id = "crfs"),
-        p(i18n$t("This section lists CRFs for ozone (O3), carbon monoxide (CO), sulfur dioxide (SO2), nitrogen dioxide (NO2), and eight associated health endpoints. You may edit and use your own values."), class = "crf-description"),
-        p(i18n$t("Please note that the CRFs for acute exposure mortality associated with SO2 and CO are still considered 'suggestive' rather than 'causal' or 'likely causal'. We will continue to monitor and incorporate any new scientific evidence."), class = "crf-description"),
-        tabindex = "0",
-        useShinyjs(),
-        div(
-          id = "form2",
+          h2(i18n$t("PM2.5 CRFs"), id = "pm25"),
+          p(i18n$t("This section provides concentration response functions (CRFs) for fine particulate matter (with a 10 ug/m3 change) and ten associated health endpoints. You may edit and use your own values."), class = "crf-description"),
+          tabindex = "0",
+          useShinyjs(),
+          createRestoreInstructions(i18n),
+          div(
+            id = "formpm25",
+            fluidRow(
+              column(4, actionButton("resetpm25", i18n$t("Restore default values"), tabindex = "0", class = "btn-primary")),
+              # column(4, numericInput("pmthr", "PM2.5 Threshold Concentration (ug/m3)", 0, min = 0, step=0.001,max = 2.5)),
+            ),
+            br(),
+            fluidRow(
+              column(
+                12,
+                p(i18n$t("\"L95%CI\" refers to the lower 95% confidence interval and \"U95%CI\" refers to the upper 95% confidence interval."), )
+              )
+            ),
+            div(
+              class = "grid-linear",
+              h3(strong(i18n$t("Chronic exposure mortality")), class = "grid-heading"),
+              div(
+                class = "parameter-box left-parameter-box",
+                div(
+                  column(
+                    12,
+                    div(
+                      class = "",
+                      tags$label(i18n$t("Source"), class = "control-label"),
+                      p(i18n$t("Crouse et al. 2012")),
+                    ),
+                  ),
+                  column(
+                    12,
+                    div(
+                      class = "form-group shiny-input-container",
+                      tags$label(i18n$t("Regression type"), class = "control-label"),
+                      p(i18n$t("Log-linear")),
+                      # hidden select with default choice log-linear
+                      hidden(selectInput("rtype", i18n$t("Regression type"), c(i18n$t("log-linear"), i18n$t("linear")))),
+                    ),
+                  ),
+                ),
+              ),
+              div(
+                class = "parameter-box right-parameter-box",
+                fluidRow(
+                  column(6, numericInput("crf", i18n$t("HR/RR/OR"), 1.1, min = 1, step = 0.01, max = 5)),
+                  column(6, numericInput("incr", i18n$t("Increment (ug/m3)"), 10, min = 1, step = 1, max = 100)),
+                ),
+                fluidRow(
+                  column(6, numericInput("l95", i18n$t("L95%CI"), 1.05, min = 1, step = 0.01, max = 5)),
+                  column(6, numericInput("u95", i18n$t("U95%CI"), 1.15, min = 1, step = 0.01, max = 5)),
+                ),
+              ),
+            ),
+            div(
+              class = "grid-linear",
+              # Title Header
+              h3(strong(i18n$t("Acute respiratory symptom days")), class = "grid-heading"),
+              # Left parameter box containing Source and Regression type
+              div(
+                class = "parameter-box left-parameter-box",
+                div(
+                  column(
+                    12,
+                    div(
+                      class = "",
+                      tags$label(i18n$t("Source"), class = "control-label"),
+                      # Source information
+                      p(i18n$t("Krupnick et al. 1990")),
+                    )
+                  ),
+                  column(
+                    12,
+                    div(
+                      class = "form-group shiny-input-container",
+                      tags$label(i18n$t("Regression type"), class = "control-label"),
+                      # Regression type information
+                      p(i18n$t("Linear")),
+                      # Hidden select input for regression type, default choice set to linear
+                      hidden(selectInput("pm25_rtype2", i18n$t("Regression type"), c(i18n$t("linear"), i18n$t("log-linear")))),
+                    )
+                  )
+                )
+              ),
+              # Right parameter box containing numeric inputs
+              div(
+                class = "parameter-box right-parameter-box",
+                # First row with HR/RR/OR and Increment inputs
+                fluidRow(
+                  column(6, numericInput("pm25_crf2", i18n$t("HR/RR/OR"), 1.0266, min = 0, step = 0.001, max = 5)),
+                  column(6, numericInput("pm25_incr2", i18n$t("Increment (ug/m3)"), 10, min = 1, step = 1, max = 100))
+                ),
+                # Second row with L95%CI and U95%CI inputs
+                fluidRow(
+                  column(6, numericInput("pm25_l95_2", i18n$t("L95%CI"), 0.9994, min = 0.8, step = 0.01, max = 5)),
+                  column(6, numericInput("pm25_u95_2", i18n$t("U95%CI"), 1.0538, min = 0, step = 0.01, max = 5))
+                )
+              )
+            ),
+            div(
+              class = "grid-linear",
+              # Title Header
+              h3(strong(i18n$t("Adult chronic bronchitis cases")), class = "grid-heading"),
+              # Left parameter box containing Source and Regression type
+              div(
+                class = "parameter-box left-parameter-box",
+                div(
+                  column(
+                    12,
+                    div(
+                      class = "",
+                      tags$label(i18n$t("Source"), class = "control-label"),
+                      # Source information
+                      p(i18n$t("Abbey et al. 1995")),
+                    )
+                  ),
+                  column(
+                    12,
+                    div(
+                      class = "form-group shiny-input-container",
+                      tags$label(i18n$t("Regression type"), class = "control-label"),
+                      # Regression type information
+                      p(i18n$t("Log-linear")),
+                      # Hidden select input for regression type, default choice set to log-linear
+                      hidden(selectInput("pm25_rtype3", i18n$t("Regression type"), c(i18n$t("log-linear"), i18n$t("linear")))),
+                    )
+                  )
+                )
+              ),
+              # Right parameter box containing numeric inputs
+              div(
+                class = "parameter-box right-parameter-box",
+                # First row with HR/RR/OR and Increment inputs
+                fluidRow(
+                  column(6, numericInput("pm25_crf3", i18n$t("HR/RR/OR"), 1.14, min = 1, step = 0.01, max = 5)),
+                  column(6, numericInput("pm25_incr3", i18n$t("Increment (ug/m3)"), 10, min = 1, step = 1, max = 100))
+                ),
+                # Second row with L95%CI and U95%CI inputs
+                fluidRow(
+                  column(6, numericInput("pm25_l95_3", i18n$t("L95%CI"), 1, min = 1, step = 0.01, max = 5)),
+                  column(6, numericInput("pm25_u95_3", i18n$t("U95%CI"), 1.3, min = 1, step = 0.01, max = 5))
+                )
+              )
+            ),
+            div(
+              class = "grid-linear",
+              # Title Header
+              h3(strong(i18n$t("Asthma symptom days")), class = "grid-heading"),
+              # Left parameter box containing Source and Regression type
+              div(
+                class = "parameter-box left-parameter-box",
+                div(
+                  column(
+                    12,
+                    div(
+                      class = "",
+                      tags$label(i18n$t("Source"), class = "control-label"),
+                      # Source information
+                      p(i18n$t("Weinmayr et al. 2010; Ward and Ayres 2004; Dell et al. 2010")),
+                    )
+                  ),
+                  column(
+                    12,
+                    div(
+                      class = "form-group shiny-input-container",
+                      tags$label(i18n$t("Regression type"), class = "control-label"),
+                      # Regression type information
+                      p(i18n$t("Log-linear")),
+                      # Hidden select input for regression type, default choice set to log-linear
+                      hidden(selectInput("pm25_rtype4", i18n$t("Regression type"), c(i18n$t("log-linear"), i18n$t("linear")))),
+                    )
+                  )
+                )
+              ),
+              # Right parameter box containing numeric inputs
+              div(
+                class = "parameter-box right-parameter-box",
+                # First row with HR/RR/OR and Increment inputs
+                fluidRow(
+                  column(6, numericInput("pm25_crf4", i18n$t("HR/RR/OR"), 1.0676, min = 1, step = 0.001, max = 5)),
+                  column(6, numericInput("pm25_incr4", i18n$t("Increment (ug/m3)"), 10, min = 1, step = 1, max = 100))
+                ),
+                # Second row with L95%CI and U95%CI inputs
+                fluidRow(
+                  column(6, numericInput("pm25_l95_4", i18n$t("L95%CI"), 1.0137, min = 1, step = 0.001, max = 5)),
+                  column(6, numericInput("pm25_u95_4", i18n$t("U95%CI"), 1.125, min = 1, step = 0.001, max = 5))
+                )
+              )
+            ),
+            div(
+              class = "grid-linear",
+              # Title Header
+              h3(strong(i18n$t("Cardiac emergency room visits")), class = "grid-heading"),
+              # Left parameter box containing Source and Regression type
+              div(
+                class = "parameter-box left-parameter-box",
+                div(
+                  column(
+                    12,
+                    div(
+                      class = "",
+                      tags$label(i18n$t("Source"), class = "control-label"),
+                      # Source information
+                      p(i18n$t("Burnett et al. 1995; Stieb et al. 2000")),
+                    )
+                  ),
+                  column(
+                    12,
+                    div(
+                      class = "form-group shiny-input-container",
+                      tags$label(i18n$t("Regression type"), class = "control-label"),
+                      # Regression type information
+                      p(i18n$t("Linear")),
+                      # Hidden select input for regression type, default choice set to linear
+                      hidden(selectInput("pm25_rtype5", i18n$t("Regression type"), c(i18n$t("linear"), i18n$t("log-linear")))),
+                    )
+                  )
+                )
+              ),
+              # Right parameter box containing numeric inputs
+              div(
+                class = "parameter-box right-parameter-box",
+                # First row with HR/RR/OR and Increment inputs
+                fluidRow(
+                  column(6, numericInput("pm25_crf5", i18n$t("HR/RR/OR"), 1.00711, min = 1, step = 0.0001, max = 5)),
+                  column(6, numericInput("pm25_incr5", i18n$t("Increment (ug/m3)"), 10, min = 1, step = 1, max = 100))
+                ),
+                # Second row with L95%CI and U95%CI inputs
+                fluidRow(
+                  column(6, numericInput("pm25_l95_5", i18n$t("L95%CI"), 1.00378, min = 0, step = 0.0001, max = 5)),
+                  column(6, numericInput("pm25_u95_5", i18n$t("U95%CI"), 1.0104, min = 0, step = 0.0001, max = 5))
+                )
+              )
+            ),
+            div(
+              class = "grid-linear",
+              # Title Header
+              h3(strong(i18n$t("Cardiac hospital admissions")), class = "grid-heading"),
+              # Left parameter box containing Source and Regression type
+              div(
+                class = "parameter-box left-parameter-box",
+                div(
+                  column(
+                    12,
+                    div(
+                      class = "",
+                      tags$label(i18n$t("Source"), class = "control-label"),
+                      # Source information
+                      p(i18n$t("Burnett et al. 1995")),
+                    )
+                  ),
+                  column(
+                    12,
+                    div(
+                      class = "form-group shiny-input-container",
+                      tags$label(i18n$t("Regression type"), class = "control-label"),
+                      # Regression type information
+                      p(i18n$t("Linear")),
+                      # Hidden select input for regression type, default choice set to linear
+                      hidden(selectInput("pm25_rtype6", i18n$t("Regression type"), c(i18n$t("linear"), i18n$t("log-linear")))),
+                    )
+                  )
+                )
+              ),
+              # Right parameter box containing numeric inputs
+              div(
+                class = "parameter-box right-parameter-box",
+                # First row with HR/RR/OR and Increment inputs
+                fluidRow(
+                  column(6, numericInput("pm25_crf6", i18n$t("HR/RR/OR"), 1.00711, min = 0, step = 0.0001, max = 5)),
+                  column(6, numericInput("pm25_incr6", i18n$t("Increment (ug/m3)"), 10, min = 1, step = 1, max = 100))
+                ),
+                # Second row with L95%CI and U95%CI inputs
+                fluidRow(
+                  column(6, numericInput("pm25_l95_6", i18n$t("L95%CI"), 1.00378, min = 0, step = 0.0001, max = 5)),
+                  column(6, numericInput("pm25_u95_6", i18n$t("U95%CI"), 1.0104, min = 0, step = 0.0001, max = 5))
+                )
+              )
+            ),
+            div(
+              class = "grid-linear",
+              # Title Header
+              h3(strong(i18n$t("Child acute bronchitis episodes")), class = "grid-heading"),
+              # Left parameter box containing Source and Regression type
+              div(
+                class = "parameter-box left-parameter-box",
+                div(
+                  column(
+                    12,
+                    div(
+                      class = "",
+                      tags$label(i18n$t("Source"), class = "control-label"),
+                      # Source information
+                      p(i18n$t("Heok et al. 2012; Dockery et al. 1996")),
+                    )
+                  ),
+                  column(
+                    12,
+                    div(
+                      class = "form-group shiny-input-container",
+                      tags$label(i18n$t("Regression type"), class = "control-label"),
+                      # Regression type information
+                      p(i18n$t("Log-linear")),
+                      # Hidden select input for regression type, default choice set to log-linear
+                      hidden(selectInput("pm25_rtype7", i18n$t("Regression type"), c(i18n$t("log-linear"), i18n$t("linear")))),
+                    )
+                  )
+                )
+              ),
+              # Right parameter box containing numeric inputs
+              div(
+                class = "parameter-box right-parameter-box",
+                # First row with HR/RR/OR and Increment inputs
+                fluidRow(
+                  column(6, numericInput("pm25_crf7", i18n$t("HR/RR/OR"), 1.0934, min = 1, step = 0.01, max = 5)),
+                  column(6, numericInput("pm25_incr7", i18n$t("Increment (ug/m3)"), 10, min = 1, step = 1, max = 100))
+                ),
+                # Second row with L95%CI and U95%CI inputs
+                fluidRow(
+                  column(6, numericInput("pm25_l95_7", i18n$t("L95%CI"), 0.977, min = 0.9, step = 0.01, max = 5)),
+                  column(6, numericInput("pm25_u95_7", i18n$t("U95%CI"), 1.224, min = 1, step = 0.01, max = 5))
+                )
+              )
+            ),
+            div(
+              class = "grid-linear",
+              # Title Header
+              h3(strong(i18n$t("Respiratory emergency room visits")), class = "grid-heading"),
+              # Left parameter box containing Source and Regression type
+              div(
+                class = "parameter-box left-parameter-box",
+                div(
+                  column(
+                    12,
+                    div(
+                      class = "",
+                      tags$label(i18n$t("Source"), class = "control-label"),
+                      # Source information
+                      p(i18n$t("Burnett et al. 1995; Stieb et al. 2000")),
+                    )
+                  ),
+                  column(
+                    12,
+                    div(
+                      class = "form-group shiny-input-container",
+                      tags$label(i18n$t("Regression type"), class = "control-label"),
+                      # Regression type information
+                      p(i18n$t("Log-linear")),
+                      # Hidden select input for regression type, default choice set to log-linear
+                      hidden(selectInput("pm25_rtype8", i18n$t("Regression type"), c(i18n$t("linear"), i18n$t("log-linear")))),
+                    )
+                  )
+                )
+              ),
+              # Right parameter box containing numeric inputs
+              div(
+                class = "parameter-box right-parameter-box",
+                # First row with HR/RR/OR and Increment inputs
+                fluidRow(
+                  column(6, numericInput("pm25_crf8", i18n$t("HR/RR/OR"), 1.00754, min = 0, step = 0.0001, max = 5)),
+                  column(6, numericInput("pm25_incr8", i18n$t("Increment (ug/m3)"), 10, min = 1, step = 1, max = 100))
+                ),
+                # Second row with L95%CI and U95%CI inputs
+                fluidRow(
+                  column(6, numericInput("pm25_l95_8", i18n$t("L95%CI"), 1.00495, min = 0, step = 0.0001, max = 5)),
+                  column(6, numericInput("pm25_u95_8", i18n$t("U95%CI"), 1.01013, min = 0, step = 0.0001, max = 5))
+                )
+              )
+            ),
+            div(
+              class = "grid-linear",
+              # Title Header
+              h3(strong(i18n$t("Respiratory hospital admissions")), class = "grid-heading"),
+              # Left parameter box containing Source and Regression type
+              div(
+                class = "parameter-box left-parameter-box",
+                div(
+                  column(
+                    12,
+                    div(
+                      class = "",
+                      tags$label(i18n$t("Source"), class = "control-label"),
+                      # Source information
+                      p(i18n$t("Burnett et al. 1995")),
+                    )
+                  ),
+                  column(
+                    12,
+                    div(
+                      class = "form-group shiny-input-container",
+                      tags$label(i18n$t("Regression type"), class = "control-label"),
+                      # Regression type information
+                      p(i18n$t("Log-linear")),
+                      # Hidden select input for regression type, default choice set to log-linear
+                      hidden(selectInput("pm25_rtype9", i18n$t("Regression type"), c(i18n$t("linear"), i18n$t("log-linear")))),
+                    )
+                  )
+                )
+              ),
+              # Right parameter box containing numeric inputs
+              div(
+                class = "parameter-box right-parameter-box",
+                # First row with HR/RR/OR and Increment inputs
+                fluidRow(
+                  column(6, numericInput("pm25_crf9", i18n$t("HR/RR/OR"), 1.00754, min = 0, step = 0.0001, max = 5)),
+                  column(6, numericInput("pm25_incr9", i18n$t("Increment (ug/m3)"), 10, min = 1, step = 1, max = 100))
+                ),
+                # Second row with L95%CI and U95%CI inputs
+                fluidRow(
+                  column(6, numericInput("pm25_l95_9", i18n$t("L95%CI"), 1.00495, min = 0, step = 0.0001, max = 5)),
+                  column(6, numericInput("pm25_u95_9", i18n$t("U95%CI"), 1.01013, min = 0, step = 0.0001, max = 5))
+                )
+              )
+            ),
+            div(
+              class = "grid-linear",
+              # Title Header
+              h3(strong(i18n$t("Restricted activity days")), class = "grid-heading"),
+              # Left parameter box containing Source and Regression type
+              div(
+                class = "parameter-box left-parameter-box",
+                div(
+                  column(
+                    12,
+                    div(
+                      class = "",
+                      tags$label(i18n$t("Source"), class = "control-label"),
+                      # Source information
+                      p("Ostro 1987"),
+                    )
+                  ),
+                  column(
+                    12,
+                    div(
+                      class = "form-group shiny-input-container",
+                      tags$label(i18n$t("Regression type"), class = "control-label"),
+                      # Regression type information
+                      p(i18n$t("Log-linear")),
+                      # Hidden select input for regression type, default choice set to log-linear
+                      hidden(selectInput("pm25_rtype10", i18n$t("Regression type"), c(i18n$t("log-linear"), i18n$t("linear")))),
+                    )
+                  )
+                )
+              ),
+              # Right parameter box containing numeric inputs
+              div(
+                class = "parameter-box right-parameter-box",
+                # First row with HR/RR/OR and Increment inputs
+                fluidRow(
+                  column(6, numericInput("pm25_crf10", i18n$t("HR/RR/OR"), 1.05, min = 1, step = 0.01, max = 5)),
+                  column(6, numericInput("pm25_incr10", i18n$t("Increment (ug/m3)"), 10, min = 1, step = 1, max = 100))
+                ),
+                # Second row with L95%CI and U95%CI inputs
+                fluidRow(
+                  column(6, numericInput("pm25_l95_10", i18n$t("L95%CI"), 1.03, min = 1, step = 0.01, max = 5)),
+                  column(6, numericInput("pm25_u95_10", i18n$t("U95%CI"), 1.07, min = 1, step = 0.01, max = 5))
+                )
+              )
+            ),
+
+            # chronic exposure lung cancer
+            div(
+              class = "grid-linear",
+              h3(strong(i18n$t("Chronic exposure lung cancer mortality")), class = "grid-heading"),
+              div(
+                class = "parameter-box left-parameter-box",
+                div(
+                  column(
+                    12,
+                    div(
+                      class = "",
+                      tags$label(i18n$t("Source"), class = "control-label"),
+                      p(paste(i18n$t("Health Canada"), "2022"))
+                    ),
+                  ),
+                  column(
+                    12,
+                    div(
+                      class = "form-group shiny-input-container",
+                      tags$label(i18n$t("Regression type"), class = "control-label"),
+                      p(i18n$t("Log-linear")),
+                      # hidden select with default choice log-linear
+                      hidden(selectInput("rtypelung", i18n$t("Regression type"), c(i18n$t("log-linear"), i18n$t("linear")))),
+                    ),
+                  ),
+                ),
+              ),
+              div(
+                class = "parameter-box right-parameter-box",
+                fluidRow(
+                  column(6, numericInput("crflung", i18n$t("HR/RR/OR"), 1.127, min = 1, step = 0.01, max = 5)),
+                  column(6, numericInput("incrlung", i18n$t("Increment (ug/m3)"), 10, min = 1, step = 1, max = 100)),
+                ),
+                fluidRow(
+                  column(6, numericInput("l95lung", i18n$t("L95%CI"), 1.085, min = 1, step = 0.01, max = 5)),
+                  column(6, numericInput("u95lung", i18n$t("U95%CI"), 1.17, min = 1, step = 0.01, max = 5)),
+                ),
+              ),
+            ),
+
+
+            # Chronic exposure cerebrovascular mortality
+            div(
+              class = "grid-normal",
+              h3(strong(i18n$t("Chronic exposure cerebrovascular mortality")), class = "grid-heading"),
+              div(
+                class = "parameter-box left-parameter-box",
+                column(
+                  12,
+                  div(
+                    column(
+                      12,
+                      div(
+                        class = "",
+                        tags$label(i18n$t("Source"), class = "control-label"),
+                        p(i18n$t("Shin et al. 2014")),
+                      ),
+                    ),
+                    column(
+                      12,
+                      div(
+                        class = "form-group shiny-input-container",
+                        tags$label(i18n$t("Regression type"), class = "control-label"),
+                        p("Gamma"),
+                        hidden(selectInput("rtypecerebro", i18n$t("Regression type"), c("Gamma", "")))
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              div(
+                class = "parameter-box right-parameter-box",
+                column(12, numericInput("crfcerebro", i18n$t("Shape"), 4.884, min = 1, step = 0.01, max = 50)),
+                column(12, numericInput("scalecerebro", i18n$t("Scale"), 0.03375, min = 0, step = 0.0001, max = 1)),
+                column(12, numericInput("incrcerebro", i18n$t("Increment (ug/m3)"), 10, min = 1, step = 1, max = 100))
+              ),
+            ),
+            # Chronic exposure COPD mortality
+            div(
+              class = "grid-normal",
+              h3(strong(i18n$t("Chronic exposure COPD mortality")), class = "grid-heading"),
+              div(
+                class = "parameter-box left-parameter-box",
+                column(
+                  12,
+                  div(
+                    column(
+                      12,
+                      div(
+                        class = "",
+                        tags$label(i18n$t("Source"), class = "control-label"),
+                        p(i18n$t("Shin et al. 2014")),
+                      )
+                    ),
+                    column(
+                      12,
+                      div(
+                        class = "form-group shiny-input-container",
+                        tags$label(i18n$t("Regression type"), class = "control-label"),
+                        p("Gamma"),
+                        hidden(selectInput("rtypcopd", i18n$t("Regression type"), c("Gamma", "", "")))
+                      )
+                    )
+                  )
+                )
+              ),
+              div(
+                class = "parameter-box right-parameter-box",
+                column(12, numericInput("crfcopd", i18n$t("Shape"), 14.57, min = 1, step = 0.01, max = 150)),
+                column(12, numericInput("scalecopd", i18n$t("Scale"), 0.00601, min = 0, step = 0.0001, max = 1)),
+                column(12, numericInput("incrcopd", i18n$t("Increment (ug/m3)"), 10, min = 1, step = 1, max = 100))
+              )
+            ),
+            # Chronic exposure ischemic heart disease mortality
+            div(
+              class = "grid-normal",
+              h3(strong(i18n$t("Chronic exposure ischemic heart disease mortality")), class = "grid-heading"),
+              div(
+                class = "parameter-box left-parameter-box",
+                column(
+                  12,
+                  div(
+                    column(
+                      12,
+                      div(
+                        class = "",
+                        tags$label(i18n$t("Source"), class = "control-label"),
+                        p(i18n$t("Shin et al. 2014")),
+                      )
+                    ),
+                    column(
+                      12,
+                      div(
+                        class = "form-group shiny-input-container",
+                        tags$label(i18n$t("Regression type"), class = "control-label"),
+                        p("Gamma"),
+                        hidden(selectInput("rtypIschem", i18n$t("Regression type"), c("Gamma", "", "")))
+                      )
+                    )
+                  )
+                )
+              ),
+              div(
+                class = "parameter-box right-parameter-box",
+                column(12, numericInput("crfIschem", i18n$t("Shape"), 1.156, min = 1, step = 0.01, max = 50)),
+                column(12, numericInput("scaleIschem", i18n$t("Scale"), 0.2117, min = 0, step = 0.0001, max = 1)),
+                column(12, numericInput("incrIschem", i18n$t("Increment (ug/m3)"), 10, min = 1, step = 1, max = 100))
+              )
+            ),
+            hr(),
+          ),
+          # CRFs (O3, CO, SO2, NO2)
+          h2(i18n$t("CRFs (O3, CO, SO2, NO2)"), id = "crfs"),
+          p(i18n$t("This section lists CRFs for ozone (O3), carbon monoxide (CO), sulfur dioxide (SO2), nitrogen dioxide (NO2), and eight associated health endpoints. You may edit and use your own values."), class = "crf-description"),
+          p(i18n$t("Please note that the CRFs for acute exposure mortality associated with SO2 and CO are still considered 'suggestive' rather than 'causal' or 'likely causal'. We will continue to monitor and incorporate any new scientific evidence."), class = "crf-description"),
+          tabindex = "0",
+          useShinyjs(),
+          div(
+            id = "form2",
+            createRestoreInstructions(i18n),
+            fluidRow(
+              column(4, actionButton("resetother", i18n$t("Restore default values"), class = "btn-primary", tabindex = "0")),
+            ),
+            br(),
+            fluidRow(
+              column(
+                12,
+                p(i18n$t("\"L95%CI\" refers to the lower 95% confidence interval and \"U95%CI\" refers to the upper 95% confidence interval."), )
+              )
+            ),
+            div(
+              class = "grid-linear",
+              # Title Header
+              h3(strong(i18n$t("O3 and acute exposure mortality")), class = "grid-heading"),
+              # Left parameter box containing Source and Regression type
+              div(
+                class = "parameter-box left-parameter-box",
+                div(
+                  column(
+                    12,
+                    div(
+                      class = "",
+                      tags$label(i18n$t("Source"), class = "control-label"),
+                      # Source information
+                      p(i18n$t("Burnett et al. 2004")),
+                    )
+                  ),
+                  column(
+                    12,
+                    div(
+                      class = "form-group shiny-input-container",
+                      tags$label(i18n$t("Regression type"), class = "control-label"),
+                      # Regression type information
+                      p(i18n$t("Log-linear")),
+                      # Hidden select input for regression type, default choice set to log-linear
+                      hidden(selectInput("o3_rtype1", i18n$t("Regression type"), c(i18n$t("log-linear"), i18n$t("linear")))),
+                    )
+                  )
+                )
+              ),
+              # Right parameter box containing numeric inputs
+              div(
+                class = "parameter-box right-parameter-box",
+                # First row with HR/RR/OR and Increment inputs
+                fluidRow(
+                  column(6, numericInput("o3_crf1", i18n$t("HR/RR/OR"), 1.0084, min = 1, step = 0.001, max = 5)),
+                  column(6, numericInput("o3_incr1", i18n$t("Increment (ppb)"), 10, min = 1, step = 1, max = 100))
+                ),
+                # Second row with L95%CI and U95%CI inputs
+                fluidRow(
+                  column(6, numericInput("o3_l95_1", i18n$t("L95%CI"), 1.0057, min = 1, step = 0.001, max = 5)),
+                  column(6, numericInput("o3_u95_1", i18n$t("U95%CI"), 1.011, min = 1, step = 0.001, max = 5))
+                )
+              )
+            ),
+            div(
+              class = "grid-linear",
+              # Title Header
+              h3(strong(i18n$t("Summer O3 and chronic exposure respiratory mortality")), class = "grid-heading"),
+              # Left parameter box containing Source and Regression type
+              div(
+                class = "parameter-box left-parameter-box",
+                div(
+                  column(
+                    12,
+                    div(
+                      class = "",
+                      tags$label(i18n$t("Source"), class = "control-label"),
+                      # Source information
+                      p(i18n$t("Jerrett et al. 2009")),
+                    )
+                  ),
+                  column(
+                    12,
+                    div(
+                      class = "form-group shiny-input-container",
+                      tags$label(i18n$t("Regression type"), class = "control-label"),
+                      # Regression type information
+                      p(i18n$t("Log-linear")),
+                      # Hidden select input for regression type, default choice set to log-linear
+                      hidden(selectInput("o3_rtype2", i18n$t("Regression type"), c(i18n$t("log-linear"), i18n$t("linear")))),
+                    )
+                  )
+                )
+              ),
+              # Right parameter box containing numeric inputs
+              div(
+                class = "parameter-box right-parameter-box",
+                # First row with HR/RR/OR and Increment inputs
+                fluidRow(
+                  column(6, numericInput("o3_crf2", i18n$t("HR/RR/OR"), 1.04, min = 1, step = 0.01, max = 5)),
+                  column(6, numericInput("o3_incr2", i18n$t("Increment (ppb)"), 10, min = 1, step = 1, max = 100))
+                ),
+                # Second row with L95%CI and U95%CI inputs
+                fluidRow(
+                  column(6, numericInput("o3_l95_2", i18n$t("L95%CI"), 1.0134, min = 1, step = 0.01, max = 5)),
+                  column(6, numericInput("o3_u95_2", i18n$t("U95%CI"), 1.0672, min = 1, step = 0.01, max = 5))
+                )
+              )
+            ),
+            div(
+              class = "grid-linear",
+              # Title Header
+              h3(strong(i18n$t("Summer O3 and acute respiratory symptom days")), class = "grid-heading"),
+              # Left parameter box containing Source and Regression type
+              div(
+                class = "parameter-box left-parameter-box",
+                div(
+                  column(
+                    12,
+                    div(
+                      class = "",
+                      tags$label(i18n$t("Source"), class = "control-label"),
+                      # Source information
+                      p(i18n$t("Krupnick et al. 1990")),
+                    )
+                  ),
+                  column(
+                    12,
+                    div(
+                      class = "form-group shiny-input-container",
+                      tags$label(i18n$t("Regression type"), class = "control-label"),
+                      # Regression type information
+                      p(i18n$t("Linear")),
+                      # Hidden select input for regression type, default choice set to linear
+                      hidden(selectInput("o3_rtype3", i18n$t("Regression type"), c(i18n$t("linear"), i18n$t("log-linear")))),
+                    )
+                  )
+                )
+              ),
+              # Right parameter box containing numeric inputs
+              div(
+                class = "parameter-box right-parameter-box",
+                # First row with HR/RR/OR and Increment inputs
+                fluidRow(
+                  column(6, numericInput("o3_crf3", i18n$t("HR/RR/OR"), 1.00786, min = 0, step = 0.0001, max = 5)),
+                  column(6, numericInput("o3_incr3", i18n$t("Increment (ppb)"), 10, min = 1, step = 1, max = 100))
+                ),
+                # Second row with L95%CI and U95%CI inputs
+                fluidRow(
+                  column(6, numericInput("o3_l95_3", i18n$t("L95%CI"), 1.0002944, min = 1, step = 0.0001, max = 5)),
+                  column(6, numericInput("o3_u95_3", i18n$t("U95%CI"), 1.01543, min = 1, step = 0.0001, max = 5))
+                )
+              )
+            ),
+            div(
+              class = "grid-linear",
+              # Title Header
+              h3(strong(i18n$t("Summer O3 and asthma symptom days")), class = "grid-heading"),
+              # Left parameter box containing Source and Regression type
+              div(
+                class = "parameter-box left-parameter-box",
+                div(
+                  column(
+                    12,
+                    div(
+                      class = "",
+                      tags$label(i18n$t("Source"), class = "control-label"),
+                      # Source information
+                      p(i18n$t("Mortimer et al. 2002; Schildcrout et al. 2006")),
+                    )
+                  ),
+                  column(
+                    12,
+                    div(
+                      class = "form-group shiny-input-container",
+                      tags$label(i18n$t("Regression type"), class = "control-label"),
+                      # Regression type information
+                      p(i18n$t("Log-linear")),
+                      # Hidden select input for regression type, default choice set to log-linear
+                      hidden(selectInput("o3_rtype4", i18n$t("Regression type"), c(i18n$t("log-linear"), i18n$t("linear")))),
+                    )
+                  )
+                )
+              ),
+              # Right parameter box containing numeric inputs
+              div(
+                class = "parameter-box right-parameter-box",
+                # First row with HR/RR/OR and Increment inputs
+                fluidRow(
+                  column(6, numericInput("o3_crf4", i18n$t("HR/RR/OR"), 1.0241, min = 1, step = 0.01, max = 5)),
+                  column(6, numericInput("o3_incr4", i18n$t("Increment (ppb)"), 10, min = 1, step = 1, max = 100))
+                ),
+                # Second row with L95%CI and U95%CI inputs
+                fluidRow(
+                  column(6, numericInput("o3_l95_4", i18n$t("L95%CI"), 0.9811, min = 0.9, step = 0.01, max = 5)),
+                  column(6, numericInput("o3_u95_4", i18n$t("U95%CI"), 1.07, min = 1, step = 0.01, max = 5))
+                )
+              )
+            ),
+            div(
+              class = "grid-linear",
+              # Title Header
+              h3(strong(i18n$t("Summer O3 and minor restricted activity days")), class = "grid-heading"),
+              # Left parameter box containing Source and Regression type
+              div(
+                class = "parameter-box left-parameter-box",
+                div(
+                  column(
+                    12,
+                    div(
+                      class = "",
+                      tags$label(i18n$t("Source"), class = "control-label"),
+                      # Source information
+                      p(i18n$t("Ostro and Rothschild 1989")),
+                    )
+                  ),
+                  column(
+                    12,
+                    div(
+                      class = "form-group shiny-input-container",
+                      tags$label(i18n$t("Regression type"), class = "control-label"),
+                      # Regression type information
+                      p(i18n$t("Log-linear")),
+                      # Hidden select input for regression type, default choice set to log-linear
+                      hidden(selectInput("o3_rtype5", i18n$t("Regression type"), c(i18n$t("log-linear"), i18n$t("linear")))),
+                    )
+                  )
+                )
+              ),
+              # Right parameter box containing numeric inputs
+              div(
+                class = "parameter-box right-parameter-box",
+                # First row with HR/RR/OR and Increment inputs
+                fluidRow(
+                  column(6, numericInput("o3_crf5", i18n$t("HR/RR/OR"), 1.0053, min = 1, step = 0.01, max = 5)),
+                  column(6, numericInput("o3_incr5", i18n$t("Increment (ppb)"), 10, min = 1, step = 1, max = 100))
+                ),
+                # Second row with L95%CI and U95%CI inputs
+                fluidRow(
+                  column(6, numericInput("o3_l95_5", i18n$t("L95%CI"), 0.95, min = 0.9, step = 0.001, max = 5)),
+                  column(6, numericInput("o3_u95_5", i18n$t("U95%CI"), 1.0643, min = 1, step = 0.001, max = 5))
+                )
+              )
+            ),
+            div(
+              class = "grid-linear",
+              # Title Header
+              h3(strong(i18n$t("Summer O3 and respiratory emergency room visits")), class = "grid-heading"),
+              # Left parameter box containing Source and Regression type
+              div(
+                class = "parameter-box left-parameter-box",
+                div(
+                  div(
+                    class = "form-group shiny-input-container",
+                    tags$label(i18n$t("Source"), class = "control-label"),
+                    # Source information
+                    p(i18n$t("Burnett et al. 1997a; Stieb et al. 2000")),
+                    hidden(textInput("o3_source6", i18n$t("Source"), value = "Burnett et al. 1997a; Stieb et al. 2000"))
+                  ),
+                  div(
+                    class = "form-group shiny-input-container",
+                    tags$label(i18n$t("Regression type"), class = "control-label"),
+                    # Regression type information
+                    p(i18n$t("Log-linear")),
+                    # Hidden select input for regression type, default choice set to log-linear
+                    hidden(selectInput("o3_rtype6", i18n$t("Regression type"), c(i18n$t("log-linear"), i18n$t("linear"))))
+                  )
+                )
+              ),
+              # Right parameter box containing numeric inputs
+              div(
+                class = "parameter-box right-parameter-box",
+                # First row with HR/RR/OR and Increment inputs
+                fluidRow(
+                  column(6, numericInput("o3_crf6", i18n$t("HR/RR/OR"), 1.008, min = 0.8, step = 0.001, max = 5)),
+                  column(6, numericInput("o3_incr6", i18n$t("Increment (ppb)"), 10, min = 1, step = 1, max = 100))
+                ),
+                # Second row with L95%CI and U95%CI inputs
+                fluidRow(
+                  column(6, numericInput("o3_l95_6", i18n$t("L95%CI"), 1.001, min = 0.8, step = 0.001, max = 5)),
+                  column(6, numericInput("o3_u95_6", i18n$t("U95%CI"), 1.015, min = 0.9, step = 0.001, max = 5))
+                )
+              )
+            ),
+            div(
+              class = "grid-linear",
+              # Title Header
+              h3(strong(i18n$t("Summer O3 and respiratory hospital admissions")), class = "grid-heading"),
+              # Left parameter box containing Source and Regression type
+              div(
+                class = "parameter-box left-parameter-box",
+                div(
+                  div(
+                    class = "form-group shiny-input-container",
+                    tags$label(i18n$t("Source"), class = "control-label"),
+                    # Source information
+                    p(i18n$t("Burnett et al. 1997a")),
+                    hidden(textInput("o3_source7", i18n$t("Source"), value = "Burnett et al. 1997a"))
+                  ),
+                  div(
+                    class = "form-group shiny-input-container",
+                    tags$label(i18n$t("Regression type"), class = "control-label"),
+                    # Regression type information
+                    p(i18n$t("Log-linear")),
+                    # Hidden select input for regression type, default choice set to log-linear
+                    hidden(selectInput("o3_rtype7", i18n$t("Regression type"), c(i18n$t("log-linear"), i18n$t("linear"))))
+                  )
+                )
+              ),
+              # Right parameter box containing numeric inputs
+              div(
+                class = "parameter-box right-parameter-box",
+                # First row with HR/RR/OR and Increment inputs
+                fluidRow(
+                  column(6, numericInput("o3_crf7", i18n$t("HR/RR/OR"), 1.008, min = 0.8, step = 0.001, max = 5)),
+                  column(6, numericInput("o3_incr7", i18n$t("Increment (ppb)"), 10, min = 1, step = 1, max = 100))
+                ),
+                # Second row with L95%CI and U95%CI inputs
+                fluidRow(
+                  column(6, numericInput("o3_l95_7", i18n$t("L95%CI"), 1.0003, min = 0.8, step = 0.001, max = 5)),
+                  column(6, numericInput("o3_u95_7", i18n$t("U95%CI"), 1.015, min = 0.9, step = 0.001, max = 5))
+                )
+              )
+            ),
+            div(
+              class = "grid-linear",
+              # Title Header
+              h3(strong(i18n$t("NO2 and acute exposure mortality")), class = "grid-heading"),
+              # Left parameter box containing Source and Regression type
+              div(
+                class = "parameter-box left-parameter-box",
+                div(
+                  class = "form-group shiny-input-container",
+                  tags$label(i18n$t("Source"), class = "control-label"),
+                  # Source information
+                  p(i18n$t("Burnett et al. 2004")),
+                  hidden(textInput("no2_out", i18n$t("Source"), value = "Burnett et al. 2004"))
+                ),
+                div(
+                  class = "form-group shiny-input-container",
+                  tags$label(i18n$t("Regression type"), class = "control-label"),
+                  # Regression type information
+                  p(i18n$t("Log-linear")),
+                  # Hidden select input for regression type, default choice set to log-linear
+                  hidden(selectInput("no2_rtype", i18n$t("Regression type"), c(i18n$t("log-linear"), i18n$t("linear"))))
+                )
+              ),
+              # Right parameter box containing numeric inputs
+              div(
+                class = "parameter-box right-parameter-box",
+                # First row with HR/RR/OR and Increment inputs
+                fluidRow(
+                  column(6, numericInput("no2_crf", i18n$t("HR/RR/OR"), 1.0075, min = 1, step = 0.001, max = 5)),
+                  column(6, numericInput("no2_incr", i18n$t("Increment (ppb)"), 10, min = 1, step = 1, max = 100))
+                ),
+                # Second row with L95%CI and U95%CI inputs
+                fluidRow(
+                  column(6, numericInput("no2_l95", i18n$t("L95%CI"), 1.0026, min = 1, step = 0.001, max = 5)),
+                  column(6, numericInput("no2_u95", i18n$t("U95%CI"), 1.0124, min = 1, step = 0.001, max = 5))
+                )
+              )
+            ),
+            div(
+              class = "grid-linear",
+              # Title Header
+              h3(strong(i18n$t("SO2 and acute exposure mortality")), class = "grid-heading"),
+
+              # Left parameter box containing Source and Regression type
+              div(
+                class = "parameter-box left-parameter-box",
+                div(
+                  class = "form-group shiny-input-container",
+                  tags$label(i18n$t("Source"), class = "control-label"),
+                  # Source information
+                  p(i18n$t("Burnett et al. 2004")),
+                  hidden(textInput("so2_out", i18n$t("Source"), value = "Burnett et al. 2004"))
+                ),
+                div(
+                  class = "form-group shiny-input-container",
+                  tags$label(i18n$t("Regression type"), class = "control-label"),
+                  # Regression type information
+                  p(i18n$t("Log-linear")),
+                  # Hidden select input for regression type, default choice set to log-linear
+                  hidden(selectInput("so2_rtype", i18n$t("Regression type"), c(i18n$t("log-linear"), i18n$t("linear"))))
+                )
+              ),
+
+              # Right parameter box containing numeric inputs
+              div(
+                class = "parameter-box right-parameter-box",
+                # First row with HR/RR/OR and Increment inputs
+                fluidRow(
+                  column(6, numericInput("so2_crf", i18n$t("HR/RR/OR"), 1.0046, min = 1, step = 0.001, max = 5)),
+                  column(6, numericInput("so2_incr", i18n$t("Increment (ppb)"), 10, min = 1, step = 1, max = 100))
+                ),
+                # Second row with L95%CI and U95%CI inputs
+                fluidRow(
+                  column(6, numericInput("so2_l95", i18n$t("L95%CI"), 1.00028, min = 1, step = 0.001, max = 5)),
+                  column(6, numericInput("so2_u95", i18n$t("U95%CI"), 1.00894, min = 1, step = 0.001, max = 5))
+                )
+              )
+            ),
+            div(
+              class = "grid-linear",
+              # Title Header
+              h3(strong(i18n$t("24h-CO and acute exposure mortality")), class = "grid-heading"),
+
+              # Left parameter box containing Source and Regression type
+              div(
+                class = "parameter-box left-parameter-box",
+                div(
+                  class = "form-group shiny-input-container",
+                  tags$label(i18n$t("Source"), class = "control-label"),
+                  # Source information
+                  p(i18n$t("Burnett et al. 2004")),
+                  hidden(textInput("co24_source", i18n$t("Source"), value = "Burnett et al. 2004"))
+                ),
+                div(
+                  class = "form-group shiny-input-container",
+                  tags$label(i18n$t("Regression type"), class = "control-label"),
+                  # Regression type information
+                  p(i18n$t("Log-linear")),
+                  # Hidden select input for regression type, default choice set to log-linear
+                  hidden(selectInput("co24_rtype", i18n$t("Regression type"), c(i18n$t("log-linear"), i18n$t("linear"))))
+                )
+              ),
+              # Right parameter box containing numeric inputs
+              div(
+                class = "parameter-box right-parameter-box",
+                # First row with HR/RR/OR and Increment inputs
+                fluidRow(
+                  column(6, numericInput("co24_crf", i18n$t("HR/RR/OR"), 1.0192, min = 1, step = 0.01, max = 5)),
+                  column(6, numericInput("co24_incr", i18n$t("Increment (ppm)"), 10, min = 1, step = 1, max = 100))
+                ),
+                # Second row with L95%CI and U95%CI inputs
+                fluidRow(
+                  column(6, numericInput("co24_l95", i18n$t("L95%CI"), 0.969, min = 0.9, step = 0.01, max = 5)),
+                  column(6, numericInput("co24_u95", i18n$t("U95%CI"), 1.072, min = 1, step = 0.01, max = 5))
+                )
+              )
+            ),
+            div(
+              class = "grid-linear",
+              # Title Header
+              h3(strong(i18n$t("1h-CO and elderly cardiac hospital admissions")), class = "grid-heading"),
+
+              # Left parameter box containing Source and Regression type
+              div(
+                class = "parameter-box left-parameter-box",
+                div(
+                  class = "form-group shiny-input-container",
+                  tags$label(i18n$t("Source"), class = "control-label"),
+                  # Source information
+                  p(i18n$t("Burnett et al. 1997b; Schwartz and Morris 1995")),
+                  hidden(textInput("co1_source", i18n$t("Source"), value = "Burnett et al. 1997b; Schwartz and Morris 1995"))
+                ),
+                div(
+                  class = "form-group shiny-input-container",
+                  tags$label(i18n$t("Regression type"), class = "control-label"),
+                  # Regression type information
+                  p(i18n$t("Linear")),
+                  # Hidden select input for regression type, default choice set to linear
+                  hidden(selectInput("co1_rtype", i18n$t("Regression type"), c(i18n$t("linear"), i18n$t("log-linear"))))
+                )
+              ),
+
+              # Right parameter box containing numeric inputs
+              div(
+                class = "parameter-box right-parameter-box",
+                # First row with HR/RR/OR and Increment inputs
+                fluidRow(
+                  column(6, numericInput("co1_crf", i18n$t("HR/RR/OR"), 1.277, min = 0, step = 0.001, max = 5)),
+                  column(6, numericInput("co1_incr", i18n$t("Increment (ppm)"), 10, min = 1, step = 1, max = 100))
+                ),
+                # Second row with L95%CI and U95%CI inputs
+                fluidRow(
+                  column(6, numericInput("co1_l95", i18n$t("L95%CI"), 1.02612, min = 0, step = 0.001, max = 5)),
+                  column(6, numericInput("co1_u95", i18n$t("U95%CI"), 1.5279, min = 0, step = 0.001, max = 5))
+                )
+              )
+            ),
+          ),
+          hr(),
+          h2(i18n$t("Toxics"), id = "toxics"),
+          p(i18n$t("This section provides reference concentrations for benzene, formaldehyde, and acetaldehyde."), class = "crf-description"),
+          tabindex = "0",
+          useShinyjs(),
+          createRestoreInstructions(i18n),
+          div(
+            id = "form3",
+            fluidRow(
+              column(4, actionButton("resetother1", i18n$t("Restore default values"), class = "btn-primary", tabindex = "0")),
+            ),
+            br(),
+            fluidRow(
+              column(
+                12,
+                p(i18n$t("\"DALYs\" refers to disability-adjusted life years."), )
+              )
+            ),
+            div(
+              class = "grid-linear mt-32",
+              div(
+                class = "parameter-box left-parameter-box",
+                div(
+                  class = "form-group shiny-input-container",
+                  tags$label(i18n$t("Source"), class = "control-label"),
+                  p(i18n$t("Health Canada 2015")), # Updated source
+                ),
+                div(
+                  class = "form-group",
+                  tags$label(i18n$t("Pollutant"), class = "control-label"),
+                  p(i18n$t("1,3-Butadiene")), # Updated pollutant
+                  hidden(textInput("btname1", "Pollutant", value = i18n$t("1,3-Butadiene")))
+                ),
+                div(
+                  class = "form-group",
+                  tags$label(i18n$t("Outcome"), class = "control-label"),
+                  p("Cancer"), # Updated outcome
+                  hidden(textInput("btoutcome1", "Outcome", value = "Cancer"))
+                ),
+              ),
+              div(
+                class = "parameter-box right-parameter-box",
+                fluidRow(
+                  column(12, numericInput("btiur", i18n$t("Inhalation unit risk per ug/m3"), 0.00000588, min = 0, step = 0.0000001, max = 0.00001)),
+                  column(12, numericInput("btdaly", i18n$t("DALYs per case"), 13.7, min = 0, step = 0.1, max = 50)),
+                ),
+              ),
+            ),
+            div(
+              class = "grid-linear mt-32",
+              div(
+                class = "parameter-box left-parameter-box",
+                div(
+                  class = "form-group shiny-input-container",
+                  tags$label(i18n$t("Source"), class = "control-label"),
+                  # Regression type information
+                  p(i18n$t("Health Canada 2010")),
+                ),
+                div(
+                  class = "form-group",
+                  tags$label(i18n$t("Pollutant"), class = "control-label"),
+                  # Source information
+                  p(i18n$t("Benzene")),
+                  hidden(textInput("bzname1", "Pollutant", value = i18n$t("Benzene")))
+                ),
+                div(
+                  class = "form-group",
+                  tags$label(i18n$t("Outcome"), class = "control-label"),
+                  # Source information
+                  p("Cancer"),
+                  hidden(textInput("bzoutcome1", "Outcome", value = "Cancer"))
+                ),
+              ),
+              # Right parameter box containing numeric inputs
+              div(
+                class = "parameter-box right-parameter-box",
+                # First row with HR/RR/OR and Increment inputs
+                fluidRow(
+                  column(12, numericInput("bziur", i18n$t("Inhalation unit risk per ug/m3"), 0.0000033, min = 0, step = 0.0000001, max = 0.00001)),
+                  column(12, numericInput("bzdaly", i18n$t("DALYs per case"), 13.7, min = 0, step = 0.1, max = 50)),
+                ),
+              ),
+            ),
+            div(
+              class = "grid-linear mt-32",
+              div(
+                class = "parameter-box left-parameter-box",
+                div(
+                  class = "form-group shiny-input-container",
+                  tags$label(i18n$t("Source"), class = "control-label"),
+                  p(i18n$t("California OEHHA 2016")), # Updated source
+                ),
+                div(
+                  class = "form-group",
+                  tags$label(i18n$t("Pollutant"), class = "control-label"),
+                  p(i18n$t("Benzene")), # Updated pollutant
+                  hidden(textInput("bzname2", "Pollutant", value = i18n$t("Benzene")))
+                ),
+                div(
+                  class = "form-group",
+                  tags$label(i18n$t("Outcome"), class = "control-label"),
+                  p(i18n$t("Hematological")), # Updated outcome
+                  hidden(textInput("bzoutcome2", "Outcome", value = i18n$t("Hematological")))
+                ),
+              ),
+              div(
+                class = "parameter-box right-parameter-box",
+                fluidRow(
+                  column(12, numericInput("bzanrfc", i18n$t("Reference concentration (annual ug/m3)"), 3, min = 0, step = 1, max = 1000)),
+                ),
+              ),
+            ),
+            div(
+              class = "grid-linear mt-32",
+              div(
+                class = "parameter-box left-parameter-box",
+                div(
+                  class = "form-group shiny-input-container",
+                  tags$label(i18n$t("Source"), class = "control-label"),
+                  p(i18n$t("Health Canada 2016a")), # Updated source
+                ),
+                div(
+                  class = "form-group",
+                  tags$label(i18n$t("Pollutant"), class = "control-label"),
+                  p(i18n$t("Formaldehyde")), # Updated pollutant
+                  hidden(textInput("fmname2", "Pollutant", value = i18n$t("Formaldehyde")))
+                ),
+                div(
+                  class = "form-group",
+                  tags$label(i18n$t("Outcome"), class = "control-label"),
+                  p(i18n$t("Respiratory (asthma)")), # Updated outcome
+                  hidden(textInput("fmoutcome2", "Outcome", value = i18n$t("Respiratory (asthma)")))
+                ),
+              ),
+              div(
+                class = "parameter-box right-parameter-box",
+                fluidRow(
+                  column(12, numericInput("fmanrfc", i18n$t("Reference concentration (annual ug/m3)"), 50, min = 0, step = 1, max = 1000)),
+                ),
+              ),
+            ),
+            div(
+              class = "grid-linear mt-32",
+              div(
+                class = "parameter-box left-parameter-box",
+                div(
+                  class = "form-group shiny-input-container",
+                  tags$label(i18n$t("Source"), class = "control-label"),
+                  p(i18n$t("Health Canada 2016b")), # Updated source
+                ),
+                div(
+                  class = "form-group",
+                  tags$label(i18n$t("Pollutant"), class = "control-label"),
+                  p(i18n$t("Acetaldehyde")), # Updated pollutant
+                  hidden(textInput("acname2", "Pollutant", value = i18n$t("Acetaldehyde")))
+                ),
+                div(
+                  class = "form-group",
+                  tags$label(i18n$t("Outcome"), class = "control-label"),
+                  p(i18n$t("Respiratory (histological)")), # Updated outcome
+                  hidden(textInput("acoutcome2", "Outcome", value = i18n$t("Respiratory (histological)")))
+                ),
+              ),
+              div(
+                class = "parameter-box right-parameter-box",
+                fluidRow(
+                  column(12, numericInput("acanrfc", i18n$t("Reference concentration (annual ug/m3)"), 280, min = 0, step = 1, max = 1000)),
+                ),
+              ),
+            ),
+          ), # div3
+          hr(),
+          h2(i18n$t("Other parameters"), id = "other"),
+          p(i18n$t("This section lists the:"), class = "crf-description"),
+          tags$ul(
+            tags$li(i18n$t("prevalence of asthma for those aged < 20 years (default is 17.7%)")),
+            tags$li(i18n$t("numbers of iterations to be used for Monte Carlo simulations (default is 10,000 for simulation iterations)")),
+          ),
+          fluidRow(
+            column(
+              12,
+              p(i18n$t("You may edit and use your own values."))
+            )
+          ),
           createRestoreInstructions(i18n),
           fluidRow(
-            column(4, actionButton("resetother", i18n$t("Restore default values"), class = "btn-primary", tabindex = "0")),
+            column(4, actionButton("resetall3", i18n$t("Restore default values"), class = "btn-primary", tabindex = "0")),
           ),
           br(),
-          fluidRow(
-            column(
-              12,
-              p(i18n$t("\"L95%CI\" refers to the lower 95% confidence interval and \"U95%CI\" refers to the upper 95% confidence interval."), )
+          useShinyjs(),
+          div(
+            id = "form4",
+            class = "parameter-box",
+            style = "margin-bottom: 32px;",
+            fluidRow(
+              column(6, numericInput("asprev", i18n$t("Prevalence of asthma (age < 20 years)"), 17.7, min = 1, step = 1, max = 25, width = "100%")),
+              column(6, numericInput("itn", i18n$t("Iterations"), 10000, min = 1, step = 100, max = 15000, width = "100%")),
+              textOutput("pasthma"),
             )
-          ),
-          div(
-            class = "grid-linear",
-            # Title Header
-            h3(strong(i18n$t("O3 and acute exposure mortality")), class = "grid-heading"),
-            # Left parameter box containing Source and Regression type
-            div(
-              class = "parameter-box left-parameter-box",
-              div(
-                column(
-                  12,
-                  div(
-                    class = "",
-                    tags$label(i18n$t("Source"), class = "control-label"),
-                    # Source information
-                    p(i18n$t("Burnett et al. 2004")),
-                  )
-                ),
-                column(
-                  12,
-                  div(
-                    class = "form-group shiny-input-container",
-                    tags$label(i18n$t("Regression type"), class = "control-label"),
-                    # Regression type information
-                    p(i18n$t("Log-linear")),
-                    # Hidden select input for regression type, default choice set to log-linear
-                    hidden(selectInput("o3_rtype1", i18n$t("Regression type"), c(i18n$t("log-linear"), i18n$t("linear")))),
-                  )
-                )
-              )
-            ),
-            # Right parameter box containing numeric inputs
-            div(
-              class = "parameter-box right-parameter-box",
-              # First row with HR/RR/OR and Increment inputs
-              fluidRow(
-                column(6, numericInput("o3_crf1", i18n$t("HR/RR/OR"), 1.0084, min = 1, step = 0.001, max = 5)),
-                column(6, numericInput("o3_incr1", i18n$t("Increment (ppb)"), 10, min = 1, step = 1, max = 100))
-              ),
-              # Second row with L95%CI and U95%CI inputs
-              fluidRow(
-                column(6, numericInput("o3_l95_1", i18n$t("L95%CI"), 1.0057, min = 1, step = 0.001, max = 5)),
-                column(6, numericInput("o3_u95_1", i18n$t("U95%CI"), 1.011, min = 1, step = 0.001, max = 5))
-              )
-            )
-          ),
-          div(
-            class = "grid-linear",
-            # Title Header
-            h3(strong(i18n$t("Summer O3 and chronic exposure respiratory mortality")), class = "grid-heading"),
-            # Left parameter box containing Source and Regression type
-            div(
-              class = "parameter-box left-parameter-box",
-              div(
-                column(
-                  12,
-                  div(
-                    class = "",
-                    tags$label(i18n$t("Source"), class = "control-label"),
-                    # Source information
-                    p(i18n$t("Jerrett et al. 2009")),
-                  )
-                ),
-                column(
-                  12,
-                  div(
-                    class = "form-group shiny-input-container",
-                    tags$label(i18n$t("Regression type"), class = "control-label"),
-                    # Regression type information
-                    p(i18n$t("Log-linear")),
-                    # Hidden select input for regression type, default choice set to log-linear
-                    hidden(selectInput("o3_rtype2", i18n$t("Regression type"), c(i18n$t("log-linear"), i18n$t("linear")))),
-                  )
-                )
-              )
-            ),
-            # Right parameter box containing numeric inputs
-            div(
-              class = "parameter-box right-parameter-box",
-              # First row with HR/RR/OR and Increment inputs
-              fluidRow(
-                column(6, numericInput("o3_crf2", i18n$t("HR/RR/OR"), 1.04, min = 1, step = 0.01, max = 5)),
-                column(6, numericInput("o3_incr2", i18n$t("Increment (ppb)"), 10, min = 1, step = 1, max = 100))
-              ),
-              # Second row with L95%CI and U95%CI inputs
-              fluidRow(
-                column(6, numericInput("o3_l95_2", i18n$t("L95%CI"), 1.0134, min = 1, step = 0.01, max = 5)),
-                column(6, numericInput("o3_u95_2", i18n$t("U95%CI"), 1.0672, min = 1, step = 0.01, max = 5))
-              )
-            )
-          ),
-          div(
-            class = "grid-linear",
-            # Title Header
-            h3(strong(i18n$t("Summer O3 and acute respiratory symptom days")), class = "grid-heading"),
-            # Left parameter box containing Source and Regression type
-            div(
-              class = "parameter-box left-parameter-box",
-              div(
-                column(
-                  12,
-                  div(
-                    class = "",
-                    tags$label(i18n$t("Source"), class = "control-label"),
-                    # Source information
-                    p(i18n$t("Krupnick et al. 1990")),
-                  )
-                ),
-                column(
-                  12,
-                  div(
-                    class = "form-group shiny-input-container",
-                    tags$label(i18n$t("Regression type"), class = "control-label"),
-                    # Regression type information
-                    p(i18n$t("Linear")),
-                    # Hidden select input for regression type, default choice set to linear
-                    hidden(selectInput("o3_rtype3", i18n$t("Regression type"), c(i18n$t("linear"), i18n$t("log-linear")))),
-                  )
-                )
-              )
-            ),
-            # Right parameter box containing numeric inputs
-            div(
-              class = "parameter-box right-parameter-box",
-              # First row with HR/RR/OR and Increment inputs
-              fluidRow(
-                column(6, numericInput("o3_crf3", i18n$t("HR/RR/OR"), 1.00786, min = 0, step = 0.0001, max = 5)),
-                column(6, numericInput("o3_incr3", i18n$t("Increment (ppb)"), 10, min = 1, step = 1, max = 100))
-              ),
-              # Second row with L95%CI and U95%CI inputs
-              fluidRow(
-                column(6, numericInput("o3_l95_3", i18n$t("L95%CI"), 1.0002944, min = 1, step = 0.0001, max = 5)),
-                column(6, numericInput("o3_u95_3", i18n$t("U95%CI"), 1.01543, min = 1, step = 0.0001, max = 5))
-              )
-            )
-          ),
-          div(
-            class = "grid-linear",
-            # Title Header
-            h3(strong(i18n$t("Summer O3 and asthma symptom days")), class = "grid-heading"),
-            # Left parameter box containing Source and Regression type
-            div(
-              class = "parameter-box left-parameter-box",
-              div(
-                column(
-                  12,
-                  div(
-                    class = "",
-                    tags$label(i18n$t("Source"), class = "control-label"),
-                    # Source information
-                    p(i18n$t("Mortimer et al. 2002; Schildcrout et al. 2006")),
-                  )
-                ),
-                column(
-                  12,
-                  div(
-                    class = "form-group shiny-input-container",
-                    tags$label(i18n$t("Regression type"), class = "control-label"),
-                    # Regression type information
-                    p(i18n$t("Log-linear")),
-                    # Hidden select input for regression type, default choice set to log-linear
-                    hidden(selectInput("o3_rtype4", i18n$t("Regression type"), c(i18n$t("log-linear"), i18n$t("linear")))),
-                  )
-                )
-              )
-            ),
-            # Right parameter box containing numeric inputs
-            div(
-              class = "parameter-box right-parameter-box",
-              # First row with HR/RR/OR and Increment inputs
-              fluidRow(
-                column(6, numericInput("o3_crf4", i18n$t("HR/RR/OR"), 1.0241, min = 1, step = 0.01, max = 5)),
-                column(6, numericInput("o3_incr4", i18n$t("Increment (ppb)"), 10, min = 1, step = 1, max = 100))
-              ),
-              # Second row with L95%CI and U95%CI inputs
-              fluidRow(
-                column(6, numericInput("o3_l95_4", i18n$t("L95%CI"), 0.9811, min = 0.9, step = 0.01, max = 5)),
-                column(6, numericInput("o3_u95_4", i18n$t("U95%CI"), 1.07, min = 1, step = 0.01, max = 5))
-              )
-            )
-          ),
-          div(
-            class = "grid-linear",
-            # Title Header
-            h3(strong(i18n$t("Summer O3 and minor restricted activity days")), class = "grid-heading"),
-            # Left parameter box containing Source and Regression type
-            div(
-              class = "parameter-box left-parameter-box",
-              div(
-                column(
-                  12,
-                  div(
-                    class = "",
-                    tags$label(i18n$t("Source"), class = "control-label"),
-                    # Source information
-                    p(i18n$t("Ostro and Rothschild 1989")),
-                  )
-                ),
-                column(
-                  12,
-                  div(
-                    class = "form-group shiny-input-container",
-                    tags$label(i18n$t("Regression type"), class = "control-label"),
-                    # Regression type information
-                    p(i18n$t("Log-linear")),
-                    # Hidden select input for regression type, default choice set to log-linear
-                    hidden(selectInput("o3_rtype5", i18n$t("Regression type"), c(i18n$t("log-linear"), i18n$t("linear")))),
-                  )
-                )
-              )
-            ),
-            # Right parameter box containing numeric inputs
-            div(
-              class = "parameter-box right-parameter-box",
-              # First row with HR/RR/OR and Increment inputs
-              fluidRow(
-                column(6, numericInput("o3_crf5", i18n$t("HR/RR/OR"), 1.0053, min = 1, step = 0.01, max = 5)),
-                column(6, numericInput("o3_incr5", i18n$t("Increment (ppb)"), 10, min = 1, step = 1, max = 100))
-              ),
-              # Second row with L95%CI and U95%CI inputs
-              fluidRow(
-                column(6, numericInput("o3_l95_5", i18n$t("L95%CI"), 0.95, min = 0.9, step = 0.001, max = 5)),
-                column(6, numericInput("o3_u95_5", i18n$t("U95%CI"), 1.0643, min = 1, step = 0.001, max = 5))
-              )
-            )
-          ),
-          div(
-            class = "grid-linear",
-            # Title Header
-            h3(strong(i18n$t("Summer O3 and respiratory emergency room visits")), class = "grid-heading"),
-            # Left parameter box containing Source and Regression type
-            div(
-              class = "parameter-box left-parameter-box",
-              div(
-                div(
-                  class = "form-group shiny-input-container",
-                  tags$label(i18n$t("Source"), class = "control-label"),
-                  # Source information
-                  p(i18n$t("Burnett et al. 1997a; Stieb et al. 2000")),
-                  hidden(textInput("o3_source6", i18n$t("Source"), value = "Burnett et al. 1997a; Stieb et al. 2000"))
-                ),
-                div(
-                  class = "form-group shiny-input-container",
-                  tags$label(i18n$t("Regression type"), class = "control-label"),
-                  # Regression type information
-                  p(i18n$t("Log-linear")),
-                  # Hidden select input for regression type, default choice set to log-linear
-                  hidden(selectInput("o3_rtype6", i18n$t("Regression type"), c(i18n$t("log-linear"), i18n$t("linear"))))
-                )
-              )
-            ),
-            # Right parameter box containing numeric inputs
-            div(
-              class = "parameter-box right-parameter-box",
-              # First row with HR/RR/OR and Increment inputs
-              fluidRow(
-                column(6, numericInput("o3_crf6", i18n$t("HR/RR/OR"), 1.008, min = 0.8, step = 0.001, max = 5)),
-                column(6, numericInput("o3_incr6", i18n$t("Increment (ppb)"), 10, min = 1, step = 1, max = 100))
-              ),
-              # Second row with L95%CI and U95%CI inputs
-              fluidRow(
-                column(6, numericInput("o3_l95_6", i18n$t("L95%CI"), 1.001, min = 0.8, step = 0.001, max = 5)),
-                column(6, numericInput("o3_u95_6", i18n$t("U95%CI"), 1.015, min = 0.9, step = 0.001, max = 5))
-              )
-            )
-          ),
-          div(
-            class = "grid-linear",
-            # Title Header
-            h3(strong(i18n$t("Summer O3 and respiratory hospital admissions")), class = "grid-heading"),
-            # Left parameter box containing Source and Regression type
-            div(
-              class = "parameter-box left-parameter-box",
-              div(
-                div(
-                  class = "form-group shiny-input-container",
-                  tags$label(i18n$t("Source"), class = "control-label"),
-                  # Source information
-                  p(i18n$t("Burnett et al. 1997a")),
-                  hidden(textInput("o3_source7", i18n$t("Source"), value = "Burnett et al. 1997a"))
-                ),
-                div(
-                  class = "form-group shiny-input-container",
-                  tags$label(i18n$t("Regression type"), class = "control-label"),
-                  # Regression type information
-                  p(i18n$t("Log-linear")),
-                  # Hidden select input for regression type, default choice set to log-linear
-                  hidden(selectInput("o3_rtype7", i18n$t("Regression type"), c(i18n$t("log-linear"), i18n$t("linear"))))
-                )
-              )
-            ),
-            # Right parameter box containing numeric inputs
-            div(
-              class = "parameter-box right-parameter-box",
-              # First row with HR/RR/OR and Increment inputs
-              fluidRow(
-                column(6, numericInput("o3_crf7", i18n$t("HR/RR/OR"), 1.008, min = 0.8, step = 0.001, max = 5)),
-                column(6, numericInput("o3_incr7", i18n$t("Increment (ppb)"), 10, min = 1, step = 1, max = 100))
-              ),
-              # Second row with L95%CI and U95%CI inputs
-              fluidRow(
-                column(6, numericInput("o3_l95_7", i18n$t("L95%CI"), 1.0003, min = 0.8, step = 0.001, max = 5)),
-                column(6, numericInput("o3_u95_7", i18n$t("U95%CI"), 1.015, min = 0.9, step = 0.001, max = 5))
-              )
-            )
-          ),
-          div(
-            class = "grid-linear",
-            # Title Header
-            h3(strong(i18n$t("NO2 and acute exposure mortality")), class = "grid-heading"),
-            # Left parameter box containing Source and Regression type
-            div(
-              class = "parameter-box left-parameter-box",
-              div(
-                class = "form-group shiny-input-container",
-                tags$label(i18n$t("Source"), class = "control-label"),
-                # Source information
-                p(i18n$t("Burnett et al. 2004")),
-                hidden(textInput("no2_out", i18n$t("Source"), value = "Burnett et al. 2004"))
-              ),
-              div(
-                class = "form-group shiny-input-container",
-                tags$label(i18n$t("Regression type"), class = "control-label"),
-                # Regression type information
-                p(i18n$t("Log-linear")),
-                # Hidden select input for regression type, default choice set to log-linear
-                hidden(selectInput("no2_rtype", i18n$t("Regression type"), c(i18n$t("log-linear"), i18n$t("linear"))))
-              )
-            ),
-            # Right parameter box containing numeric inputs
-            div(
-              class = "parameter-box right-parameter-box",
-              # First row with HR/RR/OR and Increment inputs
-              fluidRow(
-                column(6, numericInput("no2_crf", i18n$t("HR/RR/OR"), 1.0075, min = 1, step = 0.001, max = 5)),
-                column(6, numericInput("no2_incr", i18n$t("Increment (ppb)"), 10, min = 1, step = 1, max = 100))
-              ),
-              # Second row with L95%CI and U95%CI inputs
-              fluidRow(
-                column(6, numericInput("no2_l95", i18n$t("L95%CI"), 1.0026, min = 1, step = 0.001, max = 5)),
-                column(6, numericInput("no2_u95", i18n$t("U95%CI"), 1.0124, min = 1, step = 0.001, max = 5))
-              )
-            )
-          ),
-          div(
-            class = "grid-linear",
-            # Title Header
-            h3(strong(i18n$t("SO2 and acute exposure mortality")), class = "grid-heading"),
-
-            # Left parameter box containing Source and Regression type
-            div(
-              class = "parameter-box left-parameter-box",
-              div(
-                class = "form-group shiny-input-container",
-                tags$label(i18n$t("Source"), class = "control-label"),
-                # Source information
-                p(i18n$t("Burnett et al. 2004")),
-                hidden(textInput("so2_out", i18n$t("Source"), value = "Burnett et al. 2004"))
-              ),
-              div(
-                class = "form-group shiny-input-container",
-                tags$label(i18n$t("Regression type"), class = "control-label"),
-                # Regression type information
-                p(i18n$t("Log-linear")),
-                # Hidden select input for regression type, default choice set to log-linear
-                hidden(selectInput("so2_rtype", i18n$t("Regression type"), c(i18n$t("log-linear"), i18n$t("linear"))))
-              )
-            ),
-
-            # Right parameter box containing numeric inputs
-            div(
-              class = "parameter-box right-parameter-box",
-              # First row with HR/RR/OR and Increment inputs
-              fluidRow(
-                column(6, numericInput("so2_crf", i18n$t("HR/RR/OR"), 1.0046, min = 1, step = 0.001, max = 5)),
-                column(6, numericInput("so2_incr", i18n$t("Increment (ppb)"), 10, min = 1, step = 1, max = 100))
-              ),
-              # Second row with L95%CI and U95%CI inputs
-              fluidRow(
-                column(6, numericInput("so2_l95", i18n$t("L95%CI"), 1.00028, min = 1, step = 0.001, max = 5)),
-                column(6, numericInput("so2_u95", i18n$t("U95%CI"), 1.00894, min = 1, step = 0.001, max = 5))
-              )
-            )
-          ),
-          div(
-            class = "grid-linear",
-            # Title Header
-            h3(strong(i18n$t("24h-CO and acute exposure mortality")), class = "grid-heading"),
-
-            # Left parameter box containing Source and Regression type
-            div(
-              class = "parameter-box left-parameter-box",
-              div(
-                class = "form-group shiny-input-container",
-                tags$label(i18n$t("Source"), class = "control-label"),
-                # Source information
-                p(i18n$t("Burnett et al. 2004")),
-                hidden(textInput("co24_source", i18n$t("Source"), value = "Burnett et al. 2004"))
-              ),
-              div(
-                class = "form-group shiny-input-container",
-                tags$label(i18n$t("Regression type"), class = "control-label"),
-                # Regression type information
-                p(i18n$t("Log-linear")),
-                # Hidden select input for regression type, default choice set to log-linear
-                hidden(selectInput("co24_rtype", i18n$t("Regression type"), c(i18n$t("log-linear"), i18n$t("linear"))))
-              )
-            ),
-            # Right parameter box containing numeric inputs
-            div(
-              class = "parameter-box right-parameter-box",
-              # First row with HR/RR/OR and Increment inputs
-              fluidRow(
-                column(6, numericInput("co24_crf", i18n$t("HR/RR/OR"), 1.0192, min = 1, step = 0.01, max = 5)),
-                column(6, numericInput("co24_incr", i18n$t("Increment (ppm)"), 10, min = 1, step = 1, max = 100))
-              ),
-              # Second row with L95%CI and U95%CI inputs
-              fluidRow(
-                column(6, numericInput("co24_l95", i18n$t("L95%CI"), 0.969, min = 0.9, step = 0.01, max = 5)),
-                column(6, numericInput("co24_u95", i18n$t("U95%CI"), 1.072, min = 1, step = 0.01, max = 5))
-              )
-            )
-          ),
-          div(
-            class = "grid-linear",
-            # Title Header
-            h3(strong(i18n$t("1h-CO and elderly cardiac hospital admissions")), class = "grid-heading"),
-
-            # Left parameter box containing Source and Regression type
-            div(
-              class = "parameter-box left-parameter-box",
-              div(
-                class = "form-group shiny-input-container",
-                tags$label(i18n$t("Source"), class = "control-label"),
-                # Source information
-                p(i18n$t("Burnett et al. 1997b; Schwartz and Morris 1995")),
-                hidden(textInput("co1_source", i18n$t("Source"), value = "Burnett et al. 1997b; Schwartz and Morris 1995"))
-              ),
-              div(
-                class = "form-group shiny-input-container",
-                tags$label(i18n$t("Regression type"), class = "control-label"),
-                # Regression type information
-                p(i18n$t("Linear")),
-                # Hidden select input for regression type, default choice set to linear
-                hidden(selectInput("co1_rtype", i18n$t("Regression type"), c(i18n$t("linear"), i18n$t("log-linear"))))
-              )
-            ),
-
-            # Right parameter box containing numeric inputs
-            div(
-              class = "parameter-box right-parameter-box",
-              # First row with HR/RR/OR and Increment inputs
-              fluidRow(
-                column(6, numericInput("co1_crf", i18n$t("HR/RR/OR"), 1.277, min = 0, step = 0.001, max = 5)),
-                column(6, numericInput("co1_incr", i18n$t("Increment (ppm)"), 10, min = 1, step = 1, max = 100))
-              ),
-              # Second row with L95%CI and U95%CI inputs
-              fluidRow(
-                column(6, numericInput("co1_l95", i18n$t("L95%CI"), 1.02612, min = 0, step = 0.001, max = 5)),
-                column(6, numericInput("co1_u95", i18n$t("U95%CI"), 1.5279, min = 0, step = 0.001, max = 5))
-              )
-            )
-          ),
-        ),
-        hr(),
-        h2(i18n$t("Toxics"), id = "toxics"),
-        p(i18n$t("This section provides reference concentrations for benzene, formaldehyde, and acetaldehyde."), class = "crf-description"),
-        tabindex = "0",
-        useShinyjs(),
-        createRestoreInstructions(i18n),
-        div(
-          id = "form3",
-          fluidRow(
-            column(4, actionButton("resetother1", i18n$t("Restore default values"), class = "btn-primary", tabindex = "0")),
-          ),
-          br(),
-          fluidRow(
-            column(
-              12,
-              p(i18n$t("\"DALYs\" refers to disability-adjusted life years."), )
-            )
-          ),
-          div(
-            class = "grid-linear mt-32",
-            div(
-              class = "parameter-box left-parameter-box",
-              div(
-                class = "form-group shiny-input-container",
-                tags$label(i18n$t("Source"), class = "control-label"),
-                p(i18n$t("Health Canada 2015")), # Updated source
-              ),
-              div(
-                class = "form-group",
-                tags$label(i18n$t("Pollutant"), class = "control-label"),
-                p(i18n$t("1,3-Butadiene")), # Updated pollutant
-                hidden(textInput("btname1", "Pollutant", value = i18n$t("1,3-Butadiene")))
-              ),
-              div(
-                class = "form-group",
-                tags$label(i18n$t("Outcome"), class = "control-label"),
-                p("Cancer"), # Updated outcome
-                hidden(textInput("btoutcome1", "Outcome", value = "Cancer"))
-              ),
-            ),
-            div(
-              class = "parameter-box right-parameter-box",
-              fluidRow(
-                column(12, numericInput("btiur", i18n$t("Inhalation unit risk per ug/m3"), 0.00000588, min = 0, step = 0.0000001, max = 0.00001)),
-                column(12, numericInput("btdaly", i18n$t("DALYs per case"), 13.7, min = 0, step = 0.1, max = 50)),
-              ),
-            ),
-          ),
-          div(
-            class = "grid-linear mt-32",
-            div(
-              class = "parameter-box left-parameter-box",
-              div(
-                class = "form-group shiny-input-container",
-                tags$label(i18n$t("Source"), class = "control-label"),
-                # Regression type information
-                p(i18n$t("Health Canada 2010")),
-              ),
-              div(
-                class = "form-group",
-                tags$label(i18n$t("Pollutant"), class = "control-label"),
-                # Source information
-                p(i18n$t("Benzene")),
-                hidden(textInput("bzname1", "Pollutant", value = i18n$t("Benzene")))
-              ),
-              div(
-                class = "form-group",
-                tags$label(i18n$t("Outcome"), class = "control-label"),
-                # Source information
-                p("Cancer"),
-                hidden(textInput("bzoutcome1", "Outcome", value = "Cancer"))
-              ),
-            ),
-            # Right parameter box containing numeric inputs
-            div(
-              class = "parameter-box right-parameter-box",
-              # First row with HR/RR/OR and Increment inputs
-              fluidRow(
-                column(12, numericInput("bziur", i18n$t("Inhalation unit risk per ug/m3"), 0.0000033, min = 0, step = 0.0000001, max = 0.00001)),
-                column(12, numericInput("bzdaly", i18n$t("DALYs per case"), 13.7, min = 0, step = 0.1, max = 50)),
-              ),
-            ),
-          ),
-          div(
-            class = "grid-linear mt-32",
-            div(
-              class = "parameter-box left-parameter-box",
-              div(
-                class = "form-group shiny-input-container",
-                tags$label(i18n$t("Source"), class = "control-label"),
-                p(i18n$t("California OEHHA 2016")), # Updated source
-              ),
-              div(
-                class = "form-group",
-                tags$label(i18n$t("Pollutant"), class = "control-label"),
-                p(i18n$t("Benzene")), # Updated pollutant
-                hidden(textInput("bzname2", "Pollutant", value = i18n$t("Benzene")))
-              ),
-              div(
-                class = "form-group",
-                tags$label(i18n$t("Outcome"), class = "control-label"),
-                p(i18n$t("Hematological")), # Updated outcome
-                hidden(textInput("bzoutcome2", "Outcome", value = i18n$t("Hematological")))
-              ),
-            ),
-            div(
-              class = "parameter-box right-parameter-box",
-              fluidRow(
-                column(12, numericInput("bzanrfc", i18n$t("Reference concentration (annual ug/m3)"), 3, min = 0, step = 1, max = 1000)),
-              ),
-            ),
-          ),
-          div(
-            class = "grid-linear mt-32",
-            div(
-              class = "parameter-box left-parameter-box",
-              div(
-                class = "form-group shiny-input-container",
-                tags$label(i18n$t("Source"), class = "control-label"),
-                p(i18n$t("Health Canada 2016a")), # Updated source
-              ),
-              div(
-                class = "form-group",
-                tags$label(i18n$t("Pollutant"), class = "control-label"),
-                p(i18n$t("Formaldehyde")), # Updated pollutant
-                hidden(textInput("fmname2", "Pollutant", value = i18n$t("Formaldehyde")))
-              ),
-              div(
-                class = "form-group",
-                tags$label(i18n$t("Outcome"), class = "control-label"),
-                p(i18n$t("Respiratory (asthma)")), # Updated outcome
-                hidden(textInput("fmoutcome2", "Outcome", value = i18n$t("Respiratory (asthma)")))
-              ),
-            ),
-            div(
-              class = "parameter-box right-parameter-box",
-              fluidRow(
-                column(12, numericInput("fmanrfc", i18n$t("Reference concentration (annual ug/m3)"), 50, min = 0, step = 1, max = 1000)),
-              ),
-            ),
-          ),
-          div(
-            class = "grid-linear mt-32",
-            div(
-              class = "parameter-box left-parameter-box",
-              div(
-                class = "form-group shiny-input-container",
-                tags$label(i18n$t("Source"), class = "control-label"),
-                p(i18n$t("Health Canada 2016b")), # Updated source
-              ),
-              div(
-                class = "form-group",
-                tags$label(i18n$t("Pollutant"), class = "control-label"),
-                p(i18n$t("Acetaldehyde")), # Updated pollutant
-                hidden(textInput("acname2", "Pollutant", value = i18n$t("Acetaldehyde")))
-              ),
-              div(
-                class = "form-group",
-                tags$label(i18n$t("Outcome"), class = "control-label"),
-                p(i18n$t("Respiratory (histological)")), # Updated outcome
-                hidden(textInput("acoutcome2", "Outcome", value = i18n$t("Respiratory (histological)")))
-              ),
-            ),
-            div(
-              class = "parameter-box right-parameter-box",
-              fluidRow(
-                column(12, numericInput("acanrfc", i18n$t("Reference concentration (annual ug/m3)"), 280, min = 0, step = 1, max = 1000)),
-              ),
-            ),
-          ),
-        ), # div3
-        hr(),
-        h2(i18n$t("Other parameters"), id = "other"),
-        p(i18n$t("This section lists the:"), class = "crf-description"),
-        tags$ul(
-          tags$li(i18n$t("prevalence of asthma for those aged < 20 years (default is 17.7%)")),
-          tags$li(i18n$t("numbers of iterations to be used for Monte Carlo simulations (default is 10,000 for simulation iterations)")),
-        ),
-        fluidRow(
-          column(
-            12,
-            p(i18n$t("You may edit and use your own values."))
-          )
-        ),
-        createRestoreInstructions(i18n),
-        fluidRow(
-          column(4, actionButton("resetall3", i18n$t("Restore default values"), class = "btn-primary", tabindex = "0")),
-        ),
-        br(),
-        useShinyjs(),
-        div(
-          id = "form4",
-          class = "parameter-box",
-          style = "margin-bottom: 32px;",
-          fluidRow(
-            column(6, numericInput("asprev", i18n$t("Prevalence of asthma (age < 20 years)"), 17.7, min = 1, step = 1, max = 25, width = "100%")),
-            column(6, numericInput("itn", i18n$t("Iterations"), 10000, min = 1, step = 100, max = 15000, width = "100%")),
-            textOutput("pasthma"),
-          )
-        ), # div4
-      ),
-      tabPanel(
-        i18n$t("Valuation"),
-        value = i18n$t("valuation"),
-        createStepUI(i18n, stepNumber = 2, totalSteps = 4, progressMax = 4),
-        p(i18n$t("Review the economic valuation estimates. The default values provided below are Health Canada-endorsed economic valuation estimates to support the health impact assessment of air pollution. Change them as needed for your scenario by entering your desired values.")),
-        # actionLink("link_instruction5", "Click here to view details about the 'CRFs' tab under the 'Instructions'."),
-        # br(),
-        tags$h3(HTML(i18n$t("About valuation estimates"))),
-        p(i18n$t("These values are economic welfare values. AQBAT provides economic valuation estimates that consider the potential welfare impacts associated with treatment costs, lost productivity, pain and suffering, and the impacts of increased mortality risk. The page displays corresponding economic values associated with health risks identified by AQBAT."), class = ""),
-        HTML(i18n$t("Currency year ranges from 2010 to 2023. To learn more about the sources included in this page, please refer to the <a id='references-link' class='internal-link' data-target='references' href='javascript:void(0)'>references</a>.")),
-        br(),
-        br(),
-        # Discount rate
-        # actionLink("link_instruction3", "Click here to view details about the 'Valuation' tab under the 'Instructions'."),
-        # hr(),
-        p(i18n$t("Click \"Restore default values\" to restore the values of each cell back to its preset (the values that show up automatically when the website first loads). Default values are restored in this tab only.")),
-        useShinyjs(),
-        div(
-          id = "formval",
-          style = "margin-top: 20px;",
-          fluidRow(
-            column(3, actionButton("resetval", i18n$t("Restore default values"), class = "btn-primary")),
-            column(3, numericInput("curr", i18n$t("Currency year"), 2016, min = 2010, step = 1, max = 2023)),
-            column(3, numericInput("baseyr", i18n$t("Base year"), 2016, min = 1990, step = 1, max = 2023)),
-            column(3, numericInput("discountrate", i18n$t("Discount rate (%)"), 0, min = 0, step = 1, max = 30)),
-            textOutput("curryear")
-          ),
-          div(
-            class = "grid-discrete",
-            h3(strong(i18n$t("Mortality valuation")), class = "grid-heading"),
-            div(
-              class = "parameter-box left-parameter-box",
-              column(
-                12,
-                div(
-                  class = "",
-                  tags$label(i18n$t("Source"), class = "control-label"),
-                  p(i18n$t("Chestnut and DeCivita 2009")),
-                ),
-              ),
-              column(12, textInput("vslyr", i18n$t("Source year"), value = "2007")),
-              # column(3, textInput("vslfm", i18n$t("Estimate form"), c("discrete"))),
-              column(
-                12,
-                div(
-                  class = "form-group shiny-input-container",
-                  tags$label(i18n$t("Estimate form"), class = "control-label"),
-                  p(i18n$t("Discrete")),
-                  hidden(selectInput("vslfm", NULL, c(i18n$t("discrete")), selected = i18n$t("discrete")))
-                ),
-              ),
-            ),
-            div(
-              class = "parameter-box center-parameter-box",
-              column(12, numericInput("vsl", i18n$t("Central ($million)"), 6.5, min = 1, step = 0.5, max = 100)),
-              column(12, numericInput("lvsl", i18n$t("Low ($million)"), 3.5, min = 0.5, step = 0.5, max = 100)),
-              column(12, numericInput("uvsl", i18n$t("High ($million)"), 9.5, min = 7, step = 0.5, max = 100)),
-            ),
-            div(
-              class = "parameter-box right-parameter-box",
-              column(12, numericInput("pcvsl", i18n$t("Probability central"), 0.5, min = 0.1, step = 0.1, max = 1)),
-              column(12, numericInput("plvsl", i18n$t("Probability low"), 0.25, min = 0.1, step = 0.1, max = 0.9)),
-            ),
-          ),
-          # Acute Respiratory Symptom Days$
-          div(
-            class = "grid-normal",
-            h3(strong(i18n$t("Acute respiratory symptom days valuation")), class = "grid-heading"),
-            div(
-              class = "parameter-box left-parameter-box",
-              column(
-                12,
-                div(
-                  class = "",
-                  tags$label(i18n$t("Source"), class = "control-label"),
-                  p(i18n$t("Stieb et al. 2002")),
-                ),
-              ),
-              column(12, textInput("vsl2yr", i18n$t("Source year"), value = "1997")),
-              # column(3, selectInput("vsl2fm", i18n$t("Estimate form"), c("normal"))),
-              column(
-                12,
-                div(
-                  class = "form-group shiny-input-container",
-                  tags$label(i18n$t("Estimate form"), class = "control-label"),
-                  p(i18n$t("Normal")),
-                  hidden(selectInput("vsl2fm", NULL, c(i18n$t("normal")), selected = i18n$t("normal")))
-                )
-              ),
-            ),
-            div(
-              class = "parameter-box right-parameter-box",
-              column(12, numericInput("vsl2", i18n$t("Mean ($)"), 13, min = 1, step = 0.5, max = 100)),
-              column(12, numericInput("lvsl2", i18n$t("Standard error"), 7, min = 0, step = 0.5, max = 100))
-            ),
-          ),
-          # Adult Chronic Bronchitis Cases$
-          div(
-            class = "grid-discrete",
-            h3(strong(i18n$t("Adult chronic bronchitis cases valuation")), class = "grid-heading"),
-            div(
-              class = "parameter-box left-parameter-box",
-              column(
-                12,
-                div(
-                  class = "",
-                  tags$label(i18n$t("Source"), class = "control-label"),
-                  p(i18n$t("Krupnick and Cropper 1992; Viscusi et al. 1991")),
-                ),
-              ),
-              column(12, textInput("vsl3yr", i18n$t("Source year"), value = "1996")),
-              # column(3, selectInput("vsl3fm", i18n$t("Estimate form"), c("discrete"))),
-              column(
-                12,
-                div(
-                  class = "form-group shiny-input-container",
-                  tags$label(i18n$t("Estimate form"), class = "control-label"),
-                  p(i18n$t("Discrete")),
-                  hidden(selectInput("vsl3fm", NULL, c(i18n$t("discrete")), selected = i18n$t("discrete")))
-                )
-              ),
-            ),
-            div(
-              class = "parameter-box center-parameter-box",
-              column(12, numericInput("vsl3", i18n$t("Central ($1000)"), 266, min = 1, step = 0.5, max = 1000)),
-              column(12, numericInput("lvsl3", i18n$t("Low ($1000)"), 175, min = 0.5, step = 0.5, max = 1000)),
-              column(12, numericInput("uvsl3", i18n$t("High ($1000)"), 465, min = 7, step = 0.5, max = 1000)),
-            ),
-            div(
-              class = "parameter-box right-parameter-box",
-              column(12, numericInput("pcvsl3", i18n$t("Probability central"), 0.34, min = 0.1, step = 0.1, max = 1)),
-              column(12, numericInput("plvsl3", i18n$t("Probability low"), 0.33, min = 0.1, step = 0.1, max = 0.9)),
-            ),
-          ),
-          # Asthma Symptom Days $
-          div(
-            class = "grid-normal",
-            h3(strong(i18n$t("Asthma symptom days valuation")), class = "grid-heading"),
-            div(
-              class = "parameter-box left-parameter-box",
-              column(
-                12,
-                div(
-                  class = "",
-                  tags$label(i18n$t("Source"), class = "control-label"),
-                  p(i18n$t("Stieb et al. 2002")),
-                ),
-              ),
-              column(12, textInput("sourcevsl4b", i18n$t("Source year"), value = "1997")),
-              # column(3, selectInput("sourcevsl4c", i18n$t("Estimate form"), c("triangular"))),
-              column(
-                12,
-                div(
-                  class = "form-group shiny-input-container",
-                  tags$label(i18n$t("Estimate form"), class = "control-label"),
-                  p(i18n$t("Triangular")),
-                  hidden(selectInput("sourcevsl4c", NULL, c(i18n$t("triangular")), selected = i18n$t("triangular")))
-                )
-              ),
-            ),
-            div(
-              class = "parameter-box right-parameter-box",
-              column(12, numericInput("vsl4", i18n$t("Likely ($)"), 28, min = 1, step = 0.5, max = 100)),
-              column(12, numericInput("lvsl4", "Min ($)", 7, min = 0.5, step = 0.5, max = 100)),
-              column(12, numericInput("uvsl4", "Max ($)", 120, min = 7, step = 0.5, max = 300)),
-            ),
-          ),
-          div(
-            class = "grid-normal",
-            h3(strong(i18n$t("Cardiac emergency room visits valuation")), class = "grid-heading"),
-            div(
-              class = "parameter-box left-parameter-box",
-              column(
-                12,
-                div(
-                  class = "",
-                  tags$label(i18n$t("Source"), class = "control-label"),
-                  p(i18n$t("Stieb et al. 2002")),
-                ),
-              ),
-              column(12, textInput("sourcevsl5b", i18n$t("Source year"), value = "1997")),
-              # column(3, selectInput("sourcevsl5c", i18n$t("Estimate form"), c("normal"))),
-              column(
-                12,
-                div(
-                  class = "form-group shiny-input-container",
-                  tags$label(i18n$t("Estimate form"), class = "control-label"),
-                  p(i18n$t("Normal")),
-                  hidden(selectInput("sourcevsl5c", NULL, c(i18n$t("normal")), selected = i18n$t("normal")))
-                )
-              ),
-            ),
-            div(
-              class = "parameter-box right-parameter-box",
-              column(12, numericInput("vsl5", i18n$t("Mean ($)"), 4400, min = 1, step = 0.5, max = 10000)),
-              column(12, numericInput("lvsl5", i18n$t("Standard error"), 590, min = 0.5, step = 0.5, max = 10000)),
-            ),
-          ),
-          # hr(),
-          # Child Acute Bronchitis Episodes$
-          div(
-            class = "grid-discrete",
-            h3(strong(i18n$t("Child acute bronchitis episodes valuation")), class = "grid-heading"),
-            div(
-              class = "parameter-box left-parameter-box",
-              column(
-                12,
-                div(
-                  class = "",
-                  tags$label(i18n$t("Source"), class = "control-label"),
-                  p(i18n$t("Krupnick and Cropper 1989")),
-                ),
-              ),
-              column(12, textInput("sourcevsl6b", i18n$t("Source year"), value = "1996")),
-              # column(3, selectInput("sourcevsl6c", i18n$t("Estimate form"), c("discrete"))),
-              column(
-                12,
-                div(
-                  class = "form-group shiny-input-container",
-                  tags$label(i18n$t("Estimate form"), class = "control-label"),
-                  p(i18n$t("Discrete")),
-                  hidden(selectInput("sourcevsl6c", NULL, c(i18n$t("discrete")), selected = i18n$t("discrete")))
-                )
-              ),
-            ),
-            div(
-              class = "parameter-box center-parameter-box",
-              column(12, numericInput("vsl6", i18n$t("Central ($)"), 310, min = 1, step = 0.5, max = 1000)),
-              column(12, numericInput("lvsl6", i18n$t("Low ($)"), 150, min = 0.5, step = 0.5, max = 1000)),
-              column(12, numericInput("uvsl6", i18n$t("High ($)"), 460, min = 7, step = 0.5, max = 1000)),
-            ),
-            div(
-              class = "parameter-box center-parameter-box",
-              column(12, numericInput("pcvsl6", i18n$t("Probability central"), 0.34, min = 0.1, step = 0.1, max = 1)),
-              column(12, numericInput("plvsl6", i18n$t("Probability low"), 0.33, min = 0.1, step = 0.1, max = 0.9))
-            ),
-          ),
-          # Elderly Cardiac Hospital Admissions $
-          div(
-            class = "grid-normal",
-            h3(strong(i18n$t("Elderly cardiac hospital admissions valuation")), class = "grid-heading"),
-            div(
-              class = "parameter-box left-parameter-box",
-              column(
-                12,
-                div(
-                  class = "",
-                  tags$label(i18n$t("Source"), class = "control-label"),
-                  p(i18n$t("Stieb et al. 2002")),
-                ),
-              ),
-              column(12, textInput("sourcevsl7b", i18n$t("Source year"), value = "1997")),
-              # column(3, selectInput("sourcevsl7c", i18n$t("Estimate form"), c("normal"))),
-              column(
-                12,
-                div(
-                  class = "form-group shiny-input-container",
-                  tags$label(i18n$t("Estimate form"), class = "control-label"),
-                  p(i18n$t("Normal")),
-                  hidden(selectInput("sourcevsl7c", NULL, c(i18n$t("normal")), selected = i18n$t("normal")))
-                )
-              ),
-            ),
-            div(
-              class = "parameter-box right-parameter-box",
-              column(12, numericInput("vsl7", i18n$t("Mean ($)"), 5200, min = 1, step = 5, max = 10000)),
-              column(12, numericInput("lvsl7", i18n$t("Standard error"), 610, min = 5, step = 5, max = 10000))
-            )
-          ),
-          # hr(),
-          # Minor Restricted Activity Days$
-          div(
-            class = "grid-normal",
-            h3(strong(i18n$t("Minor restricted activity days valuation")), class = "grid-heading"),
-            div(
-              class = "parameter-box left-parameter-box",
-              column(
-                12,
-                div(
-                  class = "",
-                  tags$label(i18n$t("Source"), class = "control-label"),
-                  p(i18n$t("Stieb et al. 2002")),
-                ),
-              ),
-              column(12, textInput("sourcevsl8b", i18n$t("Source year"), value = "1997")),
-              # column(3, selectInput("sourcevsl8c", i18n$t("Estimate form"), c("normal"))),
-              column(
-                12,
-                div(
-                  class = "form-group shiny-input-container",
-                  tags$label(i18n$t("Estimate form"), class = "control-label"),
-                  p(i18n$t("Normal")),
-                  hidden(selectInput("sourcevsl8c", NULL, c(i18n$t("normal")), selected = i18n$t("normal")))
-                )
-              ),
-            ),
-            div(
-              class = "parameter-box right-parameter-box",
-              column(12, numericInput("vsl8", i18n$t("Mean ($)"), 22, min = 1, step = 5, max = 1000)),
-              column(12, numericInput("lvsl8", i18n$t("Standard error"), 9, min = 5, step = 5, max = 1000))
-            ),
-          ),
-          # hr(),
-          # Respiratory Emergency Room Visits$
-          div(
-            class = "grid-normal",
-            h3(strong(i18n$t("Respiratory emergency room visits valuation")), class = "grid-heading"),
-            div(
-              class = "parameter-box left-parameter-box",
-              column(
-                12,
-                div(
-                  class = "",
-                  tags$label(i18n$t("Source"), class = "control-label"),
-                  p(i18n$t("Stieb et al. 2002")),
-                ),
-              ),
-              column(12, textInput("sourcevsl9b", i18n$t("Source year"), value = "1997")),
-              # column(3, selectInput("sourcevsl9c", i18n$t("Estimate form"), c(i18n$t("normal")))),
-              column(
-                12,
-                div(
-                  class = "form-group shiny-input-container",
-                  tags$label(i18n$t("Estimate form"), class = "control-label"),
-                  p(i18n$t("Normal")),
-                  hidden(selectInput("sourcevsl9c", NULL, c(i18n$t("normal")), selected = i18n$t("normal")))
-                )
-              ),
-            ),
-            div(
-              class = "parameter-box right-parameter-box",
-              column(12, numericInput("vsl9", i18n$t("Mean ($)"), 2000, min = 10, step = 5, max = 10000)),
-              column(12, numericInput("lvsl9", i18n$t("Standard error"), 210, min = 5, step = 5, max = 10000))
-            ),
-          ),
-          # hr(),
-          div(
-            class = "grid-normal",
-            h3(strong(i18n$t("Restricted activity days valuation")), class = "grid-heading"),
-            div(
-              class = "parameter-box left-parameter-box",
-              column(
-                12,
-                div(
-                  class = "",
-                  tags$label(i18n$t("Source"), class = "control-label"),
-                  p(i18n$t("Stieb et al. 2002")),
-                ),
-              ),
-              column(12, textInput("sourcevsl10b", i18n$t("Source year"), value = "1997")),
-              column(
-                12,
-                div(
-                  class = "form-group shiny-input-container",
-                  tags$label(i18n$t("Estimate form"), class = "control-label"),
-                  p(i18n$t("Normal")),
-                  hidden(selectInput("sourcevsl10c", NULL, c(i18n$t("normal")), selected = i18n$t("normal")))
-                )
-              ),
-            ),
-            div(
-              class = "parameter-box right-parameter-box",
-              column(12, numericInput("vsl10", i18n$t("Mean ($)"), 48, min = 1, step = 5, max = 1000)),
-              column(12, numericInput("lvsl10", i18n$t("Standard error"), 18, min = 5, step = 5, max = 1000))
-            ),
           ), # div4
-        )
-      ),
-      tabPanel(
-        i18n$t("Pollutant data upload"),
-        value = i18n$t("pollutant-data-upload"),
-        createStepUI(i18n, stepNumber = 3, totalSteps = 4, progressMax = 4),
-        p(i18n$t("Upload your pollutant data by clicking \"Upload\" to browse your file system and select files. A preview of your upload will appear below.")),
-        p(i18n$t("Your uploaded data is temporary and will not be saved for future visits or stored on your device.")),
-        p(i18n$t("Only CSV files are supported. UTF-8 encoding is recommended.")),
-        div(
-          tags$section(
-            id = "dataUploadedInfo",
-            style = "margin-bottom: 0",
-            role = "alert",
-            class = "alert alert-info hidden",
-            tags$h3(id = "dataUploadedHeader", i18n$t("Sample data has been uploaded")), # Header for dynamic content
-            p(id = "dataUploadedInstruction", i18n$t('To upload new data, please click \"Clear all data and restart\".')) # Instruction text
+        ),
+        tabPanel(
+          i18n$t("Valuation"),
+          value = i18n$t("valuation"),
+          createStepUI(i18n, stepNumber = 2, totalSteps = 4, progressMax = 4),
+          p(i18n$t("Review the economic valuation estimates. The default values provided below are Health Canada-endorsed economic valuation estimates to support the health impact assessment of air pollution. Change them as needed for your scenario by entering your desired values.")),
+          # actionLink("link_instruction5", "Click here to view details about the 'CRFs' tab under the 'Instructions'."),
+          # br(),
+          tags$h3(HTML(i18n$t("About valuation estimates"))),
+          p(i18n$t("These values are economic welfare values. AQBAT provides economic valuation estimates that consider the potential welfare impacts associated with treatment costs, lost productivity, pain and suffering, and the impacts of increased mortality risk. The page displays corresponding economic values associated with health risks identified by AQBAT."), class = ""),
+          HTML(i18n$t("Currency year ranges from 2010 to 2023. To learn more about the sources included in this page, please refer to the <a id='references-link' class='internal-link' data-target='references' href='javascript:void(0)'>references</a>.")),
+          br(),
+          br(),
+          # Discount rate
+          # actionLink("link_instruction3", "Click here to view details about the 'Valuation' tab under the 'Instructions'."),
+          # hr(),
+          p(i18n$t("Click \"Restore default values\" to restore the values of each cell back to its preset (the values that show up automatically when the website first loads). Default values are restored in this tab only.")),
+          useShinyjs(),
+          div(
+            id = "formval",
+            style = "margin-top: 20px;",
+            fluidRow(
+              column(3, actionButton("resetval", i18n$t("Restore default values"), class = "btn-primary")),
+              column(3, numericInput("curr", i18n$t("Currency year"), 2016, min = 2010, step = 1, max = 2023)),
+              column(3, numericInput("baseyr", i18n$t("Base year"), 2016, min = 1990, step = 1, max = 2023)),
+              column(3, numericInput("discountrate", i18n$t("Discount rate (%)"), 0, min = 0, step = 1, max = 30)),
+              textOutput("curryear")
+            ),
+            div(
+              class = "grid-discrete",
+              h3(strong(i18n$t("Mortality valuation")), class = "grid-heading"),
+              div(
+                class = "parameter-box left-parameter-box",
+                column(
+                  12,
+                  div(
+                    class = "",
+                    tags$label(i18n$t("Source"), class = "control-label"),
+                    p(i18n$t("Chestnut and DeCivita 2009")),
+                  ),
+                ),
+                column(12, textInput("vslyr", i18n$t("Source year"), value = "2007")),
+                # column(3, textInput("vslfm", i18n$t("Estimate form"), c("discrete"))),
+                column(
+                  12,
+                  div(
+                    class = "form-group shiny-input-container",
+                    tags$label(i18n$t("Estimate form"), class = "control-label"),
+                    p(i18n$t("Discrete")),
+                    hidden(selectInput("vslfm", NULL, c(i18n$t("discrete")), selected = i18n$t("discrete")))
+                  ),
+                ),
+              ),
+              div(
+                class = "parameter-box center-parameter-box",
+                column(12, numericInput("vsl", i18n$t("Central ($million)"), 6.5, min = 1, step = 0.5, max = 100)),
+                column(12, numericInput("lvsl", i18n$t("Low ($million)"), 3.5, min = 0.5, step = 0.5, max = 100)),
+                column(12, numericInput("uvsl", i18n$t("High ($million)"), 9.5, min = 7, step = 0.5, max = 100)),
+              ),
+              div(
+                class = "parameter-box right-parameter-box",
+                column(12, numericInput("pcvsl", i18n$t("Probability central"), 0.5, min = 0.1, step = 0.1, max = 1)),
+                column(12, numericInput("plvsl", i18n$t("Probability low"), 0.25, min = 0.1, step = 0.1, max = 0.9)),
+              ),
+            ),
+            # Acute Respiratory Symptom Days$
+            div(
+              class = "grid-normal",
+              h3(strong(i18n$t("Acute respiratory symptom days valuation")), class = "grid-heading"),
+              div(
+                class = "parameter-box left-parameter-box",
+                column(
+                  12,
+                  div(
+                    class = "",
+                    tags$label(i18n$t("Source"), class = "control-label"),
+                    p(i18n$t("Stieb et al. 2002")),
+                  ),
+                ),
+                column(12, textInput("vsl2yr", i18n$t("Source year"), value = "1997")),
+                # column(3, selectInput("vsl2fm", i18n$t("Estimate form"), c("normal"))),
+                column(
+                  12,
+                  div(
+                    class = "form-group shiny-input-container",
+                    tags$label(i18n$t("Estimate form"), class = "control-label"),
+                    p(i18n$t("Normal")),
+                    hidden(selectInput("vsl2fm", NULL, c(i18n$t("normal")), selected = i18n$t("normal")))
+                  )
+                ),
+              ),
+              div(
+                class = "parameter-box right-parameter-box",
+                column(12, numericInput("vsl2", i18n$t("Mean ($)"), 13, min = 1, step = 0.5, max = 100)),
+                column(12, numericInput("lvsl2", i18n$t("Standard error"), 7, min = 0, step = 0.5, max = 100))
+              ),
+            ),
+            # Adult Chronic Bronchitis Cases$
+            div(
+              class = "grid-discrete",
+              h3(strong(i18n$t("Adult chronic bronchitis cases valuation")), class = "grid-heading"),
+              div(
+                class = "parameter-box left-parameter-box",
+                column(
+                  12,
+                  div(
+                    class = "",
+                    tags$label(i18n$t("Source"), class = "control-label"),
+                    p(i18n$t("Krupnick and Cropper 1992; Viscusi et al. 1991")),
+                  ),
+                ),
+                column(12, textInput("vsl3yr", i18n$t("Source year"), value = "1996")),
+                # column(3, selectInput("vsl3fm", i18n$t("Estimate form"), c("discrete"))),
+                column(
+                  12,
+                  div(
+                    class = "form-group shiny-input-container",
+                    tags$label(i18n$t("Estimate form"), class = "control-label"),
+                    p(i18n$t("Discrete")),
+                    hidden(selectInput("vsl3fm", NULL, c(i18n$t("discrete")), selected = i18n$t("discrete")))
+                  )
+                ),
+              ),
+              div(
+                class = "parameter-box center-parameter-box",
+                column(12, numericInput("vsl3", i18n$t("Central ($1000)"), 266, min = 1, step = 0.5, max = 1000)),
+                column(12, numericInput("lvsl3", i18n$t("Low ($1000)"), 175, min = 0.5, step = 0.5, max = 1000)),
+                column(12, numericInput("uvsl3", i18n$t("High ($1000)"), 465, min = 7, step = 0.5, max = 1000)),
+              ),
+              div(
+                class = "parameter-box right-parameter-box",
+                column(12, numericInput("pcvsl3", i18n$t("Probability central"), 0.34, min = 0.1, step = 0.1, max = 1)),
+                column(12, numericInput("plvsl3", i18n$t("Probability low"), 0.33, min = 0.1, step = 0.1, max = 0.9)),
+              ),
+            ),
+            # Asthma Symptom Days $
+            div(
+              class = "grid-normal",
+              h3(strong(i18n$t("Asthma symptom days valuation")), class = "grid-heading"),
+              div(
+                class = "parameter-box left-parameter-box",
+                column(
+                  12,
+                  div(
+                    class = "",
+                    tags$label(i18n$t("Source"), class = "control-label"),
+                    p(i18n$t("Stieb et al. 2002")),
+                  ),
+                ),
+                column(12, textInput("sourcevsl4b", i18n$t("Source year"), value = "1997")),
+                # column(3, selectInput("sourcevsl4c", i18n$t("Estimate form"), c("triangular"))),
+                column(
+                  12,
+                  div(
+                    class = "form-group shiny-input-container",
+                    tags$label(i18n$t("Estimate form"), class = "control-label"),
+                    p(i18n$t("Triangular")),
+                    hidden(selectInput("sourcevsl4c", NULL, c(i18n$t("triangular")), selected = i18n$t("triangular")))
+                  )
+                ),
+              ),
+              div(
+                class = "parameter-box right-parameter-box",
+                column(12, numericInput("vsl4", i18n$t("Likely ($)"), 28, min = 1, step = 0.5, max = 100)),
+                column(12, numericInput("lvsl4", "Min ($)", 7, min = 0.5, step = 0.5, max = 100)),
+                column(12, numericInput("uvsl4", "Max ($)", 120, min = 7, step = 0.5, max = 300)),
+              ),
+            ),
+            div(
+              class = "grid-normal",
+              h3(strong(i18n$t("Cardiac emergency room visits valuation")), class = "grid-heading"),
+              div(
+                class = "parameter-box left-parameter-box",
+                column(
+                  12,
+                  div(
+                    class = "",
+                    tags$label(i18n$t("Source"), class = "control-label"),
+                    p(i18n$t("Stieb et al. 2002")),
+                  ),
+                ),
+                column(12, textInput("sourcevsl5b", i18n$t("Source year"), value = "1997")),
+                # column(3, selectInput("sourcevsl5c", i18n$t("Estimate form"), c("normal"))),
+                column(
+                  12,
+                  div(
+                    class = "form-group shiny-input-container",
+                    tags$label(i18n$t("Estimate form"), class = "control-label"),
+                    p(i18n$t("Normal")),
+                    hidden(selectInput("sourcevsl5c", NULL, c(i18n$t("normal")), selected = i18n$t("normal")))
+                  )
+                ),
+              ),
+              div(
+                class = "parameter-box right-parameter-box",
+                column(12, numericInput("vsl5", i18n$t("Mean ($)"), 4400, min = 1, step = 0.5, max = 10000)),
+                column(12, numericInput("lvsl5", i18n$t("Standard error"), 590, min = 0.5, step = 0.5, max = 10000)),
+              ),
+            ),
+            # hr(),
+            # Child Acute Bronchitis Episodes$
+            div(
+              class = "grid-discrete",
+              h3(strong(i18n$t("Child acute bronchitis episodes valuation")), class = "grid-heading"),
+              div(
+                class = "parameter-box left-parameter-box",
+                column(
+                  12,
+                  div(
+                    class = "",
+                    tags$label(i18n$t("Source"), class = "control-label"),
+                    p(i18n$t("Krupnick and Cropper 1989")),
+                  ),
+                ),
+                column(12, textInput("sourcevsl6b", i18n$t("Source year"), value = "1996")),
+                # column(3, selectInput("sourcevsl6c", i18n$t("Estimate form"), c("discrete"))),
+                column(
+                  12,
+                  div(
+                    class = "form-group shiny-input-container",
+                    tags$label(i18n$t("Estimate form"), class = "control-label"),
+                    p(i18n$t("Discrete")),
+                    hidden(selectInput("sourcevsl6c", NULL, c(i18n$t("discrete")), selected = i18n$t("discrete")))
+                  )
+                ),
+              ),
+              div(
+                class = "parameter-box center-parameter-box",
+                column(12, numericInput("vsl6", i18n$t("Central ($)"), 310, min = 1, step = 0.5, max = 1000)),
+                column(12, numericInput("lvsl6", i18n$t("Low ($)"), 150, min = 0.5, step = 0.5, max = 1000)),
+                column(12, numericInput("uvsl6", i18n$t("High ($)"), 460, min = 7, step = 0.5, max = 1000)),
+              ),
+              div(
+                class = "parameter-box center-parameter-box",
+                column(12, numericInput("pcvsl6", i18n$t("Probability central"), 0.34, min = 0.1, step = 0.1, max = 1)),
+                column(12, numericInput("plvsl6", i18n$t("Probability low"), 0.33, min = 0.1, step = 0.1, max = 0.9))
+              ),
+            ),
+            # Elderly Cardiac Hospital Admissions $
+            div(
+              class = "grid-normal",
+              h3(strong(i18n$t("Elderly cardiac hospital admissions valuation")), class = "grid-heading"),
+              div(
+                class = "parameter-box left-parameter-box",
+                column(
+                  12,
+                  div(
+                    class = "",
+                    tags$label(i18n$t("Source"), class = "control-label"),
+                    p(i18n$t("Stieb et al. 2002")),
+                  ),
+                ),
+                column(12, textInput("sourcevsl7b", i18n$t("Source year"), value = "1997")),
+                # column(3, selectInput("sourcevsl7c", i18n$t("Estimate form"), c("normal"))),
+                column(
+                  12,
+                  div(
+                    class = "form-group shiny-input-container",
+                    tags$label(i18n$t("Estimate form"), class = "control-label"),
+                    p(i18n$t("Normal")),
+                    hidden(selectInput("sourcevsl7c", NULL, c(i18n$t("normal")), selected = i18n$t("normal")))
+                  )
+                ),
+              ),
+              div(
+                class = "parameter-box right-parameter-box",
+                column(12, numericInput("vsl7", i18n$t("Mean ($)"), 5200, min = 1, step = 5, max = 10000)),
+                column(12, numericInput("lvsl7", i18n$t("Standard error"), 610, min = 5, step = 5, max = 10000))
+              )
+            ),
+            # hr(),
+            # Minor Restricted Activity Days$
+            div(
+              class = "grid-normal",
+              h3(strong(i18n$t("Minor restricted activity days valuation")), class = "grid-heading"),
+              div(
+                class = "parameter-box left-parameter-box",
+                column(
+                  12,
+                  div(
+                    class = "",
+                    tags$label(i18n$t("Source"), class = "control-label"),
+                    p(i18n$t("Stieb et al. 2002")),
+                  ),
+                ),
+                column(12, textInput("sourcevsl8b", i18n$t("Source year"), value = "1997")),
+                # column(3, selectInput("sourcevsl8c", i18n$t("Estimate form"), c("normal"))),
+                column(
+                  12,
+                  div(
+                    class = "form-group shiny-input-container",
+                    tags$label(i18n$t("Estimate form"), class = "control-label"),
+                    p(i18n$t("Normal")),
+                    hidden(selectInput("sourcevsl8c", NULL, c(i18n$t("normal")), selected = i18n$t("normal")))
+                  )
+                ),
+              ),
+              div(
+                class = "parameter-box right-parameter-box",
+                column(12, numericInput("vsl8", i18n$t("Mean ($)"), 22, min = 1, step = 5, max = 1000)),
+                column(12, numericInput("lvsl8", i18n$t("Standard error"), 9, min = 5, step = 5, max = 1000))
+              ),
+            ),
+            # hr(),
+            # Respiratory Emergency Room Visits$
+            div(
+              class = "grid-normal",
+              h3(strong(i18n$t("Respiratory emergency room visits valuation")), class = "grid-heading"),
+              div(
+                class = "parameter-box left-parameter-box",
+                column(
+                  12,
+                  div(
+                    class = "",
+                    tags$label(i18n$t("Source"), class = "control-label"),
+                    p(i18n$t("Stieb et al. 2002")),
+                  ),
+                ),
+                column(12, textInput("sourcevsl9b", i18n$t("Source year"), value = "1997")),
+                # column(3, selectInput("sourcevsl9c", i18n$t("Estimate form"), c(i18n$t("normal")))),
+                column(
+                  12,
+                  div(
+                    class = "form-group shiny-input-container",
+                    tags$label(i18n$t("Estimate form"), class = "control-label"),
+                    p(i18n$t("Normal")),
+                    hidden(selectInput("sourcevsl9c", NULL, c(i18n$t("normal")), selected = i18n$t("normal")))
+                  )
+                ),
+              ),
+              div(
+                class = "parameter-box right-parameter-box",
+                column(12, numericInput("vsl9", i18n$t("Mean ($)"), 2000, min = 10, step = 5, max = 10000)),
+                column(12, numericInput("lvsl9", i18n$t("Standard error"), 210, min = 5, step = 5, max = 10000))
+              ),
+            ),
+            # hr(),
+            div(
+              class = "grid-normal",
+              h3(strong(i18n$t("Restricted activity days valuation")), class = "grid-heading"),
+              div(
+                class = "parameter-box left-parameter-box",
+                column(
+                  12,
+                  div(
+                    class = "",
+                    tags$label(i18n$t("Source"), class = "control-label"),
+                    p(i18n$t("Stieb et al. 2002")),
+                  ),
+                ),
+                column(12, textInput("sourcevsl10b", i18n$t("Source year"), value = "1997")),
+                column(
+                  12,
+                  div(
+                    class = "form-group shiny-input-container",
+                    tags$label(i18n$t("Estimate form"), class = "control-label"),
+                    p(i18n$t("Normal")),
+                    hidden(selectInput("sourcevsl10c", NULL, c(i18n$t("normal")), selected = i18n$t("normal")))
+                  )
+                ),
+              ),
+              div(
+                class = "parameter-box right-parameter-box",
+                column(12, numericInput("vsl10", i18n$t("Mean ($)"), 48, min = 1, step = 5, max = 1000)),
+                column(12, numericInput("lvsl10", i18n$t("Standard error"), 18, min = 5, step = 5, max = 1000))
+              ),
+            ), # div4
           )
         ),
-        fileInput("pollutants", label = "", accept = c(".csv", ".tsv"), multiple = TRUE, width = "350px"),
-        textOutput("message1"),
-        h3(i18n$t("Preview of the uploaded data"), id = "data-preview", class = "hidden"),
-        tableOutput("dataPreviewTable"),
-        p(i18n$t("If you have previously uploaded data (including the sample data), please clear all data and restart the app before uploading new pollutant data. You will return to the \"CRFs\" tab of the website. Data in all tabs in and results will be reset to defaults.")),
-        createClearDataButton("upload", i18n),
-        h3(i18n$t("Instructions for new users")),
-        p(i18n$t("Pollutant concentrations are annual averages of daily values (24 hours), except for O3 and summer O3 (May to September), which use daily 1-hour maximum averages for the annual and summer periods, respectively. CO includes both annual daily averages and daily 1-hour maximum averages."), class = ""),
-        p(i18n$t("Before using AQBAT, you need to prepare your pollutant data so you can upload it onto the tool. We provide a sample file you can use to help structure your data for upload. It includes sample air quality data for PM2.5, O3, and NO2 for 2016. These data were derived from multiple national sources and mapped to 293 census divisions in Canada. We use data from the sample file if you do not input your own data."), class = ""),
-        if (lang == "fr") {
-          downloadButton("xsample_fr", i18n$t("Download sample input file"), class = "btn-primary")
-        } else {
-          downloadButton("xsample_en", i18n$t("Download sample input file"), class = "btn-primary")
-        },
-        br(),
-        br(),
-        p(i18n$t("Please ensure that the formatting of your data matches the sample data provided. The following variables are included in the sample data:")),
-        tags$div(
-          tags$ul(
-            tags$li(i18n$t("year (2001-2063)")),
-            tags$li(i18n$t("scenario")),
-            tags$li(i18n$t("census division unique identifier (CDUID)")),
-            tags$li(i18n$t("fine particulate matter (pm25_1 and pm25_2)")),
-            tags$li(i18n$t("nitrogen dioxide (no2_1 and no2_2)")),
-            tags$li(i18n$t("ozone (o3_1 and o3_2)")),
-            tags$li(i18n$t("summer ozone (summero3_1 and summero3_2)")),
-            tags$li(i18n$t("24-hour carbon monoxide (co24h_1 and co24h_2)")),
-            tags$li(i18n$t("1-hour carbon monoxide (co1h_1 and co1h_2)")),
-            tags$li(i18n$t("sulfur dioxide (so2_1 and so2_2)")),
-            tags$li(i18n$t("benzene (bz_1 and bz_2)")),
-            tags$li(i18n$t("1,3-butadiene (bt_1 and bt_2)")),
-            tags$li(i18n$t("acetaldehyde (ac_1 and ac_2)")),
-            tags$li(i18n$t("formaldehyde (fm_1 and fm_2)"))
-          )
-        ),
-        p(i18n$t("The \"year\", \"scenario\", and \"CDUID\" columns are mandatory, as well as a minimum of one type of pollutant (status quo and counterfactual concentrations). Both the \"year\" and \"scenario\" columns need to be numeric variables. There cannot be repetitive scenario years and numbers in combination. For example, if the year is 2016, each scenario must have a different number.")),
-        p(i18n$t("AQBAT uses the difference between status quo and counterfactual concentrations to estimate health benefits or damages from air quality changes. In the sample file:")),
-        tags$div(
-          tags$ul(
-            tags$li(i18n$t("columns with \"_2\" in the header are status quo concentrations (for example, \"pm25_2\")")),
-            tags$li(i18n$t("columns with \"_1\" in the header are counterfactual concentrations, like natural background concentrations (for example, \"pm25_1\")"))
-          )
-        ),
-        tags$script(HTML("
+        tabPanel(
+          i18n$t("Pollutant data upload"),
+          value = i18n$t("pollutant-data-upload"),
+          createStepUI(i18n, stepNumber = 3, totalSteps = 4, progressMax = 4),
+          p(i18n$t("Upload your pollutant data by clicking \"Upload\" to browse your file system and select files. A preview of your upload will appear below.")),
+          p(i18n$t("Your uploaded data is temporary and will not be saved for future visits or stored on your device.")),
+          p(i18n$t("Only CSV files are supported. UTF-8 encoding is recommended.")),
+          div(
+            tags$section(
+              id = "dataUploadedInfo",
+              style = "margin-bottom: 0",
+              role = "alert",
+              class = "alert alert-info hidden",
+              tags$h3(id = "dataUploadedHeader", i18n$t("Sample data has been uploaded")), # Header for dynamic content
+              p(id = "dataUploadedInstruction", i18n$t('To upload new data, please click \"Clear all data and restart\".')) # Instruction text
+            )
+          ),
+          fileInput("pollutants", label = "", accept = c(".csv", ".tsv"), multiple = TRUE, width = "350px"),
+          textOutput("message1"),
+          h3(i18n$t("Preview of the uploaded data"), id = "data-preview", class = "hidden"),
+          tableOutput("dataPreviewTable"),
+          p(i18n$t("If you have previously uploaded data (including the sample data), please clear all data and restart the app before uploading new pollutant data. You will return to the \"CRFs\" tab of the website. Data in all tabs in and results will be reset to defaults.")),
+          createClearDataButton("upload", i18n),
+          h3(i18n$t("Instructions for new users")),
+          p(i18n$t("Pollutant concentrations are annual averages of daily values (24 hours), except for O3 and summer O3 (May to September), which use daily 1-hour maximum averages for the annual and summer periods, respectively. CO includes both annual daily averages and daily 1-hour maximum averages."), class = ""),
+          p(i18n$t("Before using AQBAT, you need to prepare your pollutant data so you can upload it onto the tool. We provide a sample file you can use to help structure your data for upload. It includes sample air quality data for PM2.5, O3, and NO2 for 2016. These data were derived from multiple national sources and mapped to 293 census divisions in Canada. We use data from the sample file if you do not input your own data."), class = ""),
+          if (lang == "fr") {
+            downloadButton("xsample_fr", i18n$t("Download sample input file"), class = "btn-primary")
+          } else {
+            downloadButton("xsample_en", i18n$t("Download sample input file"), class = "btn-primary")
+          },
+          br(),
+          br(),
+          p(i18n$t("Please ensure that the formatting of your data matches the sample data provided. The following variables are included in the sample data:")),
+          tags$div(
+            tags$ul(
+              tags$li(i18n$t("year (2001-2063)")),
+              tags$li(i18n$t("scenario")),
+              tags$li(i18n$t("census division unique identifier (CDUID)")),
+              tags$li(i18n$t("fine particulate matter (pm25_1 and pm25_2)")),
+              tags$li(i18n$t("nitrogen dioxide (no2_1 and no2_2)")),
+              tags$li(i18n$t("ozone (o3_1 and o3_2)")),
+              tags$li(i18n$t("summer ozone (summero3_1 and summero3_2)")),
+              tags$li(i18n$t("24-hour carbon monoxide (co24h_1 and co24h_2)")),
+              tags$li(i18n$t("1-hour carbon monoxide (co1h_1 and co1h_2)")),
+              tags$li(i18n$t("sulfur dioxide (so2_1 and so2_2)")),
+              tags$li(i18n$t("benzene (bz_1 and bz_2)")),
+              tags$li(i18n$t("1,3-butadiene (bt_1 and bt_2)")),
+              tags$li(i18n$t("acetaldehyde (ac_1 and ac_2)")),
+              tags$li(i18n$t("formaldehyde (fm_1 and fm_2)"))
+            )
+          ),
+          p(i18n$t("The \"year\", \"scenario\", and \"CDUID\" columns are mandatory, as well as a minimum of one type of pollutant (status quo and counterfactual concentrations). Both the \"year\" and \"scenario\" columns need to be numeric variables. There cannot be repetitive scenario years and numbers in combination. For example, if the year is 2016, each scenario must have a different number.")),
+          p(i18n$t("AQBAT uses the difference between status quo and counterfactual concentrations to estimate health benefits or damages from air quality changes. In the sample file:")),
+          tags$div(
+            tags$ul(
+              tags$li(i18n$t("columns with \"_2\" in the header are status quo concentrations (for example, \"pm25_2\")")),
+              tags$li(i18n$t("columns with \"_1\" in the header are counterfactual concentrations, like natural background concentrations (for example, \"pm25_1\")"))
+            )
+          ),
+          tags$script(HTML("
           // Listen for Shiny messages to enable/disable input
           Shiny.addCustomMessageHandler('toggleFileInput', function(enable) {
             if (enable) {
@@ -2299,230 +2299,230 @@ ui <- function(request = NULL) {
             }
           });
         ")),
-      ),
-      tabPanel(
-        i18n$t("Results"),
-        value = i18n$t("results"),
-        createStepUI(i18n, stepNumber = 4, totalSteps = 4, progressMax = 4),
-        p(i18n$t("View and download the results of your scenario. Details on the methodology for how AQBAT estimates human health effects and the associated economic value are provided in the AQBAT appendix.")),
-        downloadButton("download_aqbat_appendix_en", i18n$t("Download AQBAT appendix"), class = "btn-primary", style = "display: none;"),
-        downloadButton("download_aqbat_appendix_fr", i18n$t("Télécharger l'annexe d'OEBQA"), class = "btn-primary", style = "display: none;"),
-        tags$nav(
-          h3(i18n$t("On this page")),
-          tags$ul(
-            tags$li(tags$a(
-              i18n$t("Overall results"),
-              href = "#overall",
-            )),
-            # tags$li(tags$a(
-            #   i18n$t("Maps"),
-            #   href = "#maps",
-            #   class = "scroll-link"
-            # )),
-            tags$li(tags$a(
-              i18n$t("Population-weighted exposure"),
-              href = "#population-weighted",
-            )),
-            tags$li(tags$a(
-              i18n$t("Cause-specific mortality"),
-              href = "#cause-specific",
-            )),
-            tags$li(tags$a(
-              i18n$t("Non-linear shape constrained health impact function (SCHIF)"),
-              href = "#schif",
-            )),
-            tags$li(tags$a(
-              i18n$t("Toxics"),
-              href = "#toxics-results",
-            )),
-            tags$li(tags$a(
-              i18n$t("Input parameters"),
-              href = "#input-params",
-            )),
-            tags$li(tags$a(
-              i18n$t("Baseline data"),
-              href = "#baseline",
-            ))
-          )
         ),
-        h3("Instructions"),
-        p(i18n$t("You must specify a currency year in the \"Valuation\" tab and import pollutant data in the \"Pollutant data upload\" tab to get results. The default results based on sample pollutant data will be generated when no pollutant data is uploaded.")),
-        p(i18n$t("Click \"Clear all data and restart\" to restart the app for a new scenario. You will return to the \"CRFs\" tab of the website. Data in all tabs and results will be reset to defaults.")),
-        br(),
-        div(
-          tags$section(
-            id = "sampleDataUploadedInfo",
-            style = "margin-bottom: 0",
-            class = "alert alert-info hidden",
-            h3(i18n$t("Sample data has been uploaded")),
-            p(i18n$t('To upload your own data, please click "Clear all data and restart", and then upload your data at the "Pollutant data upload" tab before visiting this page')),
+        tabPanel(
+          i18n$t("Results"),
+          value = i18n$t("results"),
+          createStepUI(i18n, stepNumber = 4, totalSteps = 4, progressMax = 4),
+          p(i18n$t("View and download the results of your scenario. Details on the methodology for how AQBAT estimates human health effects and the associated economic value are provided in the AQBAT appendix.")),
+          downloadButton("download_aqbat_appendix_en", i18n$t("Download AQBAT appendix"), class = "btn-primary", style = "display: none;"),
+          downloadButton("download_aqbat_appendix_fr", i18n$t("Télécharger l'annexe d'OEBQA"), class = "btn-primary", style = "display: none;"),
+          tags$nav(
+            h3(i18n$t("On this page")),
+            tags$ul(
+              tags$li(tags$a(
+                i18n$t("Overall results"),
+                href = "#overall",
+              )),
+              # tags$li(tags$a(
+              #   i18n$t("Maps"),
+              #   href = "#maps",
+              #   class = "scroll-link"
+              # )),
+              tags$li(tags$a(
+                i18n$t("Population-weighted exposure"),
+                href = "#population-weighted",
+              )),
+              tags$li(tags$a(
+                i18n$t("Cause-specific mortality"),
+                href = "#cause-specific",
+              )),
+              tags$li(tags$a(
+                i18n$t("Non-linear shape constrained health impact function (SCHIF)"),
+                href = "#schif",
+              )),
+              tags$li(tags$a(
+                i18n$t("Toxics"),
+                href = "#toxics-results",
+              )),
+              tags$li(tags$a(
+                i18n$t("Input parameters"),
+                href = "#input-params",
+              )),
+              tags$li(tags$a(
+                i18n$t("Baseline data"),
+                href = "#baseline",
+              ))
+            )
           ),
-        ),
-        br(),
-        createClearDataButton("results", i18n),
+          h3("Instructions"),
+          p(i18n$t("You must specify a currency year in the \"Valuation\" tab and import pollutant data in the \"Pollutant data upload\" tab to get results. The default results based on sample pollutant data will be generated when no pollutant data is uploaded.")),
+          p(i18n$t("Click \"Clear all data and restart\" to restart the app for a new scenario. You will return to the \"CRFs\" tab of the website. Data in all tabs and results will be reset to defaults.")),
+          br(),
+          div(
+            tags$section(
+              id = "sampleDataUploadedInfo",
+              style = "margin-bottom: 0",
+              class = "alert alert-info hidden",
+              h3(i18n$t("Sample data has been uploaded")),
+              p(i18n$t('To upload your own data, please click "Clear all data and restart", and then upload your data at the "Pollutant data upload" tab before visiting this page')),
+            ),
+          ),
+          br(),
+          createClearDataButton("results", i18n),
 
-        # OVERALL RESULTS
-        tags$section(
-          class = "section",
-          h2(i18n$t("Overall results"), id = "overall"),
-          p(i18n$t("Results at census division, provincial and territorial levels along with national summaries. Please note that the table below is just a preview of the output. To see the full results, please select \"Download overall results\".")),
-          p(i18n$t("\"L95CI\" refers to the lower 95% confidence interval and \"U95CI\" refers to the upper 95% confidence interval.")),
-          p(i18n$t("\"CDUID\" refers to the census division unique identifier.")),
-          tableOutput("outputcd"),
-          createErrorMessage("An error occurred. Please refresh the page and start again.", i18n, "outputcd"),
-          createLoader(loadingMessage = i18n$t("Loading...")),
-          downloadButton("d2", i18n$t("Download overall results"), class = "download-button btn-primary"),
-        ),
-        # MAPS
-        # tags$section(
-        #   class = "section",
-        #   h2(i18n$t("Maps"), id="maps"),
-        #   p(i18n$t("Interactive and static maps of baseline health outcome rates, status quo pollutant concentrations and selected results.")),
-        #   value = i18n$t("Maps"),
-        #   uiOutput("xmap")
-        # ),
-        # POPULATION-WEIGHTED EXPOSURE
-        tags$section(
-          class = "section",
-          h2(i18n$t("Population-weighted exposure"), id = "population-weighted"),
-          p(i18n$t("An estimate of population-weighted average air pollutant exposure nationally and by province. Please note that the table below is just a preview of the output. To see the full results, please select \"Download population-weighted exposure results\".")),
-          tableOutput("outputexposure"),
-          createErrorMessage("An error occurred. Please refresh the page and start again.", i18n, "outputexposure"),
-          createLoader(loadingMessage = i18n$t("Loading...")),
-          downloadButton("d5", i18n$t("Download population-weighted exposure results"), class = "download-button btn-primary")
-        ),
-        # CAUSE-SPECIFIC MORTALITY
-        tags$section(
-          class = "section",
-          h2(i18n$t("Cause-specific mortality"), id = "cause-specific"),
-          p(i18n$t("The results for four cause-specific chronic exposure type mortalities, including chronic exposure cerebrovascular mortality, chronic exposure COPD mortality, chronic exposure ischemic heart disease mortality, and chronic exposure lung cancer mortality. Please note that the table below is just a preview of the output. To see the full results, please select \"Download cause-specific mortality results\".")),
-          p(i18n$t("\"L95CI\" refers to the lower 95% confidence interval and \"U95CI\" refers to the upper 95% confidence interval.")),
-          tableOutput("outputmort"),
-          createErrorMessage("An error occurred. Please refresh the page and start again.", i18n, "outputmort"),
-          createLoader(loadingMessage = i18n$t("Loading...")),
-          downloadButton("d3", i18n$t("Download cause-specific mortality results"), class = "download-button btn-primary")
-        ),
-        # NON-LINEAR SCHIF
-        tags$section(
-          class = "section",
-          h2(i18n$t("Non-linear shape constrained health impact function (SCHIF)"), id = "schif"),
-          p(i18n$t("The results for mortality related to long term exposure to PM2.5. Please note that the table below is just a preview of the output. To see the full results, please select \"Download non-linear shape constrained health impact function results\".")),
-          p(i18n$t("\"L95CI\" refers to the lower 95% confidence interval and \"U95CI\" refers to the upper 95% confidence interval.")),
-          tableOutput("outputschif"),
-          createErrorMessage("An error occurred. Please refresh the page and start again.", i18n, "outputschif"),
-          createLoader(loadingMessage = i18n$t("Loading...")),
-          downloadButton("d4", i18n$t("Download non-linear shape constrained health impact function results"), class = "download-button btn-primary")
-        ),
-        # TOXICS
-        tags$section(
-          class = "section",
-          h2(i18n$t("Toxics"), id = "toxics-results"),
-          p(
-            i18n$t("Results for cancer and non-cancer outcomes of air toxics."),
-            i18n$t("Please note that the table below is just a preview of the output. To see the full results, please select \"Download toxics results\". If you would like to view non-cancer outcomes, please click on the \"Non-cancer\" sheet within the downloaded table.")
+          # OVERALL RESULTS
+          tags$section(
+            class = "section",
+            h2(i18n$t("Overall results"), id = "overall"),
+            p(i18n$t("Results at census division, provincial and territorial levels along with national summaries. Please note that the table below is just a preview of the output. To see the full results, please select \"Download overall results\".")),
+            p(i18n$t("\"L95CI\" refers to the lower 95% confidence interval and \"U95CI\" refers to the upper 95% confidence interval.")),
+            p(i18n$t("\"CDUID\" refers to the census division unique identifier.")),
+            tableOutput("outputcd"),
+            createErrorMessage("An error occurred. Please refresh the page and start again.", i18n, "outputcd"),
+            createLoader(loadingMessage = i18n$t("Loading...")),
+            downloadButton("d2", i18n$t("Download overall results"), class = "download-button btn-primary"),
           ),
-          tableOutput("outputtox"),
-          createErrorMessage("An error occurred. Please refresh the page and start again.", i18n, "outputtox"),
-          createLoader(loadingMessage = i18n$t("Loading...")),
-          downloadButton("d6", i18n$t("Download toxics results"), class = "download-button btn-primary")
+          # MAPS
+          # tags$section(
+          #   class = "section",
+          #   h2(i18n$t("Maps"), id="maps"),
+          #   p(i18n$t("Interactive and static maps of baseline health outcome rates, status quo pollutant concentrations and selected results.")),
+          #   value = i18n$t("Maps"),
+          #   uiOutput("xmap")
+          # ),
+          # POPULATION-WEIGHTED EXPOSURE
+          tags$section(
+            class = "section",
+            h2(i18n$t("Population-weighted exposure"), id = "population-weighted"),
+            p(i18n$t("An estimate of population-weighted average air pollutant exposure nationally and by province. Please note that the table below is just a preview of the output. To see the full results, please select \"Download population-weighted exposure results\".")),
+            tableOutput("outputexposure"),
+            createErrorMessage("An error occurred. Please refresh the page and start again.", i18n, "outputexposure"),
+            createLoader(loadingMessage = i18n$t("Loading...")),
+            downloadButton("d5", i18n$t("Download population-weighted exposure results"), class = "download-button btn-primary")
+          ),
+          # CAUSE-SPECIFIC MORTALITY
+          tags$section(
+            class = "section",
+            h2(i18n$t("Cause-specific mortality"), id = "cause-specific"),
+            p(i18n$t("The results for four cause-specific chronic exposure type mortalities, including chronic exposure cerebrovascular mortality, chronic exposure COPD mortality, chronic exposure ischemic heart disease mortality, and chronic exposure lung cancer mortality. Please note that the table below is just a preview of the output. To see the full results, please select \"Download cause-specific mortality results\".")),
+            p(i18n$t("\"L95CI\" refers to the lower 95% confidence interval and \"U95CI\" refers to the upper 95% confidence interval.")),
+            tableOutput("outputmort"),
+            createErrorMessage("An error occurred. Please refresh the page and start again.", i18n, "outputmort"),
+            createLoader(loadingMessage = i18n$t("Loading...")),
+            downloadButton("d3", i18n$t("Download cause-specific mortality results"), class = "download-button btn-primary")
+          ),
+          # NON-LINEAR SCHIF
+          tags$section(
+            class = "section",
+            h2(i18n$t("Non-linear shape constrained health impact function (SCHIF)"), id = "schif"),
+            p(i18n$t("The results for mortality related to long term exposure to PM2.5. Please note that the table below is just a preview of the output. To see the full results, please select \"Download non-linear shape constrained health impact function results\".")),
+            p(i18n$t("\"L95CI\" refers to the lower 95% confidence interval and \"U95CI\" refers to the upper 95% confidence interval.")),
+            tableOutput("outputschif"),
+            createErrorMessage("An error occurred. Please refresh the page and start again.", i18n, "outputschif"),
+            createLoader(loadingMessage = i18n$t("Loading...")),
+            downloadButton("d4", i18n$t("Download non-linear shape constrained health impact function results"), class = "download-button btn-primary")
+          ),
+          # TOXICS
+          tags$section(
+            class = "section",
+            h2(i18n$t("Toxics"), id = "toxics-results"),
+            p(
+              i18n$t("Results for cancer and non-cancer outcomes of air toxics."),
+              i18n$t("Please note that the table below is just a preview of the output. To see the full results, please select \"Download toxics results\". If you would like to view non-cancer outcomes, please click on the \"Non-cancer\" sheet within the downloaded table.")
+            ),
+            tableOutput("outputtox"),
+            createErrorMessage("An error occurred. Please refresh the page and start again.", i18n, "outputtox"),
+            createLoader(loadingMessage = i18n$t("Loading...")),
+            downloadButton("d6", i18n$t("Download toxics results"), class = "download-button btn-primary")
+          ),
+          # INPUT PARAMETERS
+          tags$section(
+            class = "section",
+            h2(i18n$t("Input parameters"), id = "input-params"),
+            p(i18n$t("A list of all inputs defining your modelled scenario. Please note that the table below is just a preview of the output. To see the full results, please select \"Download input parameters\".")),
+            tableOutput("allinputa"),
+            createErrorMessage("An error occurred. Please refresh the page and start again.", i18n, "allinputa"),
+            createLoader(loadingMessage = i18n$t("Loading...")),
+            downloadButton("allinputb", i18n$t("Download input parameters"), class = "download-button btn-primary")
+          ),
+          # BASELINE DATA
+          tags$section(
+            class = "section",
+            h2(i18n$t("Baseline data"), id = "baseline"),
+            p(i18n$t("Annual baseline rates for health outcomes (per million). Please note that the table below is just a preview of the output. To see the full results, including population sizes, please select \"Download baseline data\".")),
+            tableOutput("outputbaserate"),
+            createErrorMessage("An error occurred. Please refresh the page and start again.", i18n, "outputbaserate"),
+            createLoader(loadingMessage = i18n$t("Loading...")),
+            downloadButton("d7", i18n$t("Download baseline data"), class = "download-button btn-primary")
+          ),
         ),
-        # INPUT PARAMETERS
-        tags$section(
-          class = "section",
-          h2(i18n$t("Input parameters"), id = "input-params"),
-          p(i18n$t("A list of all inputs defining your modelled scenario. Please note that the table below is just a preview of the output. To see the full results, please select \"Download input parameters\".")),
-          tableOutput("allinputa"),
-          createErrorMessage("An error occurred. Please refresh the page and start again.", i18n, "allinputa"),
-          createLoader(loadingMessage = i18n$t("Loading...")),
-          downloadButton("allinputb", i18n$t("Download input parameters"), class = "download-button btn-primary")
-        ),
-        # BASELINE DATA
-        tags$section(
-          class = "section",
-          h2(i18n$t("Baseline data"), id = "baseline"),
-          p(i18n$t("Annual baseline rates for health outcomes (per million). Please note that the table below is just a preview of the output. To see the full results, including population sizes, please select \"Download baseline data\".")),
-          tableOutput("outputbaserate"),
-          createErrorMessage("An error occurred. Please refresh the page and start again.", i18n, "outputbaserate"),
-          createLoader(loadingMessage = i18n$t("Loading...")),
-          downloadButton("d7", i18n$t("Download baseline data"), class = "download-button btn-primary")
-        ),
-      ),
-      tabPanel(
-        i18n$t("References"),
-        value = i18n$t("references"),
-        h2(i18n$t("References")),
-        p(i18n$t("These selected references are cited as key sources within the \"CRFs\" and \"Valuation\" tabs. Select any of the links for more information on that specific reference. Please note that selected links will open in the same window and you will not be able to return to your scenario. If you wish to avoid this, please open links in a new window or tab.")),
-        tags$nav(
-          h3(i18n$t("On this page")),
-          tags$ul(
-            tags$li(tags$a(
-              i18n$t("PM2.5 CRFs"),
-              href = "#PM25-CRFs",
-            )),
-            tags$li(tags$a(
-              i18n$t("Other CRFs"),
-              href = "#others",
-            )),
-            tags$li(tags$a(
-              i18n$t("Valuation estimates"),
-              href = "#value",
-            ))
-          )
-        ),
-        h2(i18n$t("PM2.5 CRFs"), id = "PM25-CRFs"),
-        lapply(1:nrow(pmRefs), function(i) {
-          tags$div(
-            htmlTemplate("templates/reference.html",
-              heading = pmRefs$heading[i],
-              description = pmRefs$description[i],
-              authors = pmRefs$authors[i],
-              source = pmRefs$source[i],
-              articleTitle = pmRefs$articleTitle[i],
-              publication = pmRefs$publication[i],
-              lang = pmRefs$lang[i],
+        tabPanel(
+          i18n$t("References"),
+          value = i18n$t("references"),
+          h2(i18n$t("References")),
+          p(i18n$t("These selected references are cited as key sources within the \"CRFs\" and \"Valuation\" tabs. Select any of the links for more information on that specific reference. Please note that selected links will open in the same window and you will not be able to return to your scenario. If you wish to avoid this, please open links in a new window or tab.")),
+          tags$nav(
+            h3(i18n$t("On this page")),
+            tags$ul(
+              tags$li(tags$a(
+                i18n$t("PM2.5 CRFs"),
+                href = "#PM25-CRFs",
+              )),
+              tags$li(tags$a(
+                i18n$t("Other CRFs"),
+                href = "#others",
+              )),
+              tags$li(tags$a(
+                i18n$t("Valuation estimates"),
+                href = "#value",
+              ))
             )
-          )
-        }),
-        hr(),
-        h2(i18n$t("Other CRFs"), id = "others"),
-        lapply(1:nrow(otherRefs), function(i) {
-          tags$div(
-            htmlTemplate("templates/reference.html",
-              heading = otherRefs$heading[i],
-              description = otherRefs$description[i],
-              authors = otherRefs$authors[i],
-              source = otherRefs$source[i],
-              articleTitle = otherRefs$articleTitle[i],
-              publication = otherRefs$publication[i],
-              lang = otherRefs$lang[i],
+          ),
+          h2(i18n$t("PM2.5 CRFs"), id = "PM25-CRFs"),
+          lapply(1:nrow(pmRefs), function(i) {
+            tags$div(
+              htmlTemplate("templates/reference.html",
+                heading = pmRefs$heading[i],
+                description = pmRefs$description[i],
+                authors = pmRefs$authors[i],
+                source = pmRefs$source[i],
+                articleTitle = pmRefs$articleTitle[i],
+                publication = pmRefs$publication[i],
+                lang = pmRefs$lang[i],
+              )
             )
-          )
-        }),
-        hr(),
-        h2(i18n$t("Valuation estimates"), id = "value"),
-        lapply(1:nrow(valuationRefs), function(i) {
-          tags$div(
-            htmlTemplate("templates/reference.html",
-              heading = valuationRefs$heading[i],
-              description = valuationRefs$description[i],
-              authors = valuationRefs$authors[i],
-              source = valuationRefs$source[i],
-              articleTitle = valuationRefs$articleTitle[i],
-              publication = valuationRefs$publication[i],
-              lang = valuationRefs$lang[i],
+          }),
+          hr(),
+          h2(i18n$t("Other CRFs"), id = "others"),
+          lapply(1:nrow(otherRefs), function(i) {
+            tags$div(
+              htmlTemplate("templates/reference.html",
+                heading = otherRefs$heading[i],
+                description = otherRefs$description[i],
+                authors = otherRefs$authors[i],
+                source = otherRefs$source[i],
+                articleTitle = otherRefs$articleTitle[i],
+                publication = otherRefs$publication[i],
+                lang = otherRefs$lang[i],
+              )
             )
-          )
-        }),
-      ),
-      # tabPanel ("Reset/Restart" ),
-    )
-  ),
-  # tags$script(src = "scripts/wet-boew-4.min.js", type = "text/javascript"),
-  tags$script(src = "scripts/wet-boew.min.js", type = "text/javascript"),
-  tags$script(src = "scripts/wet-table.js", type = "text/javascript"),
-  # Disconnect button for testing purposes only
-  # actionButton("disconnect_button", "Disconnect")
-)
+          }),
+          hr(),
+          h2(i18n$t("Valuation estimates"), id = "value"),
+          lapply(1:nrow(valuationRefs), function(i) {
+            tags$div(
+              htmlTemplate("templates/reference.html",
+                heading = valuationRefs$heading[i],
+                description = valuationRefs$description[i],
+                authors = valuationRefs$authors[i],
+                source = valuationRefs$source[i],
+                articleTitle = valuationRefs$articleTitle[i],
+                publication = valuationRefs$publication[i],
+                lang = valuationRefs$lang[i],
+              )
+            )
+          }),
+        ),
+        # tabPanel ("Reset/Restart" ),
+      )
+    ),
+    # tags$script(src = "scripts/wet-boew-4.min.js", type = "text/javascript"),
+    tags$script(src = "scripts/wet-boew.min.js", type = "text/javascript"),
+    tags$script(src = "scripts/wet-table.js", type = "text/javascript"),
+    # Disconnect button for testing purposes only
+    # actionButton("disconnect_button", "Disconnect")
+  )
 }
 
 one_en <- data.frame(
@@ -2576,7 +2576,6 @@ vec1co24h <- c(
 )
 
 wtnum <- c(0.005, 0.01, 0.01, 0.01, 0.01, 0.03, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.03, 0.01, 0.01, 0.01, 0.01, 0.005) # weighted numbers
-
 
 
 # server
@@ -2659,21 +2658,7 @@ server <- function(input, output, session) {
     session$sendCustomMessage("toggleFileInput", FALSE)
 
     # Check if the uploaded file is a valid CSV
-    if (input$pollutants$size > 0 && tools::file_ext(input$pollutants$name) == "csv") {
-      shinyjs::addClass(selector = "#dataUploadedInfo", class = "alert-success")
-      shinyjs::removeClass(selector = "#data-preview", class = "hidden")
-      # Session language so message matches this tab (cross-tab fix)
-      header_message <- gsub("\\\\", "\\\\\\\\", gsub('"', '\\\\"', get_session_t("Your data has been uploaded")))
-      instruction_message <- gsub("\\\\", "\\\\\\\\", gsub('"', '\\\\"', get_session_t("To upload new data, please click 'Clear all data and restart'.")))
-
-      # Set innerHTML using JavaScript with translated messages
-      shinyjs::runjs(sprintf('
-      document.getElementById("dataUploadedHeader").innerHTML = "%s";
-      document.getElementById("dataUploadedInstruction").innerHTML = "%s";
-    ', header_message, instruction_message))
-
-      uploadStatus("user-data")
-    } else {
+    if (!(input$pollutants$size > 0 && tools::file_ext(input$pollutants$name) == "csv")) {
       shinyjs::addClass(selector = "#dataUploadedInfo", class = "alert-danger")
 
       # Session language for error messages (cross-tab fix)
@@ -2688,6 +2673,57 @@ server <- function(input, output, session) {
 
       return() # Prevent further reactivity
     }
+
+    # Check for UTF-8 encoding
+    is_utf8 <- TRUE
+    tryCatch(
+      {
+        # Check first 100KB of the file
+        con <- file(input$pollutants$datapath, "rb")
+        bytes <- readBin(con, "raw", n = 100000)
+        close(con)
+        # Try to convert to UTF-8
+        test_conv <- iconv(list(bytes), from = "UTF-8", to = "UTF-8")
+        if (any(is.na(test_conv))) {
+          is_utf8 <- FALSE
+        }
+      },
+      error = function(e) {
+        is_utf8 <- FALSE
+      }
+    )
+
+    if (!is_utf8) {
+      shinyjs::removeClass(selector = "#dataUploadedInfo", class = "alert-success")
+      shinyjs::addClass(selector = "#dataUploadedInfo", class = "alert-danger")
+
+      # Session language for error messages (cross-tab fix)
+      error_header_message <- gsub("\\\\", "\\\\\\\\", gsub('"', '\\\\"', get_session_t("Error: Invalid file encoding.")))
+      error_instruction_message <- gsub("\\\\", "\\\\\\\\", gsub('"', '\\\\"', get_session_t("Please ensure your CSV file is UTF-8 encoded. If you are using Excel, save as 'CSV UTF-8 (comma delimited)'.")))
+
+      # Set innerHTML using JavaScript with translated error messages
+      shinyjs::runjs(sprintf('
+      document.getElementById("dataUploadedHeader").innerHTML = "%s";
+      document.getElementById("dataUploadedInstruction").innerHTML = "%s";
+    ', error_header_message, error_instruction_message))
+
+      return() # Prevent further reactivity
+    }
+
+    # If all checks pass, show success message
+    shinyjs::addClass(selector = "#dataUploadedInfo", class = "alert-success")
+    shinyjs::removeClass(selector = "#data-preview", class = "hidden")
+    # Session language so message matches this tab (cross-tab fix)
+    header_message <- gsub("\\\\", "\\\\\\\\", gsub('"', '\\\\"', get_session_t("Your data has been uploaded")))
+    instruction_message <- gsub("\\\\", "\\\\\\\\", gsub('"', '\\\\"', get_session_t("To upload new data, please click 'Clear all data and restart'.")))
+
+    # Set innerHTML using JavaScript with translated messages
+    shinyjs::runjs(sprintf('
+      document.getElementById("dataUploadedHeader").innerHTML = "%s";
+      document.getElementById("dataUploadedInstruction").innerHTML = "%s";
+    ', header_message, instruction_message))
+
+    uploadStatus("user-data")
   })
 
   session$allowReconnect(TRUE)
@@ -3525,7 +3561,6 @@ server <- function(input, output, session) {
   })
 
 
-
   endpointval1 <- reactive({
     cbind(get_session_t("endpoint valuations($)"), paste(
       get_session_t("Mortality: source year ="), input$vslyr, get_session_t(", distribution form ="), input$vslfm, get_session_t("(low ="), input$lvsl, get_session_t("million, central ="), input$vsl,
@@ -3610,8 +3645,6 @@ server <- function(input, output, session) {
   })
 
 
-
-
   inputallparameters1 <- reactive({
     as.data.frame(rbind(
       scenarioyr(), currency(), simulationitn(), childasprev(), pmcrf1(), pmcrf2(), pmcrf3(), pmcrf4(), pmcrf5(), pmcrf6(), pmcrf7(), pmcrf8(), pmcrf9(), pmcrf10(), pmcrf11(), pmcrf12(), pmcrf13(), pmcrf14(), pmcrf15(),
@@ -3619,7 +3652,6 @@ server <- function(input, output, session) {
       endpointval1(), endpointval2(), endpointval3(), endpointval4(), endpointval5(), endpointval6(), endpointval7(), endpointval8(), endpointval9(), endpointval10()
     ))
   })
-
 
 
   inputallparameters <- reactive({
