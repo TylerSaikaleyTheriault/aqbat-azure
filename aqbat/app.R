@@ -2671,6 +2671,7 @@ server <- function(input, output, session) {
       document.getElementById("dataUploadedInstruction").innerHTML = "%s";
     ', error_header_message, error_instruction_message))
 
+      shinyjs::addClass(selector = ".download-button", class = "hidden")
       return() # Prevent further reactivity
     }
 
@@ -2707,10 +2708,12 @@ server <- function(input, output, session) {
       document.getElementById("dataUploadedInstruction").innerHTML = "%s";
     ', error_header_message, error_instruction_message))
 
+      shinyjs::addClass(selector = ".download-button", class = "hidden")
       return() # Prevent further reactivity
     }
 
     # If all checks pass, show success message
+    shinyjs::removeClass(selector = ".download-button", class = "hidden")
     shinyjs::addClass(selector = "#dataUploadedInfo", class = "alert-success")
     shinyjs::removeClass(selector = "#data-preview", class = "hidden")
     # Session language so message matches this tab (cross-tab fix)
