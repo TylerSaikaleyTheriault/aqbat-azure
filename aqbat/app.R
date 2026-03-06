@@ -39,10 +39,11 @@ createRestoreInstructions <- function(i18n) {
   htmlTemplate("templates/restore-instructions.html", i18n = i18n)
 }
 
-createLoader <- function(loadingMessage) {
+createLoader <- function(loadingMessage, lang = "en") {
   htmlTemplate(
     filename = "templates/loader.html",
-    loadingMessage = loadingMessage
+    loadingMessage = loadingMessage,
+    lang = lang
   )
 }
 
@@ -2370,7 +2371,7 @@ ui <- function(request = NULL) {
             p(i18n$t("\"CDUID\" refers to the census division unique identifier.")),
             tableOutput("outputcd"),
             createErrorMessage("An error occurred. Please refresh the page and start again.", i18n, "outputcd"),
-            createLoader(loadingMessage = i18n$t("Loading...")),
+            createLoader(loadingMessage = i18n$t("Loading..."), lang = lang),
             downloadButton("d2", i18n$t("Download overall results"), class = "download-button btn-primary"),
           ),
           # MAPS
@@ -2388,7 +2389,7 @@ ui <- function(request = NULL) {
             p(i18n$t("An estimate of population-weighted average air pollutant exposure nationally and by province. Please note that the table below is just a preview of the output. To see the full results, please select \"Download population-weighted exposure results\".")),
             tableOutput("outputexposure"),
             createErrorMessage("An error occurred. Please refresh the page and start again.", i18n, "outputexposure"),
-            createLoader(loadingMessage = i18n$t("Loading...")),
+            createLoader(loadingMessage = i18n$t("Loading..."), lang = lang),
             downloadButton("d5", i18n$t("Download population-weighted exposure results"), class = "download-button btn-primary")
           ),
           # CAUSE-SPECIFIC MORTALITY
@@ -2399,7 +2400,7 @@ ui <- function(request = NULL) {
             p(i18n$t("\"L95CI\" refers to the lower 95% confidence interval and \"U95CI\" refers to the upper 95% confidence interval.")),
             tableOutput("outputmort"),
             createErrorMessage("An error occurred. Please refresh the page and start again.", i18n, "outputmort"),
-            createLoader(loadingMessage = i18n$t("Loading...")),
+            createLoader(loadingMessage = i18n$t("Loading..."), lang = lang),
             downloadButton("d3", i18n$t("Download cause-specific mortality results"), class = "download-button btn-primary")
           ),
           # NON-LINEAR SCHIF
@@ -2410,7 +2411,7 @@ ui <- function(request = NULL) {
             p(i18n$t("\"L95CI\" refers to the lower 95% confidence interval and \"U95CI\" refers to the upper 95% confidence interval.")),
             tableOutput("outputschif"),
             createErrorMessage("An error occurred. Please refresh the page and start again.", i18n, "outputschif"),
-            createLoader(loadingMessage = i18n$t("Loading...")),
+            createLoader(loadingMessage = i18n$t("Loading..."), lang = lang),
             downloadButton("d4", i18n$t("Download non-linear shape constrained health impact function results"), class = "download-button btn-primary")
           ),
           # TOXICS
@@ -2423,7 +2424,7 @@ ui <- function(request = NULL) {
             ),
             tableOutput("outputtox"),
             createErrorMessage("An error occurred. Please refresh the page and start again.", i18n, "outputtox"),
-            createLoader(loadingMessage = i18n$t("Loading...")),
+            createLoader(loadingMessage = i18n$t("Loading..."), lang = lang),
             downloadButton("d6", i18n$t("Download toxics results"), class = "download-button btn-primary")
           ),
           # INPUT PARAMETERS
@@ -2433,7 +2434,7 @@ ui <- function(request = NULL) {
             p(i18n$t("A list of all inputs defining your modelled scenario. Please note that the table below is just a preview of the output. To see the full results, please select \"Download input parameters\".")),
             tableOutput("allinputa"),
             createErrorMessage("An error occurred. Please refresh the page and start again.", i18n, "allinputa"),
-            createLoader(loadingMessage = i18n$t("Loading...")),
+            createLoader(loadingMessage = i18n$t("Loading..."), lang = lang),
             downloadButton("allinputb", i18n$t("Download input parameters"), class = "download-button btn-primary")
           ),
           # BASELINE DATA
@@ -2443,7 +2444,7 @@ ui <- function(request = NULL) {
             p(i18n$t("Annual baseline rates for health outcomes (per million). Please note that the table below is just a preview of the output. To see the full results, including population sizes, please select \"Download baseline data\".")),
             tableOutput("outputbaserate"),
             createErrorMessage("An error occurred. Please refresh the page and start again.", i18n, "outputbaserate"),
-            createLoader(loadingMessage = i18n$t("Loading...")),
+            createLoader(loadingMessage = i18n$t("Loading..."), lang = lang),
             downloadButton("d7", i18n$t("Download baseline data"), class = "download-button btn-primary")
           ),
         ),
