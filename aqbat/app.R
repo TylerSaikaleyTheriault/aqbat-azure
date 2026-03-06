@@ -1496,7 +1496,7 @@ ui <- function(request = NULL) {
                 ),
                 # Second row with L95%CI and U95%CI inputs
                 fluidRow(
-                  column(6, numericInput("o3_l95_7", i18n$t("L95%CI"), 1.0003, min = 0.8, step = 0.001, max = 5)),
+                  column(6, numericInput("o3_l95_7", i18n$t("L95%CI"), 1.001, min = 0.8, step = 0.001, max = 5)),
                   column(6, numericInput("o3_u95_7", i18n$t("U95%CI"), 1.015, min = 0.9, step = 0.001, max = 5))
                 )
               )
