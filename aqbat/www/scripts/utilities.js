@@ -5,6 +5,49 @@ const setUrlParam = (param) => {
 }
 
 $(document).ready(function () {
+  // remove tabindex from tab panels
+  function updateTabIndex() {
+    const tabPanels = document.querySelectorAll('.tab-pane');
+    tabPanels.forEach(panel => {
+      if (panel.getAttribute('tabindex') !== '-1') {
+        panel.setAttribute('tabindex', '-1');
+      }
+    });
+  }
+
+  // Use MutationObserver to keep tabindex at -1 for tab panes, preventing any JS from resetting it to 0
+  const tabObserver = new MutationObserver((mutations) => {
+    mutations.forEach((mutation) => {
+      if (mutation.type === 'attributes' && mutation.attributeName === 'tabindex') {
+        if (mutation.target.classList.contains('tab-pane') && mutation.target.getAttribute('tabindex') !== '-1') {
+          mutation.target.setAttribute('tabindex', '-1');
+        }
+      } else if (mutation.type === 'childList') {
+        mutation.addedNodes.forEach(node => {
+          if (node.nodeType === 1) {
+            if (node.classList.contains('tab-pane')) {
+              node.setAttribute('tabindex', '-1');
+            }
+            node.querySelectorAll('.tab-pane').forEach(panel => {
+              panel.setAttribute('tabindex', '-1');
+            });
+          }
+        });
+      }
+    });
+  });
+
+  // Start observing as early as possible
+  tabObserver.observe(document.body, {
+    attributes: true,
+    childList: true,
+    subtree: true,
+    attributeFilter: ['tabindex']
+  });
+
+  // Perform an immediate check
+  updateTabIndex();
+
   // change background color for nav bar if on French version
   if (window.location.href.includes("sante") || window.location.toString().includes("fr")) {
     document.styleSheets[0].insertRule(
@@ -115,14 +158,6 @@ $(document).ready(function () {
     $('#disconnect-message').removeClass('hidden');
   });
 
-  // remove tabindex from tab panels
-  function updateTabIndex() {
-    const tabPanels = document.querySelectorAll('.tab-pane');
-    tabPanels.forEach(panel => {
-      panel.setAttribute('tabindex', '-1');
-    });
-  }
-
   // Ensure citation links are read in the correct language by screen readers (set lang from class so it survives any sanitization)
   function setCitationLang() {
     document.querySelectorAll('.cite-lang-en').forEach(function (el) { el.setAttribute('lang', 'en'); });
@@ -131,14 +166,14 @@ $(document).ready(function () {
   setCitationLang();
 
   document.addEventListener('DOMContentLoaded', function () {
-    updateTabIndex(); // Initial setting on page load
+    updateTabIndex(); // Initial check again on DOMContentLoaded
     setCitationLang();
 
-    // Listen for tab change events and update tabindex
+    // Listen for tab change events and update tabindex manually just in case
     const tabLinks = document.querySelectorAll('a[data-toggle=\"tab\"]');
     tabLinks.forEach(link => {
       link.addEventListener('shown.bs.tab', function () {
-        updateTabIndex(); // Reset tabindex after each tab switch
+        updateTabIndex();
         setCitationLang();
       });
     });

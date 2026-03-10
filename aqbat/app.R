@@ -537,7 +537,6 @@ ui <- function(request = NULL) {
           ),
           h2(i18n$t("Threshold concentration"), id = "threshold"),
           p(i18n$t("Use this section to specify concentrations below which there is no association between air pollution and adverse health effects."), class = "crf-description"),
-          tabindex = "0",
           useShinyjs(),
           createRestoreInstructions(i18n),
           p(i18n$t("The default value for each pollutant's threshold concentration is zero.")),
@@ -566,7 +565,6 @@ ui <- function(request = NULL) {
           hr(),
           h2(i18n$t("PM2.5 CRFs"), id = "pm25"),
           p(i18n$t("This section provides concentration response functions (CRFs) for fine particulate matter (with a 10 ug/m3 change) and ten associated health endpoints. You may edit and use your own values."), class = "crf-description"),
-          tabindex = "0",
           useShinyjs(),
           createRestoreInstructions(i18n),
           div(
@@ -1181,7 +1179,6 @@ ui <- function(request = NULL) {
           h2(i18n$t("CRFs (O3, CO, SO2, NO2)"), id = "crfs"),
           p(i18n$t("This section lists CRFs for ozone (O3), carbon monoxide (CO), sulfur dioxide (SO2), nitrogen dioxide (NO2), and eight associated health endpoints. You may edit and use your own values."), class = "crf-description"),
           p(i18n$t("Please note that the CRFs for acute exposure mortality associated with SO2 and CO are still considered 'suggestive' rather than 'causal' or 'likely causal'. We will continue to monitor and incorporate any new scientific evidence."), class = "crf-description"),
-          tabindex = "0",
           useShinyjs(),
           div(
             id = "form2",
@@ -1662,7 +1659,6 @@ ui <- function(request = NULL) {
           hr(),
           h2(i18n$t("Toxics"), id = "toxics"),
           p(i18n$t("This section provides reference concentrations for benzene, formaldehyde, and acetaldehyde."), class = "crf-description"),
-          tabindex = "0",
           useShinyjs(),
           createRestoreInstructions(i18n),
           div(
@@ -1863,6 +1859,7 @@ ui <- function(request = NULL) {
         tabPanel(
           i18n$t("Valuation"),
           value = i18n$t("valuation"),
+          tabindex = "-1",
           createStepUI(i18n, stepNumber = 2, totalSteps = 4, progressMax = 4),
           p(i18n$t("Review the economic valuation estimates. The default values provided below are Health Canada-endorsed economic valuation estimates to support the health impact assessment of air pollution. Change them as needed for your scenario by entering your desired values.")),
           # actionLink("link_instruction5", "Click here to view details about the 'CRFs' tab under the 'Instructions'."),
@@ -2231,6 +2228,7 @@ ui <- function(request = NULL) {
         tabPanel(
           i18n$t("Pollutant data upload"),
           value = i18n$t("pollutant-data-upload"),
+          tabindex = "-1",
           createStepUI(i18n, stepNumber = 3, totalSteps = 4, progressMax = 4),
           p(i18n$t("Upload your pollutant data by clicking \"Upload\" to browse your file system and select files. A preview of your upload will appear below.")),
           p(i18n$t("Your uploaded data is temporary and will not be saved for future visits or stored on your device.")),
@@ -2304,6 +2302,7 @@ ui <- function(request = NULL) {
         tabPanel(
           i18n$t("Results"),
           value = i18n$t("results"),
+          tabindex = "-1",
           createStepUI(i18n, stepNumber = 4, totalSteps = 4, progressMax = 4),
           p(i18n$t("View and download the results of your scenario. Details on the methodology for how AQBAT estimates human health effects and the associated economic value are provided in the AQBAT appendix.")),
           downloadButton("download_aqbat_appendix_en", i18n$t("Download AQBAT appendix"), class = "btn-primary", style = "display: none;"),
@@ -2451,6 +2450,7 @@ ui <- function(request = NULL) {
         tabPanel(
           i18n$t("References"),
           value = i18n$t("references"),
+          tabindex = "-1",
           h2(i18n$t("References")),
           p(i18n$t("These selected references are cited as key sources within the \"CRFs\" and \"Valuation\" tabs. Select any of the links for more information on that specific reference. Please note that selected links will open in the same window and you will not be able to return to your scenario. If you wish to avoid this, please open links in a new window or tab.")),
           tags$nav(
