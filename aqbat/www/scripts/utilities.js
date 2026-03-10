@@ -74,15 +74,19 @@ $(document).ready(function () {
   });
 
   // MODAL SCROLL LOGIC
-  $(".modal").on('shown.bs.modal', function () {
-    const modalElement = document.getElementById("data-warning-centred-popup-modal");
+  $(document).on('shown.bs.modal', '.modal', function (event) {
+    const modalElement = event.target;
     if (modalElement) {
-      // Prevent default scrolling behavior
+      // Calculate the modal's position relative to the top of the iframe document
       const rect = modalElement.getBoundingClientRect();
+      const scrollTop = window.scrollY || document.documentElement.scrollTop;
+      const relativeTop = rect.top + scrollTop;
+
       const scrollPosition = {
         type: 'scroll',
-        top: window.scrollY || document.documentElement.scrollTop,
-        left: window.scrollX || document.documentElement.scrollLeft
+        top: relativeTop,
+        left: window.scrollX || document.documentElement.scrollLeft,
+        isModal: true // Flag to indicate this is a modal being shown
       };
       // Send the position to the parent window
       window.parent.postMessage(scrollPosition, '*');

@@ -25,16 +25,24 @@ window.addEventListener('message', function (event) {
 
   if (data.type === 'scroll') {
     if (typeof data.top === 'number') {
-      const currentTop = window.scrollY || document.documentElement.scrollTop;
-      const scrollThreshold = 500;
-      if (Math.abs(data.top - currentTop) > scrollThreshold) {
-        // Scroll the parent window to the received position
+      const iframe = document.getElementById('shinyIframe');
+      if (iframe) {
+        // Get the iframe's position relative to the parent window
+        const iframeRect = iframe.getBoundingClientRect();
+        const parentScrollTop = window.scrollY || document.documentElement.scrollTop;
+
+        // Calculate the absolute top position in the parent window
+        // iframeRect.top is relative to the viewport, so add current scroll to get absolute
+        const iframeAbsoluteTop = iframeRect.top + parentScrollTop;
+
+        // Final scroll position: iframe top + relative position of modal inside iframe
+        // We subtract a small offset (e.g., 100px) so the modal isn't flush against the top
+        const absoluteTargetTop = iframeAbsoluteTop + data.top - 100;
+
         window.scrollTo({
-          top: data.top,
-          behavior: 'smooth', // or 'auto' for instant scroll
+          top: Math.max(0, absoluteTargetTop),
+          behavior: 'smooth'
         });
-      } else {
-        return false;
       }
     }
   }
