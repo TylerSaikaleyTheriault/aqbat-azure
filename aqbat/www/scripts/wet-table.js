@@ -86,4 +86,9 @@ $(document).ready(function() {
     $('.loader-container').hide();
     $(tbl).closest('.shiny-table').css('display', 'table');
   });
+
+  // Fix for NVDA double-reading table headers with DataTables
+  $(document).on('draw.dt', function(e) {
+    $(e.target).find('th').removeAttr('aria-label');
+  });
 });
