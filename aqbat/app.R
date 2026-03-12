@@ -72,13 +72,14 @@ createErrorMessage <- function(message, i18n, identifier = "") {
   )
 }
 
-createStepUI <- function(i18n, stepNumber, totalSteps, progressMax) {
+createStepUI <- function(i18n, stepNumber, totalSteps, progressMax, lang = "en") {
   htmlTemplate(
     "templates/progress.html",
     i18n = i18n,
     stepNumber = stepNumber,
     totalSteps = totalSteps,
     progressMax = progressMax,
+    lang = i18n$get_translation_language()
   )
 }
 
@@ -508,7 +509,7 @@ ui <- function(request = NULL) {
           i18n$t("CRFs"),
           value = i18n$t("crfs"),
           tabindex = "-1",
-          createStepUI(i18n, stepNumber = 1, totalSteps = 4, progressMax = 4),
+          createStepUI(i18n, stepNumber = 1, totalSteps = 4, progressMax = 4, lang = lang),
           p(i18n$t("Review concentration response functions (CRFs) and other parameters. The default values provided below are Health Canada-endorsed concentration-response functions to support the health impact assessment of air pollution. Change them as needed for your scenario by entering your desired values.")),
           tags$nav(
             h3(i18n$t("On this page")),
@@ -1860,7 +1861,7 @@ ui <- function(request = NULL) {
           i18n$t("Valuation"),
           value = i18n$t("valuation"),
           tabindex = "-1",
-          createStepUI(i18n, stepNumber = 2, totalSteps = 4, progressMax = 4),
+          createStepUI(i18n, stepNumber = 2, totalSteps = 4, progressMax = 4, lang = lang),
           p(i18n$t("Review the economic valuation estimates. The default values provided below are Health Canada-endorsed economic valuation estimates to support the health impact assessment of air pollution. Change them as needed for your scenario by entering your desired values.")),
           # actionLink("link_instruction5", "Click here to view details about the 'CRFs' tab under the 'Instructions'."),
           # br(),
@@ -2229,7 +2230,7 @@ ui <- function(request = NULL) {
           i18n$t("Pollutant data upload"),
           value = i18n$t("pollutant-data-upload"),
           tabindex = "-1",
-          createStepUI(i18n, stepNumber = 3, totalSteps = 4, progressMax = 4),
+          createStepUI(i18n, stepNumber = 3, totalSteps = 4, progressMax = 4, lang = lang),
           p(i18n$t("Upload your pollutant data by clicking \"Upload\" to browse your file system and select files. A preview of your upload will appear below.")),
           p(i18n$t("Your uploaded data is temporary and will not be saved for future visits or stored on your device.")),
           p(i18n$t("Only CSV files are supported. UTF-8 encoding is recommended.")),
@@ -2303,7 +2304,7 @@ ui <- function(request = NULL) {
           i18n$t("Results"),
           value = i18n$t("results"),
           tabindex = "-1",
-          createStepUI(i18n, stepNumber = 4, totalSteps = 4, progressMax = 4),
+          createStepUI(i18n, stepNumber = 4, totalSteps = 4, progressMax = 4, lang = lang),
           p(i18n$t("View and download the results of your scenario. Details on the methodology for how AQBAT estimates human health effects and the associated economic value are provided in the AQBAT appendix.")),
           downloadButton("download_aqbat_appendix_en", i18n$t("Download AQBAT appendix"), class = "btn-primary", style = "display: none;"),
           downloadButton("download_aqbat_appendix_fr", i18n$t("Télécharger l'annexe d'OEBQA"), class = "btn-primary", style = "display: none;"),
