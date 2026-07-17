@@ -440,3 +440,14 @@ html body #ss-overlay {
   min-height: 150px;
   width: 100%;
 }
+
+/* Fix color contrast for search input to meet WCAG 2 AAA */
+#wb-srch-q {
+  color: #26374a !important;
+  background-color: #ffffff !important;
+}
+
+#wb-srch-q::placeholder {
+  color: #4d4d4d !important;
+  opacity: 1; /* Firefox lowers opacity by default */
+}
