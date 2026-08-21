@@ -1,8 +1,8 @@
 # Use official Shiny base image
 FROM rocker/shiny:4.4.1
 
-# Install system dependencies
-RUN apt-get update && apt-get install -y \
+# Install system dependencies and apply security updates
+RUN apt-get update && apt-get upgrade -y && apt-get install -y \
     libudunits2-dev \
     libgdal-dev \
     libgeos-dev \
