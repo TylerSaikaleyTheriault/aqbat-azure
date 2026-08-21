@@ -4,11 +4,21 @@
 
 // WET Tables integration with R Shiny
 $(document).ready(function() {
+  // Extract plain text from a value that may include HTML. Use the browser
+  // parser instead of a tag-stripping regex (nested/malformed tags can survive
+  // a single replace, which GitHub CodeQL flags as incomplete sanitization).
+  function stripHtml(s) {
+    if (s == null) return '';
+    if (s.nodeType) return s.textContent || s.innerText || '';
+    var doc = new DOMParser().parseFromString(String(s), 'text/html');
+    return (doc.body && doc.body.textContent) || '';
+  }
+
   // Parse French/European number string to number (space thousands, comma decimal).
   // Used so DataTables sorts numerically instead of by string.
   function parseFrenchNum(s) {
     if (s === '-' || s === '' || s == null) return NaN;
-    s = (s + '').replace(/<[^>]*>/g, '').trim();
+    s = stripHtml(s).trim();
     s = s.replace(/[\s\u00A0]/g, '');
     s = s.replace(/,(?=\d+$)/, '.');
     var n = parseFloat(s);
@@ -45,7 +55,7 @@ $(document).ready(function() {
   var frenchNumRe = /^\s*-?[\d\s\u00A0]+(,[\d]+)?\s*$/;
   function _frenchNumDetector(sData) {
     if (sData == null || sData === '') return null;
-    var t = (sData + '').replace(/<[^>]*>/g, '').trim();
+    var t = stripHtml(sData).trim();
     if (frenchNumRe.test(t)) return 'formatted-num';
     return null;
   }
@@ -78,7 +88,7 @@ $(document).ready(function() {
               if (data[0]._aSortData && data[0]._aSortData[c] !== undefined) cellVal = data[0]._aSortData[c];
               else if (data[0].anCells && data[0].anCells[c]) cellVal = (data[0].anCells[c].textContent || data[0].anCells[c].innerText || '').trim();
             }
-            if ((cellVal + '').replace(/<[^>]*>/g, '').trim().match(frenchNumRe)) cols[c].sType = 'formatted-num';
+            if (stripHtml(cellVal).trim().match(frenchNumRe)) cols[c].sType = 'formatted-num';
           }
         }
       } catch (e) {}

@@ -158,22 +158,34 @@ This project uses Docker to containerize the Shiny application for production. H
    ```
    This will make the app available at `http://localhost:3838`
 
-3. **View running containers**:
+3. **Hot Reloading for Local Development (Docker Compose)**:
+   ```bash
+   docker compose up
+   ```
+   Or to rebuild the image before starting:
+   ```bash
+   docker compose up --build
+   ```
+   This uses `docker-compose.yml`, mounting your local project directories (`./aqbat`, `./src`, `./images`, `index.html`) into the container with `SHINY_AUTORELOAD=TRUE`. Any edits to R scripts, HTML, CSS, or JS will immediately reload in the running application without needing to restart the container.
+
+4. **View running containers**:
    ```bash
    docker ps
    ```
 
-4. **Stop a container**:
+5. **Stop a container**:
    ```bash
    docker stop <container_id>
+   # Or if using docker compose:
+   docker compose down
    ```
 
-5. **Remove a container**:
+6. **Remove a container**:
    ```bash
    docker rm <container_id>
    ```
 
-6. **Remove an image**:
+7. **Remove an image**:
    ```bash
    docker rmi aqbat
    ```

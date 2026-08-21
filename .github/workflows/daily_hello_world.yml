@@ -11,9 +11,22 @@ on:
         type: boolean
         default: false
 
+permissions:
+  contents: read
+
 jobs:
+  # 1) Dynamically create the self-hosted ephemeral runner
+  createRunner:
+    uses: hs/createEphemeralUbuntuRunner/.github/workflows/createEphemeralUbuntuRunner.yml@main
+    with:
+      environment: "lz-client-hecsb-psd-aqbatwe-dt"
+    secrets:
+      AZURE_CREDENTIALS: ${{ secrets.HECSB_PSD_AQBATWE_CICDLZSP_DT }}
+
+  # 2) Run the daily task on the provisioned runner
   run-daily-task:
-    runs-on: ubuntu-latest
+    runs-on: [ lz-client-hecsb-psd-aqbatwe-dt ]
+    needs: createRunner
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4

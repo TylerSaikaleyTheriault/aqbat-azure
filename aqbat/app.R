@@ -28,6 +28,8 @@ currentlanguage <- i18n$set_translation_language("en")
 
 # SHINY OPTIONS - https://shiny.posit.co/r/reference/shiny/1.0.3/shiny-options.html
 options(shiny.autoreload = TRUE)
+options(shiny.autoreload.pattern = ".*")
+options(shiny.autoreload.interval = 1000)
 
 options(shiny.sanitize.errors = TRUE)
 
@@ -515,7 +517,7 @@ ui <- function(request = NULL) {
             h3(i18n$t("On this page")),
             tags$ul(
               tags$li(tags$a(
-                i18n$t("Threshold concentration"),
+                i18n$t("Threshold concentration123"),
                 href = "#threshold",
               )),
               tags$li(tags$a(

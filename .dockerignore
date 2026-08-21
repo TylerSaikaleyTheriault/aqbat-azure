@@ -1,9 +1,19 @@
-# Exclude other unnecessary files (renv files are copied explicitly first, then overwritten in bulk copy)
+# Exclude local renv library and build artifacts
+aqbat/renv/library/
+aqbat/renv/staging/
+aqbat/renv/python/
+aqbat/renv/local/
+
+# Exclude other unnecessary files
 aqbat/.Rproj
 aqbat/rsconnect/
 aqbat/deploy.R
 aqbat/manifest.json
 aqbat/French names.txt
 aqbat/empty.csv
-
-# TEST
+.git
+.Rproj.user
+.Rhistory
+.RData
+.Ruserdata
+.Renviron
