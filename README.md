@@ -137,6 +137,22 @@ aqbat/
 - Template changes require app restart (no hot reloading)
 - Deployment targets include Netlify (static) and Shinyapps.io (R server)
 
+### GitHub Actions and Ephemeral Runners
+
+This repository uses the organization’s ephemeral runner pattern for CI/CD jobs instead of relying on generic public GitHub-hosted runners. The pattern is designed to create a fresh Azure VM runner for each job, run the work on that runner, and then automatically destroy it afterward.
+
+This gives us a clean, consistent environment and avoids the queue delays and resource variability of public hosted runners. The reusable workflow used by this repo is documented here:
+
+- [GitHub Actions Ephemeral Runners](https://devops.hc-sc.gc.ca/confluence/spaces/HOME/pages/323813748/GitHub+Actions+Ephemeral+Runners)
+
+In practice, workflows that need a build runner should:
+
+1. call the reusable ephemeral runner workflow
+2. wait for the runner to be created with `needs`
+3. run the build or validation job on the `ephemeral_runner` label
+
+This is the pattern used by the deployment workflows in this repo, including the Docker build workflow.
+
 ## Docker Setup and Usage
 
 This project uses Docker to containerize the Shiny application for production. Here's how to work with the Docker setup:
