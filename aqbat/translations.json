@@ -77,20 +77,68 @@
         "fr": "Applications récentes d'OEBQA"
     },
     {
-        "en": "Stieb DM, Smith-Doiron M, Quick M, Christidis T, Xi G, Miles RM, van Donkelaar A, Martin RV, Hystad P, Tjepkema M. <a target='_parent' href='https://agupubs.onlinelibrary.wiley.com/doi/10.1029/2023GH000816' lang='en'>Inequality in the Distribution of Air Pollution Attributable Mortality Within Canadian Cities</a>. Geohealth. 2023 Aug 29;7(9):e2023GH000816.",
-        "fr": "Stieb DM, Smith-Doiron M, Quick M, Christidis T, Xi G, Miles RM, van Donkelaar A, Martin RV, Hystad P, Tjepkema M. <a target='_parent' href='https://agupubs.onlinelibrary.wiley.com/doi/10.1029/2023GH000816' lang='en'>Inequality in the Distribution of Air Pollution Attributable Mortality Within Canadian Cities</a>. Geohealth. 2023, le 29 août;7(9):e2023GH000816."
+        "en": "Stieb DM, Smith-Doiron M, Quick M, Christidis T, Xi G, Miles RM, van Donkelaar A, Martin RV, Hystad P, Tjepkema M. <a target='_parent' href='https://agupubs.onlinelibrary.wiley.com/doi/10.1029/2023GH000816'><span lang='en' class='cite-lang-en'>Inequality in the Distribution of Air Pollution Attributable Mortality Within Canadian Cities</span></a>. Geohealth. 2023 Aug 29;7(9):e2023GH000816.",
+        "fr": "Stieb DM, Smith-Doiron M, Quick M, Christidis T, Xi G, Miles RM, van Donkelaar A, Martin RV, Hystad P, Tjepkema M. <a target='_parent' href='https://agupubs.onlinelibrary.wiley.com/doi/10.1029/2023GH000816'><span lang='en' class='cite-lang-en'>Inequality in the Distribution of Air Pollution Attributable Mortality Within Canadian Cities</span></a>. Geohealth. 2023, le 29 août;7(9):e2023GH000816."
     },
     {
-        "en": "Egyed M, Blagden P, Plummer D, Makar P, Matz CJ, Flannigan M, MacNeill M, Lavigne E, Ling B, Lopez, DV, Edwards B, Pavlovic R, Racine J, Raymond P, Rittmaster R, Wilson A, Xi G. 2022. Air Quality. In P. Berry & R. Schnitter (Eds.), <a target='_parent' href='https://changingclimate.ca/health-in-a-changing-climate/chapter/5-0/' lang='en'>Health of Canadians in a Changing Climate: Advancing our Knowledge for Action</a>. Ottawa, ON: Government of Canada.",
-        "fr": "Egyed M, Blagden P, Plummer D, Makar P, Matz CJ, Flannigan M, MacNeill M, Lavigne E, Ling B, Lopez, DV, Edwards B, Pavlovic R, Racine J, Raymond P, Rittmaster R, Wilson A, Xi G. 2022. Qualité de l’air. Dans P. Berry & R. Schnitter (Eds.), <a target='_parent' href='https://changingclimate.ca/health-in-a-changing-climate/fr/chapter/5-0/' lang='fr'>La santé des Canadiens et des Canadiennes dans un climat en changement : Faire progresser nos connaissances pour agir</a>. Ottawa, Ont.: Gouvernement du Canada."
+        "en": "Egyed M, Blagden P, Plummer D, Makar P, Matz CJ, Flannigan M, MacNeill M, Lavigne E, Ling B, Lopez, DV, Edwards B, Pavlovic R, Racine J, Raymond P, Rittmaster R, Wilson A, Xi G. 2022. Air Quality. In P. Berry & R. Schnitter (Eds.), <a target='_parent' href='https://changingclimate.ca/health-in-a-changing-climate/chapter/5-0/'><span lang='en' class='cite-lang-en'>Health of Canadians in a Changing Climate: Advancing our Knowledge for Action</span></a>. Ottawa, ON: Government of Canada.",
+        "fr": "Egyed M, Blagden P, Plummer D, Makar P, Matz CJ, Flannigan M, MacNeill M, Lavigne E, Ling B, Lopez, DV, Edwards B, Pavlovic R, Racine J, Raymond P, Rittmaster R, Wilson A, Xi G. 2022. Qualité de l’air. Dans P. Berry & R. Schnitter (Eds.), <a target='_parent' href='https://changingclimate.ca/health-in-a-changing-climate/fr/chapter/5-0/'><span lang='fr' class='cite-lang-fr'>La santé des Canadiens et des Canadiennes dans un climat en changement : Faire progresser nos connaissances pour agir</span></a>. Ottawa, Ont.: Gouvernement du Canada."
     },
     {
-        "en": "Matz CJ, Egyed M, Xi G, Racine J, Pavlovic R, Rittmaster R, Henderson SB, Stieb DM. <a target='_parent' href='https://doi.org/10.1016/j.scitotenv.2020.138506' lang='en'>Health impact analysis of PM2.5 from wildfire smoke in Canada (2013-2015, 2017-2018)</a>. Sci Total Environ. 2020 Jul 10;725:138506. <a href='https://health-infobase.canada.ca/datalab/wildfire-blog.html' lang='en'>See an interactive map of results</a>.",
-        "fr": "Matz CJ, Egyed M, Xi G, Racine J, Pavlovic R, Rittmaster R, Henderson SB, Stieb DM. <a target='_parent' href='https://doi.org/10.1016/j.scitotenv.2020.138506' lang='en'>Health impact analysis of PM2.5 from wildfire smoke in Canada (2013-2015, 2017-2018)</a>. Sci Total Environ. 2020, le 10 juill;725:138506. <a href='https://sante-infobase.canada.ca/labo-de-donnees/blogue-feux-de-friches.html' lang='fr'>Consulter la carte interactive des résultats.</a>"
+        "en": "Matz CJ, Egyed M, Xi G, Racine J, Pavlovic R, Rittmaster R, Henderson SB, Stieb DM. <a target='_parent' href='https://doi.org/10.1016/j.scitotenv.2020.138506'><span lang='en' class='cite-lang-en'>Health impact analysis of PM2.5 from wildfire smoke in Canada (2013-2015, 2017-2018)</span></a>. Sci Total Environ. 2020 Jul 10;725:138506. <a href='https://health-infobase.canada.ca/datalab/wildfire-blog.html'><span lang='en' class='cite-lang-en'>See an interactive map of results</span></a>.",
+        "fr": "Matz CJ, Egyed M, Xi G, Racine J, Pavlovic R, Rittmaster R, Henderson SB, Stieb DM. <a target='_parent' href='https://doi.org/10.1016/j.scitotenv.2020.138506'><span lang='en' class='cite-lang-en'>Health impact analysis of PM2.5 from wildfire smoke in Canada (2013-2015, 2017-2018)</span></a>. Sci Total Environ. 2020, le 10 juill;725:138506. <a href='https://sante-infobase.canada.ca/labo-de-donnees/blogue-feux-de-friches.html'><span lang='fr' class='cite-lang-fr'>Consulter la carte interactive des résultats.</span></a>"
     },
     {
-        "en": "Health Canada. 2024. <a target='_parent' href='https://www.canada.ca/en/health-canada/services/publications/healthy-living/health-impacts-air-pollution-2018.html' lang='en'>Health Impacts of Air Pollution in Canada in 2018</a>.",
-        "fr": "Santé Canada. 2024. <a target='_parent' href='https://www.canada.ca/fr/sante-canada/services/publications/vie-saine/impacts-pollution-atmospherique-2018.html' lang='fr'>Impacts de la pollution atmosphérique sur la santé au Canada en 2018</a>."
+        "en": "Health Canada. 2024. <a target='_parent' href='https://www.canada.ca/en/health-canada/services/publications/healthy-living/health-impacts-air-pollution-2018.html'><span lang='en' class='cite-lang-en'>Health Impacts of Air Pollution in Canada in 2018</span></a>.",
+        "fr": "Santé Canada. 2024. <a target='_parent' href='https://www.canada.ca/fr/sante-canada/services/publications/vie-saine/impacts-pollution-atmospherique-2018.html'><span lang='fr' class='cite-lang-fr'>Impacts de la pollution atmosphérique sur la santé au Canada en 2018</span></a>."
+    },
+    {
+        "en": "Stieb DM, Smith-Doiron M, Quick M, Christidis T, Xi G, Miles RM, van Donkelaar A, Martin RV, Hystad P, Tjepkema M. ",
+        "fr": "Stieb DM, Smith-Doiron M, Quick M, Christidis T, Xi G, Miles RM, van Donkelaar A, Martin RV, Hystad P, Tjepkema M. "
+    },
+    {
+        "en": "Inequality in the Distribution of Air Pollution Attributable Mortality Within Canadian Cities",
+        "fr": "Inequality in the Distribution of Air Pollution Attributable Mortality Within Canadian Cities"
+    },
+    {
+        "en": ". Geohealth. 2023 Aug 29;7(9):e2023GH000816.",
+        "fr": ". Geohealth. 2023, le 29 août;7(9):e2023GH000816."
+    },
+    {
+        "en": "Egyed M, Blagden P, Plummer D, Makar P, Matz CJ, Flannigan M, MacNeill M, Lavigne E, Ling B, Lopez, DV, Edwards B, Pavlovic R, Racine J, Raymond P, Rittmaster R, Wilson A, Xi G. 2022. Air Quality. In P. Berry & R. Schnitter (Eds.), ",
+        "fr": "Egyed M, Blagden P, Plummer D, Makar P, Matz CJ, Flannigan M, MacNeill M, Lavigne E, Ling B, Lopez, DV, Edwards B, Pavlovic R, Racine J, Raymond P, Rittmaster R, Wilson A, Xi G. 2022. Qualité de l'air. Dans P. Berry & R. Schnitter (Eds.), "
+    },
+    {
+        "en": "Health of Canadians in a Changing Climate: Advancing our Knowledge for Action",
+        "fr": "La santé des Canadiens et des Canadiennes dans un climat en changement : Faire progresser nos connaissances pour agir"
+    },
+    {
+        "en": ". Ottawa, ON: Government of Canada.",
+        "fr": ". Ottawa, Ont.: Gouvernement du Canada."
+    },
+    {
+        "en": "Matz CJ, Egyed M, Xi G, Racine J, Pavlovic R, Rittmaster R, Henderson SB, Stieb DM. ",
+        "fr": "Matz CJ, Egyed M, Xi G, Racine J, Pavlovic R, Rittmaster R, Henderson SB, Stieb DM. "
+    },
+    {
+        "en": "Health impact analysis of PM2.5 from wildfire smoke in Canada (2013-2015, 2017-2018)",
+        "fr": "Health impact analysis of PM2.5 from wildfire smoke in Canada (2013-2015, 2017-2018)"
+    },
+    {
+        "en": ". Sci Total Environ. 2020 Jul 10;725:138506. ",
+        "fr": ". Sci Total Environ. 2020, le 10 juill;725:138506. "
+    },
+    {
+        "en": "See an interactive map of results",
+        "fr": "Consulter la carte interactive des résultats."
+    },
+    {
+        "en": "Health Canada. 2024. ",
+        "fr": "Santé Canada. 2024. "
+    },
+    {
+        "en": "Health Impacts of Air Pollution in Canada in 2018",
+        "fr": "Impacts de la pollution atmosphérique sur la santé au Canada en 2018"
     },
 
     {
@@ -682,6 +730,14 @@
     {
         "en": "To upload new data, please click \"Clear all data and restart\".",
         "fr": "Pour télécharger de nouvelles données, veuillez cliquer sur « Effacer toutes les données et recommencer »."
+    },
+    {
+        "en": "Error: Invalid file encoding.",
+        "fr": "Erreur : Encodage de fichier invalide."
+    },
+    {
+        "en": "Please ensure your CSV file is UTF-8 encoded. If you are using Excel, save as 'CSV UTF-8 (comma delimited)'.",
+        "fr": "Veuillez vous assurer que votre fichier CSV est encodé en UTF-8. Si vous utilisez Excel, enregistrez-le sous le nom « CSV UTF-8 (délimité par des virgules) »."
     },
 
     {
@@ -1907,8 +1963,8 @@
         "fr": "Prolonger la session"
     },
     {
-        "en": "You have been disconnected from the server. All data has been lost. This can happen for the following reasons: exceeding 3 hours of inactivity or the application has been updated on the server. Please refresh the page to restart the app. You may press F5 to refresh.",
-        "fr": "Vous avez été déconnecté du serveur. Toutes les données ont été perdues. Cela peut se produire pour les raisons suivantes : dépassement de 3 heures d'inactivité ou l'application a été mise à jour sur le serveur. Veuillez recharger la page pour redémarrer l'application. Vous pouvez presser F5 pour recharger."
+        "en": "You have been disconnected from the server. All data has been lost. This can happen if the application has been updated on the server. Please refresh the page to restart the app. You may press F5 to refresh.",
+        "fr": "Vous avez été déconnecté du serveur. Toutes les données ont été perdues. Cela peut se produire si l'application a été mise à jour sur le serveur. Veuillez recharger la page pour redémarrer l'application. Vous pouvez presser F5 pour recharger."
     },
     {
         "en": "Restart application",

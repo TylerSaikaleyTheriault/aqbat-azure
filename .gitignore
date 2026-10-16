@@ -5,6 +5,9 @@
 .Ruserdata
 .Renviron
 
+# Files containing secrets (DO NOT COMMIT)
+aqbat/deploy.R
+
 # renv specific files
 aqbat/renv/library/
 aqbat/renv/staging/
@@ -19,3 +22,5 @@ aqbat/renv/settings.json
 # OS specific files
 .DS_Store
 Thumbs.db
+# Local development
+docker-compose.yml

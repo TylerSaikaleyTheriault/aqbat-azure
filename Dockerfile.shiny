@@ -1,16 +1,17 @@
-# Use official Shiny base image
+# syntax=docker/dockerfile:1
+# BuildKit required for cache mounts. In CI, set DOCKER_BUILDKIT=1 before docker build.
 FROM rocker/shiny:4.4.1
 
-# Install system dependencies
-RUN apt-get update && apt-get install -y \
+# Install system dependencies (cache mount speeds repeated builds)
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt,sharing=locked \
+    apt-get update && apt-get install -y --no-install-recommends \
     libudunits2-dev \
     libgdal-dev \
     libgeos-dev \
     libproj-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# Create working directory
-# Using /app instead of /home/shiny-app to avoid Azure App Service volume mounts
 WORKDIR /app
 
 # Copy renv files first (for package installation cache)
@@ -18,111 +19,14 @@ COPY ./aqbat/renv.lock /app/renv.lock
 COPY ./aqbat/renv /app/renv
 COPY ./aqbat/.Rprofile /app/.Rprofile
 
-# Install renv (cached separately from package restore for better cache reuse)
+# Install renv and restore packages; cache mount reuses R package cache across builds
 RUN R -e "install.packages('renv', repos='https://cloud.r-project.org')"
+RUN --mount=type=cache,target=/root/.local/share/renv/cache,sharing=locked \
+    R -e "renv::restore()"
 
-# Restore packages (this layer will be cached if renv.lock hasn't changed)
-RUN R -e "renv::restore()"
-
-# Copy all app files (after renv restore to preserve package cache)
-# .dockerignore excludes renv files since they're already copied above
+# Copy app files (after renv restore to preserve package layer cache)
 COPY ./aqbat/ /app/
 
-# Verify critical files were copied (fail build if missing)
-RUN if [ ! -f "/app/app.R" ]; then \
-      echo "ERROR: app.R was not copied!" && \
-      echo "Contents of /app:" && \
-      ls -la /app && \
-      exit 1; \
-    fi && \
-    echo "✓ app.R verified at /app/app.R"
-
-# Copy debug script for troubleshooting
-COPY debug-container.sh /debug-container.sh
-RUN chmod +x /debug-container.sh
-
-# Enhanced debugging: Verify files are in the right place
-RUN echo "========================================" && \
-    echo "=== BUILD-TIME FILE STRUCTURE CHECK ===" && \
-    echo "========================================" && \
-    echo "" && \
-    echo "=== Current Working Directory ===" && \
-    pwd && \
-    echo "" && \
-    echo "=== Files in /app (root) ===" && \
-    ls -la /app && \
-    echo "" && \
-    echo "=== Looking for app.R ===" && \
-    (ls -la /app/app.R 2>&1 || echo "ERROR: app.R NOT FOUND") && \
-    echo "" && \
-    echo "=== Directory structure (top 3 levels) ===" && \
-    find /app -maxdepth 3 -type d | head -20 && \
-    echo "" && \
-    echo "=== All .R files found ===" && \
-    find /app -type f -name "*.R" | head -10 && \
-    echo "" && \
-    echo "=== www directory contents ===" && \
-    (ls -la /app/www 2>&1 || echo "ERROR: www directory NOT FOUND") && \
-    echo "" && \
-    echo "=== data directory contents ===" && \
-    (ls -la /app/data 2>&1 || echo "ERROR: data directory NOT FOUND") && \
-    echo "" && \
-    echo "=== Full directory tree (limited) ===" && \
-    (tree -L 3 /app 2>&1 || find /app -maxdepth 3 -print | sed 's|[^/]*/| |g') && \
-    echo "" && \
-    echo "========================================"
-
-# Expose Shiny default port
 EXPOSE 3838
 
-# Create a startup script that includes runtime debugging
-RUN echo '#!/bin/bash\n\
-set -e\n\
-echo "========================================"\n\
-echo "=== RUNTIME FILE STRUCTURE CHECK ==="\n\
-echo "========================================"\n\
-echo ""\n\
-echo "=== Current Working Directory ==="\n\
-pwd\n\
-echo ""\n\
-echo "=== Files in /app ==="\n\
-ls -la /app 2>&1 || echo "Directory does not exist!"\n\
-echo ""\n\
-echo "=== Checking for app.R ==="\n\
-if [ -f "/app/app.R" ]; then\n\
-    echo "✓ app.R found at /app/app.R"\n\
-    echo "File size: $(stat -c%s /app/app.R) bytes"\n\
-else\n\
-    echo "✗ ERROR: app.R NOT FOUND at /app/app.R"\n\
-    echo "Searching for app.R in container..."\n\
-    find / -name "app.R" 2>/dev/null | head -10 || echo "No app.R found anywhere"\n\
-    echo ""\n\
-    echo "=== Checking if /app exists ==="\n\
-    if [ -d "/app" ]; then\n\
-        echo "Directory exists but is empty or app.R missing"\n\
-        echo "Contents:"\n\
-        ls -la /app\n\
-    else\n\
-        echo "Directory /app does not exist!"\n\
-    fi\n\
-    echo ""\n\
-    echo "=== Checking mounted volumes ==="\n\
-    mount | grep -E "(app|home)" || echo "No relevant mounts found"\n\
-    echo ""\n\
-    echo "=== Environment variables ==="\n\
-    env | grep -E "(HOME|PWD|WORKDIR)" || echo "No relevant env vars"\n\
-    exit 1\n\
-fi\n\
-echo ""\n\
-echo "=== Directory structure ==="\n\
-find /app -maxdepth 2 -type d\n\
-echo ""\n\
-echo "=== Starting Shiny app ==="\n\
-echo "Running: shiny::runApp(\"/app\", port = 3838, host = \"0.0.0.0\")"\n\
-echo ""\n\
-cd /app\n\
-exec R -e "shiny::runApp(\"/app\", port = 3838, host = \"0.0.0.0\")"\n\
-' > /start.sh && chmod +x /start.sh
-
-# Use the startup script that includes debugging
-CMD ["/bin/bash", "/start.sh"]
+CMD ["R", "-e", "shiny::runApp('/app', port=3838, host='0.0.0.0')"]

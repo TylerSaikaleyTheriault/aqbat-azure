@@ -1,20 +1,12 @@
-<article class="step-counter">
+<article class="step-counter" lang="{{lang}}">
     <div>
-        <span id="progress-description-{{stepNumber}}">
-            <strong>{{i18n$t("Step")}} {{stepNumber}}</strong> {{i18n$t("of")}} {{totalSteps}}
+        <span id="progress-description-{{stepNumber}}" lang="{{lang}}">
+            <strong lang="{{lang}}">{{i18n$t("Step")}} {{stepNumber}}</strong> {{i18n$t("of")}} {{totalSteps}}
         </span>&nbsp;
     </div>
-    <progress
-        id="progress-bar-{{stepNumber}}"
-        value="{{stepNumber}}"
-        max="{{totalSteps}}"
-        aria-labelledby="progress-description-{{stepNumber}}"
-        aria-valuenow="{{stepNumber}}"
-        aria-valuemin="1"
-        aria-valuemax="{{totalSteps}}"
-    >
+    <progress id="progress-bar-{{stepNumber}}" value="{{stepNumber}}" max="{{totalSteps}}" aria-hidden="true">
         <span class="wb-inv">
-            Step {{stepNumber}} of {{totalSteps}}
+            {{i18n$t("Step")}} {{stepNumber}} {{i18n$t("of")}} {{totalSteps}}
         </span>
     </progress>
 </article>

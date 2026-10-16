@@ -39,10 +39,11 @@ createRestoreInstructions <- function(i18n) {
   htmlTemplate("templates/restore-instructions.html", i18n = i18n)
 }
 
-createLoader <- function(loadingMessage) {
+createLoader <- function(loadingMessage, lang = "en") {
   htmlTemplate(
     filename = "templates/loader.html",
-    loadingMessage = loadingMessage
+    loadingMessage = loadingMessage,
+    lang = lang
   )
 }
 
@@ -71,13 +72,14 @@ createErrorMessage <- function(message, i18n, identifier = "") {
   )
 }
 
-createStepUI <- function(i18n, stepNumber, totalSteps, progressMax) {
+createStepUI <- function(i18n, stepNumber, totalSteps, progressMax, lang = "en") {
   htmlTemplate(
     "templates/progress.html",
     i18n = i18n,
     stepNumber = stepNumber,
     totalSteps = totalSteps,
     progressMax = progressMax,
+    lang = i18n$get_translation_language()
   )
 }
 
@@ -95,11 +97,6 @@ valuationReferences <- valuationReferences_en
 # setup app reload
 jscode <- "shinyjs.reload = function() { location.reload(); }"
 
-setLang <- HTML(paste0("
-  $(document).ready(function() {
-    $('#aqbat').attr('lang', '", currentlanguage, "');
-  });
-"))
 
 # load files of pollutant and province names for maps
 pollnames_en <- read.csv("pollnames.csv", stringsAsFactors = FALSE)
@@ -226,28 +223,40 @@ xsample1_fr <- read.csv("pollutants_2016wtox_fr.csv", stringsAsFactors = FALSE) 
 
 xsample1 <- if (currentlanguage == "en") xsample1_en else xsample1_fr
 
-geocode <- data.frame(
-  Name = c(
-    "Canada", i18n$t("NL"), i18n$t("PE"), i18n$t("NS"), i18n$t("NB"), i18n$t("QC"), i18n$t("ON"), i18n$t("MB"), i18n$t("SK"),
-    i18n$t("AB"), i18n$t("BC"), i18n$t("YK"), i18n$t("NT"), i18n$t("NU")
-  ),
-  geocode = c(1, 10, 11, 12, 13, 24, 35, 46, 47, 48, 59, 60, 61, 62),
-  geotype = c(i18n$t("National"), "Province", "Province", "Province", "Province", "Province", "Province", "Province", "Province", "Province", "Province", i18n$t("Territory"), i18n$t("Territory"), i18n$t("Territory"))
-) # prevent from missing province in results
+# Build geocode for both languages so server can use session-scoped version (cross-tab fix)
+.geocode_lang <- function(lang) {
+  old <- i18n$get_translation_language()
+  on.exit(i18n$set_translation_language(old))
+  i18n$set_translation_language(lang)
+  data.frame(
+    Name = c(
+      "Canada", i18n$t("NL"), i18n$t("PE"), i18n$t("NS"), i18n$t("NB"), i18n$t("QC"), i18n$t("ON"), i18n$t("MB"), i18n$t("SK"),
+      i18n$t("AB"), i18n$t("BC"), i18n$t("YK"), i18n$t("NT"), i18n$t("NU")
+    ),
+    geocode = c(1, 10, 11, 12, 13, 24, 35, 46, 47, 48, 59, 60, 61, 62),
+    geotype = c(i18n$t("National"), "Province", "Province", "Province", "Province", "Province", "Province", "Province", "Province", "Province", "Province", i18n$t("Territory"), i18n$t("Territory"), i18n$t("Territory"))
+  )
+}
+geocode_en <- .geocode_lang("en")
+geocode_fr <- .geocode_lang("fr")
+geocode <- geocode_en # default for source-time use
 
-# define functions
-beta <- function(rtype, rr, incr) {
-  ifelse(rtype == i18n$t("log-linear"), log(rr) / incr, (rr - 1) / incr)
+# define functions (log_linear_label optional: pass get_session_t("log-linear") from server for session language)
+beta <- function(rtype, rr, incr, log_linear_label = NULL) {
+  ll <- if (is.null(log_linear_label)) i18n$t("log-linear") else log_linear_label
+  ifelse(rtype == ll, log(rr) / incr, (rr - 1) / incr)
 } # transfer RR to beta
-se <- function(rtype, urr, lrr, incr) {
-  ifelse(rtype == i18n$t("log-linear"), (log(urr) - log(lrr)) / (2 * 1.96 * incr), (urr - lrr) / (2 * 1.96 * incr))
+se <- function(rtype, urr, lrr, incr, log_linear_label = NULL) {
+  ll <- if (is.null(log_linear_label)) i18n$t("log-linear") else log_linear_label
+  ifelse(rtype == ll, (log(urr) - log(lrr)) / (2 * 1.96 * incr), (urr - lrr) / (2 * 1.96 * incr))
 } # transfer 95%CI to se
 
 chrochg <- function(statusquo, counterfactual) {
   return(statusquo - counterfactual)
 } # function for SCHIF
-af <- function(rtype, beta, deltap) {
-  ifelse(rtype == i18n$t("log-linear"), ((exp(beta * deltap) - 1) / exp(beta * deltap)), beta * deltap)
+af <- function(rtype, beta, deltap, log_linear_label = NULL) {
+  ll <- if (is.null(log_linear_label)) i18n$t("log-linear") else log_linear_label
+  ifelse(rtype == ll, ((exp(beta * deltap) - 1) / exp(beta * deltap)), beta * deltap)
 } # function for attributable fraction
 afa <- function(deltap, beta) {
   (exp(beta * deltap) - 1) / exp(beta * deltap)
@@ -406,12 +415,15 @@ lifeyr6 <- function(pct2) {
 # functions for changes in life expectancy
 
 
-valdist <- function(y, n, a1, a2, a3, a4, a5) {
-  if (y == i18n$t("normal")) {
+valdist <- function(y, n, a1, a2, a3, a4, a5, normal_label = NULL, discrete_label = NULL, triangular_label = NULL) {
+  nlab <- if (is.null(normal_label)) i18n$t("normal") else normal_label
+  dlab <- if (is.null(discrete_label)) i18n$t("discrete") else discrete_label
+  tlab <- if (is.null(triangular_label)) i18n$t("triangular") else triangular_label
+  if (y == nlab) {
     return(rnorm(n, a1, a2))
-  } else if (y == i18n$t("discrete")) {
+  } else if (y == dlab) {
     return(sample(c(a1, a2, a3), size = n, replace = TRUE, prob = c(a4, a5, 1 - a4 - a5)))
-  } else if (y == i18n$t("triangular")) {
+  } else if (y == tlab) {
     return(rtri(n, as.double(a2), as.double(a3), as.double(a1)))
   }
 } # loop for valuation distribution
@@ -426,1870 +438,1856 @@ ui <- function(request = NULL) {
       if (!is.null(query$lang) && query$lang %in% c("en", "fr")) lang <- query$lang
     }
   }
+  # Set i18n for this request so UI strings (i18n$t) are correct when page is built. No other globals.
   currentlanguage <<- i18n$set_translation_language(lang)
-  pmReferences <<- if (lang == "en") pmReferences_en else pmReferences_fr
-  otherReferences <<- if (lang == "en") otherReferences_en else otherReferences_fr
-  valuationReferences <<- if (lang == "en") valuationReferences_en else valuationReferences_fr
-  pollnames <<- if (lang == "en") pollnames_en else pollnames_fr
-  prov <<- if (lang == "en") prov_en else prov_fr
-  xprov <<- if (lang == "en") xprov_en else xprov_fr
-  cdmap <<- if (lang == "en") cdmap_en else cdmap_fr
-  three <<- if (lang == "en") three_en else three_fr
-  cpi <<- if (lang == "en") cpi_en else cpi_fr
-  xsample1 <<- if (lang == "en") xsample1_en else xsample1_fr
-  geocode <<- data.frame(
-    Name = c(
-      "Canada", i18n$t("NL"), i18n$t("PE"), i18n$t("NS"), i18n$t("NB"), i18n$t("QC"), i18n$t("ON"), i18n$t("MB"), i18n$t("SK"),
-      i18n$t("AB"), i18n$t("BC"), i18n$t("YK"), i18n$t("NT"), i18n$t("NU")
-    ),
-    geocode = c(1, 10, 11, 12, 13, 24, 35, 46, 47, 48, 59, 60, 61, 62),
-    geotype = c(i18n$t("National"), "Province", "Province", "Province", "Province", "Province", "Province", "Province", "Province", "Province", "Province", i18n$t("Territory"), i18n$t("Territory"), i18n$t("Territory"))
-  )
-  one <<- if (lang == "en") one_en else one_fr
+  pmRefs <- if (lang == "en") pmReferences_en else pmReferences_fr
+  otherRefs <- if (lang == "en") otherReferences_en else otherReferences_fr
+  valuationRefs <- if (lang == "en") valuationReferences_en else valuationReferences_fr
   fluidPage(
-  # Hidden input: language for this session (set when UI is built; avoids URL reactive / cross-session issues)
-  tags$div(style = "display: none;", textInput("session_lang", label = NULL, value = lang)),
-  # add_loading_state(
-  #   ".shiny-plot-output", # selector
-  #   spinner = "circle",
-  #   text = i18n$t("Please wait..."),
-  #   timeout = 600,
-  #   svgColor = "#383838",
-  #   svgSize = "45px",
-  #   messageColor = "#383838",
-  #   messageFontSize = "14px",
-  #   backgroundColor = "#ffffff"
-  # ),
-  title = i18n$t("AQBAT"),
-  tags$head(
-    tags$title(i18n$t("Air Quality Benefits Assessment Tool"), "|", i18n$t("Health Canada"), i18n$t("Infobase")),
-    tags$script(setLang, type = "application/javascript"),
-    tags$script(src = "scripts/iframeResizer.contentWindow.min.js", type = "application/javascript"),
-    tags$script(src = "scripts/save-load-url.js", type = "application/javascript"),
-    tags$script(src = "scripts/utilities.js", type = "application/javascript"),
-    tags$script(src = "scripts/jquery.magnific-popup.min.js", type = "application/javascript"),
-    # tags$script(src = "scripts/handle-internal-anchor.js", type = "application/javascript"),
-    tags$link(rel = "stylesheet", href = "styles/theme.min.css", type = "text/css"), # Canada.ca theming
-    tags$link(rel = "stylesheet", href = "styles/aqbat.css", type = "text/css") # Custom styles
-  ),
-  useShinyjs(),
-  extendShinyjs(text = jscode, functions = "reload"),
+    lang = lang, # root <html lang="..."> for screen readers (correct voice for FR/EN)
+    # Hidden input: language for this session (set when UI is built; avoids URL reactive / cross-session issues)
+    tags$div(style = "display: none;", textInput("session_lang", label = NULL, value = lang)),
+    # add_loading_state(
+    #   ".shiny-plot-output", # selector
+    #   spinner = "circle",
+    #   text = i18n$t("Please wait..."),
+    #   timeout = 600,
+    #   svgColor = "#383838",
+    #   svgSize = "45px",
+    #   messageColor = "#383838",
+    #   messageFontSize = "14px",
+    #   backgroundColor = "#ffffff"
+    # ),
+    title = i18n$t("AQBAT"),
+    tags$head(
+      tags$title(i18n$t("Air Quality Benefits Assessment Tool"), "|", i18n$t("Health Canada"), i18n$t("Infobase")),
+      tags$script(src = "scripts/iframeResizer.contentWindow.min.js", type = "application/javascript"),
+      tags$script(src = "scripts/save-load-url.js", type = "application/javascript"),
+      tags$script(src = "scripts/utilities.js", type = "application/javascript"),
+      tags$script(src = "scripts/jquery.magnific-popup.min.js", type = "application/javascript"),
+      # tags$script(src = "scripts/handle-internal-anchor.js", type = "application/javascript"),
+      tags$link(rel = "stylesheet", href = "styles/theme.min.css", type = "text/css"), # Canada.ca theming
+      tags$link(rel = "stylesheet", href = "styles/aqbat.css", type = "text/css") # Custom styles
+    ),
+    useShinyjs(),
+    extendShinyjs(text = jscode, functions = "reload"),
 
-  # format error messages in bold red font
-  tags$head(
-    tags$style(HTML("
+    # format error messages in bold red font
+    tags$head(
+      tags$style(HTML("
       .shiny-output-error-validation {
         color: #ff0000;
         font-weight: bold;
       }
     "))
-  ),
-  tags$style(HTML("
+    ),
+    tags$style(HTML("
     #shiny-disconnected-overlay {
       z-index: 2 !important;
     }
   ")),
-  tags$body(class = "container hidden test"), # the container class from theme.min.css perfectly replicates the width of Canada.c
-  # createDisconnectMessage(i18n),
-  createErrorMessage("An error occurred. Please refresh the page and start again.", i18n),
-  useShinyjs(),
-  tags$head(
-    tags$style(HTML("hr {border-top: 1px solid #000000;}"))
-  ),
-  createDisconnectNoticeModal(i18n$t("You have been disconnected from the server. All data has been lost. This can happen if the application has been updated on the server. Please refresh the page to restart the app. You may press F5 to refresh."), "disconnect-warning", i18n),
-  createWarningModal(i18n$t("You are about to reset this application, along with all of its data."), "data-warning", i18n),
-  tags$nav(
-    class = "btn-tabs",
-    tabsetPanel(
-      id = "alltabpanel",
-      tabPanel(
-        i18n$t("Summary"),
-        value = i18n$t("summary"),
-        tabindex = "-1",
-        summary_ui(i18n),
-      ),
-      tabPanel(
-        i18n$t("CRFs"),
-        value = i18n$t("crfs"),
-        tabindex = "-1",
-        createStepUI(i18n, stepNumber = 1, totalSteps = 4, progressMax = 4),
-        p(i18n$t("Review concentration response functions (CRFs) and other parameters. The default values provided below are Health Canada-endorsed concentration-response functions to support the health impact assessment of air pollution. Change them as needed for your scenario by entering your desired values.")),
-        tags$nav(
-          h3(i18n$t("On this page")),
-          tags$ul(
-            tags$li(tags$a(
-              i18n$t("Threshold concentration"),
-              href = "#threshold",
-              class = "scroll-link"
-            )),
-            tags$li(tags$a(
-              i18n$t("PM2.5 CRFs"),
-              href = "#pm25",
-            )),
-            tags$li(tags$a(
-              i18n$t("CRFs (O3, CO, SO2, NO2)"),
-              href = "#crfs",
-            )),
-            tags$li(tags$a(
-              i18n$t("Toxics"),
-              href = "#toxics",
-            )),
-            tags$li(tags$a(
-              i18n$t("Other parameters"),
-              href = "#other",
-            ))
-          )
+    tags$body(class = "container hidden test"), # the container class from theme.min.css perfectly replicates the width of Canada.c
+    # createDisconnectMessage(i18n),
+    createErrorMessage("An error occurred. Please refresh the page and start again.", i18n),
+    useShinyjs(),
+    tags$head(
+      tags$style(HTML("hr {border-top: 1px solid #000000;}"))
+    ),
+    createDisconnectNoticeModal(i18n$t("You have been disconnected from the server. All data has been lost. This can happen if the application has been updated on the server. Please refresh the page to restart the app. You may press F5 to refresh."), "disconnect-warning", i18n),
+    createWarningModal(i18n$t("You are about to reset this application, along with all of its data."), "data-warning", i18n),
+    tags$nav(
+      class = "btn-tabs",
+      tabsetPanel(
+        id = "alltabpanel",
+        tabPanel(
+          i18n$t("Summary"),
+          value = i18n$t("summary"),
+          tabindex = "-1",
+          summary_ui(i18n),
         ),
-        h2(i18n$t("Threshold concentration"), id = "threshold"),
-        p(i18n$t("Use this section to specify concentrations below which there is no association between air pollution and adverse health effects."), class = "crf-description"),
-        tabindex = "0",
-        useShinyjs(),
-        createRestoreInstructions(i18n),
-        p(i18n$t("The default value for each pollutant's threshold concentration is zero.")),
-        actionButton("resetthreshold", i18n$t("Restore default values"), class = "btn-primary", tabindex = "0"),
-        br(),
-        br(),
-        p(i18n$t("Click \"Clear all data and restart\" to restart the app for a new scenario. Data in all tabs will be reset to defaults. The default value for each pollutant is zero.")),
-        createClearDataButton("crfs", i18n),
-        br(),
-        br(),
-        div(
-          id = "formthreshold",
-          class = "parameter-box",
-          fluidRow(
-            column(4, numericInput("pmthr", i18n$t("PM2.5 (ug/m3)"), value = 0, min = 0, step = 0.001, max = 3)),
-            column(4, numericInput("o3thr", i18n$t("O3 (ppb)"), 0, min = 0, step = 0.1, max = 30)),
-            column(4, numericInput("summero3thr", i18n$t("Summer O3 (ppb)"), 0, min = 0, step = 0.1, max = 30))
+        tabPanel(
+          i18n$t("CRFs"),
+          value = i18n$t("crfs"),
+          tabindex = "-1",
+          createStepUI(i18n, stepNumber = 1, totalSteps = 4, progressMax = 4, lang = lang),
+          p(i18n$t("Review concentration response functions (CRFs) and other parameters. The default values provided below are Health Canada-endorsed concentration-response functions to support the health impact assessment of air pollution. Change them as needed for your scenario by entering your desired values.")),
+          tags$nav(
+            h3(i18n$t("On this page")),
+            tags$ul(
+              tags$li(tags$a(
+                i18n$t("Threshold concentration"),
+                href = "#threshold",
+              )),
+              tags$li(tags$a(
+                i18n$t("PM2.5 CRFs"),
+                href = "#pm25",
+              )),
+              tags$li(tags$a(
+                i18n$t("CRFs (O3, CO, SO2, NO2)"),
+                href = "#crfs",
+              )),
+              tags$li(tags$a(
+                i18n$t("Toxics"),
+                href = "#toxics",
+              )),
+              tags$li(tags$a(
+                i18n$t("Other parameters"),
+                href = "#other",
+              ))
+            )
           ),
+          h2(i18n$t("Threshold concentration"), id = "threshold"),
+          p(i18n$t("Use this section to specify concentrations below which there is no association between air pollution and adverse health effects."), class = "crf-description"),
+          useShinyjs(),
+          createRestoreInstructions(i18n),
+          p(i18n$t("The default value for each pollutant's threshold concentration is zero.")),
+          actionButton("resetthreshold", i18n$t("Restore default values"), class = "btn-primary", tabindex = "0"),
           br(),
-          fluidRow(
-            column(4, numericInput("no2thr", i18n$t("NO2 (ppb)"), 0, min = 0, step = 0.001, max = 1)),
-            column(4, numericInput("so2thr", i18n$t("SO2 (ppb)"), 0, min = 0, step = 0.001, max = 1)),
-            column(4, numericInput("cothr", i18n$t("CO (ppm)"), 0, min = 0, step = 0.001, max = 1)),
-          ),
-        ),
-        hr(),
-        h2(i18n$t("PM2.5 CRFs"), id = "pm25"),
-        p(i18n$t("This section provides concentration response functions (CRFs) for fine particulate matter (with a 10 ug/m3 change) and ten associated health endpoints. You may edit and use your own values."), class = "crf-description"),
-        tabindex = "0",
-        useShinyjs(),
-        createRestoreInstructions(i18n),
-        div(
-          id = "formpm25",
-          fluidRow(
-            column(4, actionButton("resetpm25", i18n$t("Restore default values"), tabindex = "0", class = "btn-primary")),
-            # column(4, numericInput("pmthr", "PM2.5 Threshold Concentration (ug/m3)", 0, min = 0, step=0.001,max = 2.5)),
-          ),
           br(),
-          fluidRow(
-            column(
-              12,
-              p(i18n$t("\"L95%CI\" refers to the lower 95% confidence interval and \"U95%CI\" refers to the upper 95% confidence interval."), )
-            )
-          ),
+          p(i18n$t("Click \"Clear all data and restart\" to restart the app for a new scenario. Data in all tabs will be reset to defaults. The default value for each pollutant is zero.")),
+          createClearDataButton("crfs", i18n),
+          br(),
+          br(),
           div(
-            class = "grid-linear",
-            h3(strong(i18n$t("Chronic exposure mortality")), class = "grid-heading"),
-            div(
-              class = "parameter-box left-parameter-box",
-              div(
-                column(
-                  12,
-                  div(
-                    class = "",
-                    tags$label(i18n$t("Source"), class = "control-label"),
-                    p(i18n$t("Crouse et al. 2012")),
-                  ),
-                ),
-                column(
-                  12,
-                  div(
-                    class = "form-group shiny-input-container",
-                    tags$label(i18n$t("Regression type"), class = "control-label"),
-                    p(i18n$t("Log-linear")),
-                    # hidden select with default choice log-linear
-                    hidden(selectInput("rtype", i18n$t("Regression type"), c(i18n$t("log-linear"), i18n$t("linear")))),
-                  ),
-                ),
-              ),
+            id = "formthreshold",
+            class = "parameter-box",
+            fluidRow(
+              column(4, numericInput("pmthr", i18n$t("PM2.5 (ug/m3)"), value = 0, min = 0, step = 0.001, max = 3)),
+              column(4, numericInput("o3thr", i18n$t("O3 (ppb)"), 0, min = 0, step = 0.1, max = 30)),
+              column(4, numericInput("summero3thr", i18n$t("Summer O3 (ppb)"), 0, min = 0, step = 0.1, max = 30))
             ),
-            div(
-              class = "parameter-box right-parameter-box",
-              fluidRow(
-                column(6, numericInput("crf", i18n$t("HR/RR/OR"), 1.1, min = 1, step = 0.01, max = 5)),
-                column(6, numericInput("incr", i18n$t("Increment (ug/m3)"), 10, min = 1, step = 1, max = 100)),
-              ),
-              fluidRow(
-                column(6, numericInput("l95", i18n$t("L95%CI"), 1.05, min = 1, step = 0.01, max = 5)),
-                column(6, numericInput("u95", i18n$t("U95%CI"), 1.15, min = 1, step = 0.01, max = 5)),
-              ),
+            br(),
+            fluidRow(
+              column(4, numericInput("no2thr", i18n$t("NO2 (ppb)"), 0, min = 0, step = 0.001, max = 1)),
+              column(4, numericInput("so2thr", i18n$t("SO2 (ppb)"), 0, min = 0, step = 0.001, max = 1)),
+              column(4, numericInput("cothr", i18n$t("CO (ppm)"), 0, min = 0, step = 0.001, max = 1)),
             ),
-          ),
-          div(
-            class = "grid-linear",
-            # Title Header
-            h3(strong(i18n$t("Acute respiratory symptom days")), class = "grid-heading"),
-            # Left parameter box containing Source and Regression type
-            div(
-              class = "parameter-box left-parameter-box",
-              div(
-                column(
-                  12,
-                  div(
-                    class = "",
-                    tags$label(i18n$t("Source"), class = "control-label"),
-                    # Source information
-                    p(i18n$t("Krupnick et al. 1990")),
-                  )
-                ),
-                column(
-                  12,
-                  div(
-                    class = "form-group shiny-input-container",
-                    tags$label(i18n$t("Regression type"), class = "control-label"),
-                    # Regression type information
-                    p(i18n$t("Linear")),
-                    # Hidden select input for regression type, default choice set to linear
-                    hidden(selectInput("pm25_rtype2", i18n$t("Regression type"), c(i18n$t("linear"), i18n$t("log-linear")))),
-                  )
-                )
-              )
-            ),
-            # Right parameter box containing numeric inputs
-            div(
-              class = "parameter-box right-parameter-box",
-              # First row with HR/RR/OR and Increment inputs
-              fluidRow(
-                column(6, numericInput("pm25_crf2", i18n$t("HR/RR/OR"), 1.0266, min = 0, step = 0.001, max = 5)),
-                column(6, numericInput("pm25_incr2", i18n$t("Increment (ug/m3)"), 10, min = 1, step = 1, max = 100))
-              ),
-              # Second row with L95%CI and U95%CI inputs
-              fluidRow(
-                column(6, numericInput("pm25_l95_2", i18n$t("L95%CI"), 0.9994, min = 0.8, step = 0.01, max = 5)),
-                column(6, numericInput("pm25_u95_2", i18n$t("U95%CI"), 1.0538, min = 0, step = 0.01, max = 5))
-              )
-            )
-          ),
-          div(
-            class = "grid-linear",
-            # Title Header
-            h3(strong(i18n$t("Adult chronic bronchitis cases")), class = "grid-heading"),
-            # Left parameter box containing Source and Regression type
-            div(
-              class = "parameter-box left-parameter-box",
-              div(
-                column(
-                  12,
-                  div(
-                    class = "",
-                    tags$label(i18n$t("Source"), class = "control-label"),
-                    # Source information
-                    p(i18n$t("Abbey et al. 1995")),
-                  )
-                ),
-                column(
-                  12,
-                  div(
-                    class = "form-group shiny-input-container",
-                    tags$label(i18n$t("Regression type"), class = "control-label"),
-                    # Regression type information
-                    p(i18n$t("Log-linear")),
-                    # Hidden select input for regression type, default choice set to log-linear
-                    hidden(selectInput("pm25_rtype3", i18n$t("Regression type"), c(i18n$t("log-linear"), i18n$t("linear")))),
-                  )
-                )
-              )
-            ),
-            # Right parameter box containing numeric inputs
-            div(
-              class = "parameter-box right-parameter-box",
-              # First row with HR/RR/OR and Increment inputs
-              fluidRow(
-                column(6, numericInput("pm25_crf3", i18n$t("HR/RR/OR"), 1.14, min = 1, step = 0.01, max = 5)),
-                column(6, numericInput("pm25_incr3", i18n$t("Increment (ug/m3)"), 10, min = 1, step = 1, max = 100))
-              ),
-              # Second row with L95%CI and U95%CI inputs
-              fluidRow(
-                column(6, numericInput("pm25_l95_3", i18n$t("L95%CI"), 1, min = 1, step = 0.01, max = 5)),
-                column(6, numericInput("pm25_u95_3", i18n$t("U95%CI"), 1.3, min = 1, step = 0.01, max = 5))
-              )
-            )
-          ),
-          div(
-            class = "grid-linear",
-            # Title Header
-            h3(strong(i18n$t("Asthma symptom days")), class = "grid-heading"),
-            # Left parameter box containing Source and Regression type
-            div(
-              class = "parameter-box left-parameter-box",
-              div(
-                column(
-                  12,
-                  div(
-                    class = "",
-                    tags$label(i18n$t("Source"), class = "control-label"),
-                    # Source information
-                    p(i18n$t("Weinmayr et al. 2010; Ward and Ayres 2004; Dell et al. 2010")),
-                  )
-                ),
-                column(
-                  12,
-                  div(
-                    class = "form-group shiny-input-container",
-                    tags$label(i18n$t("Regression type"), class = "control-label"),
-                    # Regression type information
-                    p(i18n$t("Log-linear")),
-                    # Hidden select input for regression type, default choice set to log-linear
-                    hidden(selectInput("pm25_rtype4", i18n$t("Regression type"), c(i18n$t("log-linear"), i18n$t("linear")))),
-                  )
-                )
-              )
-            ),
-            # Right parameter box containing numeric inputs
-            div(
-              class = "parameter-box right-parameter-box",
-              # First row with HR/RR/OR and Increment inputs
-              fluidRow(
-                column(6, numericInput("pm25_crf4", i18n$t("HR/RR/OR"), 1.0676, min = 1, step = 0.001, max = 5)),
-                column(6, numericInput("pm25_incr4", i18n$t("Increment (ug/m3)"), 10, min = 1, step = 1, max = 100))
-              ),
-              # Second row with L95%CI and U95%CI inputs
-              fluidRow(
-                column(6, numericInput("pm25_l95_4", i18n$t("L95%CI"), 1.0137, min = 1, step = 0.001, max = 5)),
-                column(6, numericInput("pm25_u95_4", i18n$t("U95%CI"), 1.125, min = 1, step = 0.001, max = 5))
-              )
-            )
-          ),
-          div(
-            class = "grid-linear",
-            # Title Header
-            h3(strong(i18n$t("Cardiac emergency room visits")), class = "grid-heading"),
-            # Left parameter box containing Source and Regression type
-            div(
-              class = "parameter-box left-parameter-box",
-              div(
-                column(
-                  12,
-                  div(
-                    class = "",
-                    tags$label(i18n$t("Source"), class = "control-label"),
-                    # Source information
-                    p(i18n$t("Burnett et al. 1995; Stieb et al. 2000")),
-                  )
-                ),
-                column(
-                  12,
-                  div(
-                    class = "form-group shiny-input-container",
-                    tags$label(i18n$t("Regression type"), class = "control-label"),
-                    # Regression type information
-                    p(i18n$t("Linear")),
-                    # Hidden select input for regression type, default choice set to linear
-                    hidden(selectInput("pm25_rtype5", i18n$t("Regression type"), c(i18n$t("linear"), i18n$t("log-linear")))),
-                  )
-                )
-              )
-            ),
-            # Right parameter box containing numeric inputs
-            div(
-              class = "parameter-box right-parameter-box",
-              # First row with HR/RR/OR and Increment inputs
-              fluidRow(
-                column(6, numericInput("pm25_crf5", i18n$t("HR/RR/OR"), 1.00711, min = 1, step = 0.0001, max = 5)),
-                column(6, numericInput("pm25_incr5", i18n$t("Increment (ug/m3)"), 10, min = 1, step = 1, max = 100))
-              ),
-              # Second row with L95%CI and U95%CI inputs
-              fluidRow(
-                column(6, numericInput("pm25_l95_5", i18n$t("L95%CI"), 1.00378, min = 0, step = 0.0001, max = 5)),
-                column(6, numericInput("pm25_u95_5", i18n$t("U95%CI"), 1.0104, min = 0, step = 0.0001, max = 5))
-              )
-            )
-          ),
-          div(
-            class = "grid-linear",
-            # Title Header
-            h3(strong(i18n$t("Cardiac hospital admissions")), class = "grid-heading"),
-            # Left parameter box containing Source and Regression type
-            div(
-              class = "parameter-box left-parameter-box",
-              div(
-                column(
-                  12,
-                  div(
-                    class = "",
-                    tags$label(i18n$t("Source"), class = "control-label"),
-                    # Source information
-                    p(i18n$t("Burnett et al. 1995")),
-                  )
-                ),
-                column(
-                  12,
-                  div(
-                    class = "form-group shiny-input-container",
-                    tags$label(i18n$t("Regression type"), class = "control-label"),
-                    # Regression type information
-                    p(i18n$t("Linear")),
-                    # Hidden select input for regression type, default choice set to linear
-                    hidden(selectInput("pm25_rtype6", i18n$t("Regression type"), c(i18n$t("linear"), i18n$t("log-linear")))),
-                  )
-                )
-              )
-            ),
-            # Right parameter box containing numeric inputs
-            div(
-              class = "parameter-box right-parameter-box",
-              # First row with HR/RR/OR and Increment inputs
-              fluidRow(
-                column(6, numericInput("pm25_crf6", i18n$t("HR/RR/OR"), 1.00711, min = 0, step = 0.0001, max = 5)),
-                column(6, numericInput("pm25_incr6", i18n$t("Increment (ug/m3)"), 10, min = 1, step = 1, max = 100))
-              ),
-              # Second row with L95%CI and U95%CI inputs
-              fluidRow(
-                column(6, numericInput("pm25_l95_6", i18n$t("L95%CI"), 1.00378, min = 0, step = 0.0001, max = 5)),
-                column(6, numericInput("pm25_u95_6", i18n$t("U95%CI"), 1.0104, min = 0, step = 0.0001, max = 5))
-              )
-            )
-          ),
-          div(
-            class = "grid-linear",
-            # Title Header
-            h3(strong(i18n$t("Child acute bronchitis episodes")), class = "grid-heading"),
-            # Left parameter box containing Source and Regression type
-            div(
-              class = "parameter-box left-parameter-box",
-              div(
-                column(
-                  12,
-                  div(
-                    class = "",
-                    tags$label(i18n$t("Source"), class = "control-label"),
-                    # Source information
-                    p(i18n$t("Heok et al. 2012; Dockery et al. 1996")),
-                  )
-                ),
-                column(
-                  12,
-                  div(
-                    class = "form-group shiny-input-container",
-                    tags$label(i18n$t("Regression type"), class = "control-label"),
-                    # Regression type information
-                    p(i18n$t("Log-linear")),
-                    # Hidden select input for regression type, default choice set to log-linear
-                    hidden(selectInput("pm25_rtype7", i18n$t("Regression type"), c(i18n$t("log-linear"), i18n$t("linear")))),
-                  )
-                )
-              )
-            ),
-            # Right parameter box containing numeric inputs
-            div(
-              class = "parameter-box right-parameter-box",
-              # First row with HR/RR/OR and Increment inputs
-              fluidRow(
-                column(6, numericInput("pm25_crf7", i18n$t("HR/RR/OR"), 1.0934, min = 1, step = 0.01, max = 5)),
-                column(6, numericInput("pm25_incr7", i18n$t("Increment (ug/m3)"), 10, min = 1, step = 1, max = 100))
-              ),
-              # Second row with L95%CI and U95%CI inputs
-              fluidRow(
-                column(6, numericInput("pm25_l95_7", i18n$t("L95%CI"), 0.977, min = 0.9, step = 0.01, max = 5)),
-                column(6, numericInput("pm25_u95_7", i18n$t("U95%CI"), 1.224, min = 1, step = 0.01, max = 5))
-              )
-            )
-          ),
-          div(
-            class = "grid-linear",
-            # Title Header
-            h3(strong(i18n$t("Respiratory emergency room visits")), class = "grid-heading"),
-            # Left parameter box containing Source and Regression type
-            div(
-              class = "parameter-box left-parameter-box",
-              div(
-                column(
-                  12,
-                  div(
-                    class = "",
-                    tags$label(i18n$t("Source"), class = "control-label"),
-                    # Source information
-                    p(i18n$t("Burnett et al. 1995; Stieb et al. 2000")),
-                  )
-                ),
-                column(
-                  12,
-                  div(
-                    class = "form-group shiny-input-container",
-                    tags$label(i18n$t("Regression type"), class = "control-label"),
-                    # Regression type information
-                    p(i18n$t("Log-linear")),
-                    # Hidden select input for regression type, default choice set to log-linear
-                    hidden(selectInput("pm25_rtype8", i18n$t("Regression type"), c(i18n$t("linear"), i18n$t("log-linear")))),
-                  )
-                )
-              )
-            ),
-            # Right parameter box containing numeric inputs
-            div(
-              class = "parameter-box right-parameter-box",
-              # First row with HR/RR/OR and Increment inputs
-              fluidRow(
-                column(6, numericInput("pm25_crf8", i18n$t("HR/RR/OR"), 1.00754, min = 0, step = 0.0001, max = 5)),
-                column(6, numericInput("pm25_incr8", i18n$t("Increment (ug/m3)"), 10, min = 1, step = 1, max = 100))
-              ),
-              # Second row with L95%CI and U95%CI inputs
-              fluidRow(
-                column(6, numericInput("pm25_l95_8", i18n$t("L95%CI"), 1.00495, min = 0, step = 0.0001, max = 5)),
-                column(6, numericInput("pm25_u95_8", i18n$t("U95%CI"), 1.01013, min = 0, step = 0.0001, max = 5))
-              )
-            )
-          ),
-          div(
-            class = "grid-linear",
-            # Title Header
-            h3(strong(i18n$t("Respiratory hospital admissions")), class = "grid-heading"),
-            # Left parameter box containing Source and Regression type
-            div(
-              class = "parameter-box left-parameter-box",
-              div(
-                column(
-                  12,
-                  div(
-                    class = "",
-                    tags$label(i18n$t("Source"), class = "control-label"),
-                    # Source information
-                    p(i18n$t("Burnett et al. 1995")),
-                  )
-                ),
-                column(
-                  12,
-                  div(
-                    class = "form-group shiny-input-container",
-                    tags$label(i18n$t("Regression type"), class = "control-label"),
-                    # Regression type information
-                    p(i18n$t("Log-linear")),
-                    # Hidden select input for regression type, default choice set to log-linear
-                    hidden(selectInput("pm25_rtype9", i18n$t("Regression type"), c(i18n$t("linear"), i18n$t("log-linear")))),
-                  )
-                )
-              )
-            ),
-            # Right parameter box containing numeric inputs
-            div(
-              class = "parameter-box right-parameter-box",
-              # First row with HR/RR/OR and Increment inputs
-              fluidRow(
-                column(6, numericInput("pm25_crf9", i18n$t("HR/RR/OR"), 1.00754, min = 0, step = 0.0001, max = 5)),
-                column(6, numericInput("pm25_incr9", i18n$t("Increment (ug/m3)"), 10, min = 1, step = 1, max = 100))
-              ),
-              # Second row with L95%CI and U95%CI inputs
-              fluidRow(
-                column(6, numericInput("pm25_l95_9", i18n$t("L95%CI"), 1.00495, min = 0, step = 0.0001, max = 5)),
-                column(6, numericInput("pm25_u95_9", i18n$t("U95%CI"), 1.01013, min = 0, step = 0.0001, max = 5))
-              )
-            )
-          ),
-          div(
-            class = "grid-linear",
-            # Title Header
-            h3(strong(i18n$t("Restricted activity days")), class = "grid-heading"),
-            # Left parameter box containing Source and Regression type
-            div(
-              class = "parameter-box left-parameter-box",
-              div(
-                column(
-                  12,
-                  div(
-                    class = "",
-                    tags$label(i18n$t("Source"), class = "control-label"),
-                    # Source information
-                    p("Ostro 1987"),
-                  )
-                ),
-                column(
-                  12,
-                  div(
-                    class = "form-group shiny-input-container",
-                    tags$label(i18n$t("Regression type"), class = "control-label"),
-                    # Regression type information
-                    p(i18n$t("Log-linear")),
-                    # Hidden select input for regression type, default choice set to log-linear
-                    hidden(selectInput("pm25_rtype10", i18n$t("Regression type"), c(i18n$t("log-linear"), i18n$t("linear")))),
-                  )
-                )
-              )
-            ),
-            # Right parameter box containing numeric inputs
-            div(
-              class = "parameter-box right-parameter-box",
-              # First row with HR/RR/OR and Increment inputs
-              fluidRow(
-                column(6, numericInput("pm25_crf10", i18n$t("HR/RR/OR"), 1.05, min = 1, step = 0.01, max = 5)),
-                column(6, numericInput("pm25_incr10", i18n$t("Increment (ug/m3)"), 10, min = 1, step = 1, max = 100))
-              ),
-              # Second row with L95%CI and U95%CI inputs
-              fluidRow(
-                column(6, numericInput("pm25_l95_10", i18n$t("L95%CI"), 1.03, min = 1, step = 0.01, max = 5)),
-                column(6, numericInput("pm25_u95_10", i18n$t("U95%CI"), 1.07, min = 1, step = 0.01, max = 5))
-              )
-            )
-          ),
-
-          # chronic exposure lung cancer
-          div(
-            class = "grid-linear",
-            h3(strong(i18n$t("Chronic exposure lung cancer mortality")), class = "grid-heading"),
-            div(
-              class = "parameter-box left-parameter-box",
-              div(
-                column(
-                  12,
-                  div(
-                    class = "",
-                    tags$label(i18n$t("Source"), class = "control-label"),
-                    p(paste(i18n$t("Health Canada"), "2022"))
-                  ),
-                ),
-                column(
-                  12,
-                  div(
-                    class = "form-group shiny-input-container",
-                    tags$label(i18n$t("Regression type"), class = "control-label"),
-                    p(i18n$t("Log-linear")),
-                    # hidden select with default choice log-linear
-                    hidden(selectInput("rtypelung", i18n$t("Regression type"), c(i18n$t("log-linear"), i18n$t("linear")))),
-                  ),
-                ),
-              ),
-            ),
-            div(
-              class = "parameter-box right-parameter-box",
-              fluidRow(
-                column(6, numericInput("crflung", i18n$t("HR/RR/OR"), 1.127, min = 1, step = 0.01, max = 5)),
-                column(6, numericInput("incrlung", i18n$t("Increment (ug/m3)"), 10, min = 1, step = 1, max = 100)),
-              ),
-              fluidRow(
-                column(6, numericInput("l95lung", i18n$t("L95%CI"), 1.085, min = 1, step = 0.01, max = 5)),
-                column(6, numericInput("u95lung", i18n$t("U95%CI"), 1.17, min = 1, step = 0.01, max = 5)),
-              ),
-            ),
-          ),
-
-
-          # Chronic exposure cerebrovascular mortality
-          div(
-            class = "grid-normal",
-            h3(strong(i18n$t("Chronic exposure cerebrovascular mortality")), class = "grid-heading"),
-            div(
-              class = "parameter-box left-parameter-box",
-              column(
-                12,
-                div(
-                  column(
-                    12,
-                    div(
-                      class = "",
-                      tags$label(i18n$t("Source"), class = "control-label"),
-                      p(i18n$t("Shin et al. 2014")),
-                    ),
-                  ),
-                  column(
-                    12,
-                    div(
-                      class = "form-group shiny-input-container",
-                      tags$label(i18n$t("Regression type"), class = "control-label"),
-                      p("Gamma"),
-                      hidden(selectInput("rtypecerebro", i18n$t("Regression type"), c("Gamma", "")))
-                    ),
-                  ),
-                ),
-              ),
-            ),
-            div(
-              class = "parameter-box right-parameter-box",
-              column(12, numericInput("crfcerebro", i18n$t("Shape"), 4.884, min = 1, step = 0.01, max = 50)),
-              column(12, numericInput("scalecerebro", i18n$t("Scale"), 0.03375, min = 0, step = 0.0001, max = 1)),
-              column(12, numericInput("incrcerebro", i18n$t("Increment (ug/m3)"), 10, min = 1, step = 1, max = 100))
-            ),
-          ),
-          # Chronic exposure COPD mortality
-          div(
-            class = "grid-normal",
-            h3(strong(i18n$t("Chronic exposure COPD mortality")), class = "grid-heading"),
-            div(
-              class = "parameter-box left-parameter-box",
-              column(
-                12,
-                div(
-                  column(
-                    12,
-                    div(
-                      class = "",
-                      tags$label(i18n$t("Source"), class = "control-label"),
-                      p(i18n$t("Shin et al. 2014")),
-                    )
-                  ),
-                  column(
-                    12,
-                    div(
-                      class = "form-group shiny-input-container",
-                      tags$label(i18n$t("Regression type"), class = "control-label"),
-                      p("Gamma"),
-                      hidden(selectInput("rtypcopd", i18n$t("Regression type"), c("Gamma", "", "")))
-                    )
-                  )
-                )
-              )
-            ),
-            div(
-              class = "parameter-box right-parameter-box",
-              column(12, numericInput("crfcopd", i18n$t("Shape"), 14.57, min = 1, step = 0.01, max = 150)),
-              column(12, numericInput("scalecopd", i18n$t("Scale"), 0.00601, min = 0, step = 0.0001, max = 1)),
-              column(12, numericInput("incrcopd", i18n$t("Increment (ug/m3)"), 10, min = 1, step = 1, max = 100))
-            )
-          ),
-          # Chronic exposure ischemic heart disease mortality
-          div(
-            class = "grid-normal",
-            h3(strong(i18n$t("Chronic exposure ischemic heart disease mortality")), class = "grid-heading"),
-            div(
-              class = "parameter-box left-parameter-box",
-              column(
-                12,
-                div(
-                  column(
-                    12,
-                    div(
-                      class = "",
-                      tags$label(i18n$t("Source"), class = "control-label"),
-                      p(i18n$t("Shin et al. 2014")),
-                    )
-                  ),
-                  column(
-                    12,
-                    div(
-                      class = "form-group shiny-input-container",
-                      tags$label(i18n$t("Regression type"), class = "control-label"),
-                      p("Gamma"),
-                      hidden(selectInput("rtypIschem", i18n$t("Regression type"), c("Gamma", "", "")))
-                    )
-                  )
-                )
-              )
-            ),
-            div(
-              class = "parameter-box right-parameter-box",
-              column(12, numericInput("crfIschem", i18n$t("Shape"), 1.156, min = 1, step = 0.01, max = 50)),
-              column(12, numericInput("scaleIschem", i18n$t("Scale"), 0.2117, min = 0, step = 0.0001, max = 1)),
-              column(12, numericInput("incrIschem", i18n$t("Increment (ug/m3)"), 10, min = 1, step = 1, max = 100))
-            )
           ),
           hr(),
-        ),
-        # CRFs (O3, CO, SO2, NO2)
-        h2(i18n$t("CRFs (O3, CO, SO2, NO2)"), id = "crfs"),
-        p(i18n$t("This section lists CRFs for ozone (O3), carbon monoxide (CO), sulfur dioxide (SO2), nitrogen dioxide (NO2), and eight associated health endpoints. You may edit and use your own values."), class = "crf-description"),
-        p(i18n$t("Please note that the CRFs for acute exposure mortality associated with SO2 and CO are still considered 'suggestive' rather than 'causal' or 'likely causal'. We will continue to monitor and incorporate any new scientific evidence."), class = "crf-description"),
-        tabindex = "0",
-        useShinyjs(),
-        div(
-          id = "form2",
+          h2(i18n$t("PM2.5 CRFs"), id = "pm25"),
+          p(i18n$t("This section provides concentration response functions (CRFs) for fine particulate matter (with a 10 ug/m3 change) and ten associated health endpoints. You may edit and use your own values."), class = "crf-description"),
+          useShinyjs(),
+          createRestoreInstructions(i18n),
+          div(
+            id = "formpm25",
+            fluidRow(
+              column(4, actionButton("resetpm25", i18n$t("Restore default values"), tabindex = "0", class = "btn-primary")),
+              # column(4, numericInput("pmthr", "PM2.5 Threshold Concentration (ug/m3)", 0, min = 0, step=0.001,max = 2.5)),
+            ),
+            br(),
+            fluidRow(
+              column(
+                12,
+                p(i18n$t("\"L95%CI\" refers to the lower 95% confidence interval and \"U95%CI\" refers to the upper 95% confidence interval."), )
+              )
+            ),
+            div(
+              class = "grid-linear",
+              h3(strong(i18n$t("Chronic exposure mortality")), class = "grid-heading"),
+              div(
+                class = "parameter-box left-parameter-box",
+                div(
+                  column(
+                    12,
+                    div(
+                      class = "",
+                      tags$label(i18n$t("Source"), class = "control-label"),
+                      p(i18n$t("Crouse et al. 2012")),
+                    ),
+                  ),
+                  column(
+                    12,
+                    div(
+                      class = "form-group shiny-input-container",
+                      tags$label(i18n$t("Regression type"), class = "control-label"),
+                      p(i18n$t("Log-linear")),
+                      # hidden select with default choice log-linear
+                      hidden(selectInput("rtype", i18n$t("Regression type"), c(i18n$t("log-linear"), i18n$t("linear")))),
+                    ),
+                  ),
+                ),
+              ),
+              div(
+                class = "parameter-box right-parameter-box",
+                fluidRow(
+                  column(6, numericInput("crf", i18n$t("HR/RR/OR"), 1.1, min = 1, step = 0.01, max = 5)),
+                  column(6, numericInput("incr", i18n$t("Increment (ug/m3)"), 10, min = 1, step = 1, max = 100)),
+                ),
+                fluidRow(
+                  column(6, numericInput("l95", i18n$t("L95%CI"), 1.05, min = 1, step = 0.01, max = 5)),
+                  column(6, numericInput("u95", i18n$t("U95%CI"), 1.15, min = 1, step = 0.01, max = 5)),
+                ),
+              ),
+            ),
+            div(
+              class = "grid-linear",
+              # Title Header
+              h3(strong(i18n$t("Acute respiratory symptom days")), class = "grid-heading"),
+              # Left parameter box containing Source and Regression type
+              div(
+                class = "parameter-box left-parameter-box",
+                div(
+                  column(
+                    12,
+                    div(
+                      class = "",
+                      tags$label(i18n$t("Source"), class = "control-label"),
+                      # Source information
+                      p(i18n$t("Krupnick et al. 1990")),
+                    )
+                  ),
+                  column(
+                    12,
+                    div(
+                      class = "form-group shiny-input-container",
+                      tags$label(i18n$t("Regression type"), class = "control-label"),
+                      # Regression type information
+                      p(i18n$t("Linear")),
+                      # Hidden select input for regression type, default choice set to linear
+                      hidden(selectInput("pm25_rtype2", i18n$t("Regression type"), c(i18n$t("linear"), i18n$t("log-linear")))),
+                    )
+                  )
+                )
+              ),
+              # Right parameter box containing numeric inputs
+              div(
+                class = "parameter-box right-parameter-box",
+                # First row with HR/RR/OR and Increment inputs
+                fluidRow(
+                  column(6, numericInput("pm25_crf2", i18n$t("HR/RR/OR"), 1.0266, min = 0, step = 0.001, max = 5)),
+                  column(6, numericInput("pm25_incr2", i18n$t("Increment (ug/m3)"), 10, min = 1, step = 1, max = 100))
+                ),
+                # Second row with L95%CI and U95%CI inputs
+                fluidRow(
+                  column(6, numericInput("pm25_l95_2", i18n$t("L95%CI"), 0.9994, min = 0.8, step = 0.01, max = 5)),
+                  column(6, numericInput("pm25_u95_2", i18n$t("U95%CI"), 1.0538, min = 0, step = 0.01, max = 5))
+                )
+              )
+            ),
+            div(
+              class = "grid-linear",
+              # Title Header
+              h3(strong(i18n$t("Adult chronic bronchitis cases")), class = "grid-heading"),
+              # Left parameter box containing Source and Regression type
+              div(
+                class = "parameter-box left-parameter-box",
+                div(
+                  column(
+                    12,
+                    div(
+                      class = "",
+                      tags$label(i18n$t("Source"), class = "control-label"),
+                      # Source information
+                      p(i18n$t("Abbey et al. 1995")),
+                    )
+                  ),
+                  column(
+                    12,
+                    div(
+                      class = "form-group shiny-input-container",
+                      tags$label(i18n$t("Regression type"), class = "control-label"),
+                      # Regression type information
+                      p(i18n$t("Log-linear")),
+                      # Hidden select input for regression type, default choice set to log-linear
+                      hidden(selectInput("pm25_rtype3", i18n$t("Regression type"), c(i18n$t("log-linear"), i18n$t("linear")))),
+                    )
+                  )
+                )
+              ),
+              # Right parameter box containing numeric inputs
+              div(
+                class = "parameter-box right-parameter-box",
+                # First row with HR/RR/OR and Increment inputs
+                fluidRow(
+                  column(6, numericInput("pm25_crf3", i18n$t("HR/RR/OR"), 1.14, min = 1, step = 0.01, max = 5)),
+                  column(6, numericInput("pm25_incr3", i18n$t("Increment (ug/m3)"), 10, min = 1, step = 1, max = 100))
+                ),
+                # Second row with L95%CI and U95%CI inputs
+                fluidRow(
+                  column(6, numericInput("pm25_l95_3", i18n$t("L95%CI"), 1, min = 1, step = 0.01, max = 5)),
+                  column(6, numericInput("pm25_u95_3", i18n$t("U95%CI"), 1.3, min = 1, step = 0.01, max = 5))
+                )
+              )
+            ),
+            div(
+              class = "grid-linear",
+              # Title Header
+              h3(strong(i18n$t("Asthma symptom days")), class = "grid-heading"),
+              # Left parameter box containing Source and Regression type
+              div(
+                class = "parameter-box left-parameter-box",
+                div(
+                  column(
+                    12,
+                    div(
+                      class = "",
+                      tags$label(i18n$t("Source"), class = "control-label"),
+                      # Source information
+                      p(i18n$t("Weinmayr et al. 2010; Ward and Ayres 2004; Dell et al. 2010")),
+                    )
+                  ),
+                  column(
+                    12,
+                    div(
+                      class = "form-group shiny-input-container",
+                      tags$label(i18n$t("Regression type"), class = "control-label"),
+                      # Regression type information
+                      p(i18n$t("Log-linear")),
+                      # Hidden select input for regression type, default choice set to log-linear
+                      hidden(selectInput("pm25_rtype4", i18n$t("Regression type"), c(i18n$t("log-linear"), i18n$t("linear")))),
+                    )
+                  )
+                )
+              ),
+              # Right parameter box containing numeric inputs
+              div(
+                class = "parameter-box right-parameter-box",
+                # First row with HR/RR/OR and Increment inputs
+                fluidRow(
+                  column(6, numericInput("pm25_crf4", i18n$t("HR/RR/OR"), 1.0676, min = 1, step = 0.001, max = 5)),
+                  column(6, numericInput("pm25_incr4", i18n$t("Increment (ug/m3)"), 10, min = 1, step = 1, max = 100))
+                ),
+                # Second row with L95%CI and U95%CI inputs
+                fluidRow(
+                  column(6, numericInput("pm25_l95_4", i18n$t("L95%CI"), 1.0137, min = 1, step = 0.001, max = 5)),
+                  column(6, numericInput("pm25_u95_4", i18n$t("U95%CI"), 1.125, min = 1, step = 0.001, max = 5))
+                )
+              )
+            ),
+            div(
+              class = "grid-linear",
+              # Title Header
+              h3(strong(i18n$t("Cardiac emergency room visits")), class = "grid-heading"),
+              # Left parameter box containing Source and Regression type
+              div(
+                class = "parameter-box left-parameter-box",
+                div(
+                  column(
+                    12,
+                    div(
+                      class = "",
+                      tags$label(i18n$t("Source"), class = "control-label"),
+                      # Source information
+                      p(i18n$t("Burnett et al. 1995; Stieb et al. 2000")),
+                    )
+                  ),
+                  column(
+                    12,
+                    div(
+                      class = "form-group shiny-input-container",
+                      tags$label(i18n$t("Regression type"), class = "control-label"),
+                      # Regression type information
+                      p(i18n$t("Linear")),
+                      # Hidden select input for regression type, default choice set to linear
+                      hidden(selectInput("pm25_rtype5", i18n$t("Regression type"), c(i18n$t("linear"), i18n$t("log-linear")))),
+                    )
+                  )
+                )
+              ),
+              # Right parameter box containing numeric inputs
+              div(
+                class = "parameter-box right-parameter-box",
+                # First row with HR/RR/OR and Increment inputs
+                fluidRow(
+                  column(6, numericInput("pm25_crf5", i18n$t("HR/RR/OR"), 1.00711, min = 1, step = 0.0001, max = 5)),
+                  column(6, numericInput("pm25_incr5", i18n$t("Increment (ug/m3)"), 10, min = 1, step = 1, max = 100))
+                ),
+                # Second row with L95%CI and U95%CI inputs
+                fluidRow(
+                  column(6, numericInput("pm25_l95_5", i18n$t("L95%CI"), 1.00378, min = 0, step = 0.0001, max = 5)),
+                  column(6, numericInput("pm25_u95_5", i18n$t("U95%CI"), 1.0104, min = 0, step = 0.0001, max = 5))
+                )
+              )
+            ),
+            div(
+              class = "grid-linear",
+              # Title Header
+              h3(strong(i18n$t("Cardiac hospital admissions")), class = "grid-heading"),
+              # Left parameter box containing Source and Regression type
+              div(
+                class = "parameter-box left-parameter-box",
+                div(
+                  column(
+                    12,
+                    div(
+                      class = "",
+                      tags$label(i18n$t("Source"), class = "control-label"),
+                      # Source information
+                      p(i18n$t("Burnett et al. 1995")),
+                    )
+                  ),
+                  column(
+                    12,
+                    div(
+                      class = "form-group shiny-input-container",
+                      tags$label(i18n$t("Regression type"), class = "control-label"),
+                      # Regression type information
+                      p(i18n$t("Linear")),
+                      # Hidden select input for regression type, default choice set to linear
+                      hidden(selectInput("pm25_rtype6", i18n$t("Regression type"), c(i18n$t("linear"), i18n$t("log-linear")))),
+                    )
+                  )
+                )
+              ),
+              # Right parameter box containing numeric inputs
+              div(
+                class = "parameter-box right-parameter-box",
+                # First row with HR/RR/OR and Increment inputs
+                fluidRow(
+                  column(6, numericInput("pm25_crf6", i18n$t("HR/RR/OR"), 1.00711, min = 0, step = 0.0001, max = 5)),
+                  column(6, numericInput("pm25_incr6", i18n$t("Increment (ug/m3)"), 10, min = 1, step = 1, max = 100))
+                ),
+                # Second row with L95%CI and U95%CI inputs
+                fluidRow(
+                  column(6, numericInput("pm25_l95_6", i18n$t("L95%CI"), 1.00378, min = 0, step = 0.0001, max = 5)),
+                  column(6, numericInput("pm25_u95_6", i18n$t("U95%CI"), 1.0104, min = 0, step = 0.0001, max = 5))
+                )
+              )
+            ),
+            div(
+              class = "grid-linear",
+              # Title Header
+              h3(strong(i18n$t("Child acute bronchitis episodes")), class = "grid-heading"),
+              # Left parameter box containing Source and Regression type
+              div(
+                class = "parameter-box left-parameter-box",
+                div(
+                  column(
+                    12,
+                    div(
+                      class = "",
+                      tags$label(i18n$t("Source"), class = "control-label"),
+                      # Source information
+                      p(i18n$t("Heok et al. 2012; Dockery et al. 1996")),
+                    )
+                  ),
+                  column(
+                    12,
+                    div(
+                      class = "form-group shiny-input-container",
+                      tags$label(i18n$t("Regression type"), class = "control-label"),
+                      # Regression type information
+                      p(i18n$t("Log-linear")),
+                      # Hidden select input for regression type, default choice set to log-linear
+                      hidden(selectInput("pm25_rtype7", i18n$t("Regression type"), c(i18n$t("log-linear"), i18n$t("linear")))),
+                    )
+                  )
+                )
+              ),
+              # Right parameter box containing numeric inputs
+              div(
+                class = "parameter-box right-parameter-box",
+                # First row with HR/RR/OR and Increment inputs
+                fluidRow(
+                  column(6, numericInput("pm25_crf7", i18n$t("HR/RR/OR"), 1.0934, min = 1, step = 0.01, max = 5)),
+                  column(6, numericInput("pm25_incr7", i18n$t("Increment (ug/m3)"), 10, min = 1, step = 1, max = 100))
+                ),
+                # Second row with L95%CI and U95%CI inputs
+                fluidRow(
+                  column(6, numericInput("pm25_l95_7", i18n$t("L95%CI"), 0.977, min = 0.9, step = 0.01, max = 5)),
+                  column(6, numericInput("pm25_u95_7", i18n$t("U95%CI"), 1.224, min = 1, step = 0.01, max = 5))
+                )
+              )
+            ),
+            div(
+              class = "grid-linear",
+              # Title Header
+              h3(strong(i18n$t("Respiratory emergency room visits")), class = "grid-heading"),
+              # Left parameter box containing Source and Regression type
+              div(
+                class = "parameter-box left-parameter-box",
+                div(
+                  column(
+                    12,
+                    div(
+                      class = "",
+                      tags$label(i18n$t("Source"), class = "control-label"),
+                      # Source information
+                      p(i18n$t("Burnett et al. 1995; Stieb et al. 2000")),
+                    )
+                  ),
+                  column(
+                    12,
+                    div(
+                      class = "form-group shiny-input-container",
+                      tags$label(i18n$t("Regression type"), class = "control-label"),
+                      # Regression type information
+                      p(i18n$t("Log-linear")),
+                      # Hidden select input for regression type, default choice set to log-linear
+                      hidden(selectInput("pm25_rtype8", i18n$t("Regression type"), c(i18n$t("linear"), i18n$t("log-linear")))),
+                    )
+                  )
+                )
+              ),
+              # Right parameter box containing numeric inputs
+              div(
+                class = "parameter-box right-parameter-box",
+                # First row with HR/RR/OR and Increment inputs
+                fluidRow(
+                  column(6, numericInput("pm25_crf8", i18n$t("HR/RR/OR"), 1.00754, min = 0, step = 0.0001, max = 5)),
+                  column(6, numericInput("pm25_incr8", i18n$t("Increment (ug/m3)"), 10, min = 1, step = 1, max = 100))
+                ),
+                # Second row with L95%CI and U95%CI inputs
+                fluidRow(
+                  column(6, numericInput("pm25_l95_8", i18n$t("L95%CI"), 1.00495, min = 0, step = 0.0001, max = 5)),
+                  column(6, numericInput("pm25_u95_8", i18n$t("U95%CI"), 1.01013, min = 0, step = 0.0001, max = 5))
+                )
+              )
+            ),
+            div(
+              class = "grid-linear",
+              # Title Header
+              h3(strong(i18n$t("Respiratory hospital admissions")), class = "grid-heading"),
+              # Left parameter box containing Source and Regression type
+              div(
+                class = "parameter-box left-parameter-box",
+                div(
+                  column(
+                    12,
+                    div(
+                      class = "",
+                      tags$label(i18n$t("Source"), class = "control-label"),
+                      # Source information
+                      p(i18n$t("Burnett et al. 1995")),
+                    )
+                  ),
+                  column(
+                    12,
+                    div(
+                      class = "form-group shiny-input-container",
+                      tags$label(i18n$t("Regression type"), class = "control-label"),
+                      # Regression type information
+                      p(i18n$t("Log-linear")),
+                      # Hidden select input for regression type, default choice set to log-linear
+                      hidden(selectInput("pm25_rtype9", i18n$t("Regression type"), c(i18n$t("linear"), i18n$t("log-linear")))),
+                    )
+                  )
+                )
+              ),
+              # Right parameter box containing numeric inputs
+              div(
+                class = "parameter-box right-parameter-box",
+                # First row with HR/RR/OR and Increment inputs
+                fluidRow(
+                  column(6, numericInput("pm25_crf9", i18n$t("HR/RR/OR"), 1.00754, min = 0, step = 0.0001, max = 5)),
+                  column(6, numericInput("pm25_incr9", i18n$t("Increment (ug/m3)"), 10, min = 1, step = 1, max = 100))
+                ),
+                # Second row with L95%CI and U95%CI inputs
+                fluidRow(
+                  column(6, numericInput("pm25_l95_9", i18n$t("L95%CI"), 1.00495, min = 0, step = 0.0001, max = 5)),
+                  column(6, numericInput("pm25_u95_9", i18n$t("U95%CI"), 1.01013, min = 0, step = 0.0001, max = 5))
+                )
+              )
+            ),
+            div(
+              class = "grid-linear",
+              # Title Header
+              h3(strong(i18n$t("Restricted activity days")), class = "grid-heading"),
+              # Left parameter box containing Source and Regression type
+              div(
+                class = "parameter-box left-parameter-box",
+                div(
+                  column(
+                    12,
+                    div(
+                      class = "",
+                      tags$label(i18n$t("Source"), class = "control-label"),
+                      # Source information
+                      p("Ostro 1987"),
+                    )
+                  ),
+                  column(
+                    12,
+                    div(
+                      class = "form-group shiny-input-container",
+                      tags$label(i18n$t("Regression type"), class = "control-label"),
+                      # Regression type information
+                      p(i18n$t("Log-linear")),
+                      # Hidden select input for regression type, default choice set to log-linear
+                      hidden(selectInput("pm25_rtype10", i18n$t("Regression type"), c(i18n$t("log-linear"), i18n$t("linear")))),
+                    )
+                  )
+                )
+              ),
+              # Right parameter box containing numeric inputs
+              div(
+                class = "parameter-box right-parameter-box",
+                # First row with HR/RR/OR and Increment inputs
+                fluidRow(
+                  column(6, numericInput("pm25_crf10", i18n$t("HR/RR/OR"), 1.05, min = 1, step = 0.01, max = 5)),
+                  column(6, numericInput("pm25_incr10", i18n$t("Increment (ug/m3)"), 10, min = 1, step = 1, max = 100))
+                ),
+                # Second row with L95%CI and U95%CI inputs
+                fluidRow(
+                  column(6, numericInput("pm25_l95_10", i18n$t("L95%CI"), 1.03, min = 1, step = 0.01, max = 5)),
+                  column(6, numericInput("pm25_u95_10", i18n$t("U95%CI"), 1.07, min = 1, step = 0.01, max = 5))
+                )
+              )
+            ),
+
+            # chronic exposure lung cancer
+            div(
+              class = "grid-linear",
+              h3(strong(i18n$t("Chronic exposure lung cancer mortality")), class = "grid-heading"),
+              div(
+                class = "parameter-box left-parameter-box",
+                div(
+                  column(
+                    12,
+                    div(
+                      class = "",
+                      tags$label(i18n$t("Source"), class = "control-label"),
+                      p(paste(i18n$t("Health Canada"), "2022"))
+                    ),
+                  ),
+                  column(
+                    12,
+                    div(
+                      class = "form-group shiny-input-container",
+                      tags$label(i18n$t("Regression type"), class = "control-label"),
+                      p(i18n$t("Log-linear")),
+                      # hidden select with default choice log-linear
+                      hidden(selectInput("rtypelung", i18n$t("Regression type"), c(i18n$t("log-linear"), i18n$t("linear")))),
+                    ),
+                  ),
+                ),
+              ),
+              div(
+                class = "parameter-box right-parameter-box",
+                fluidRow(
+                  column(6, numericInput("crflung", i18n$t("HR/RR/OR"), 1.127, min = 1, step = 0.01, max = 5)),
+                  column(6, numericInput("incrlung", i18n$t("Increment (ug/m3)"), 10, min = 1, step = 1, max = 100)),
+                ),
+                fluidRow(
+                  column(6, numericInput("l95lung", i18n$t("L95%CI"), 1.085, min = 1, step = 0.01, max = 5)),
+                  column(6, numericInput("u95lung", i18n$t("U95%CI"), 1.17, min = 1, step = 0.01, max = 5)),
+                ),
+              ),
+            ),
+
+
+            # Chronic exposure cerebrovascular mortality
+            div(
+              class = "grid-normal",
+              h3(strong(i18n$t("Chronic exposure cerebrovascular mortality")), class = "grid-heading"),
+              div(
+                class = "parameter-box left-parameter-box",
+                column(
+                  12,
+                  div(
+                    column(
+                      12,
+                      div(
+                        class = "",
+                        tags$label(i18n$t("Source"), class = "control-label"),
+                        p(i18n$t("Shin et al. 2014")),
+                      ),
+                    ),
+                    column(
+                      12,
+                      div(
+                        class = "form-group shiny-input-container",
+                        tags$label(i18n$t("Regression type"), class = "control-label"),
+                        p("Gamma"),
+                        hidden(selectInput("rtypecerebro", i18n$t("Regression type"), c("Gamma", "")))
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              div(
+                class = "parameter-box right-parameter-box",
+                column(12, numericInput("crfcerebro", i18n$t("Shape"), 4.884, min = 1, step = 0.01, max = 50)),
+                column(12, numericInput("scalecerebro", i18n$t("Scale"), 0.03375, min = 0, step = 0.0001, max = 1)),
+                column(12, numericInput("incrcerebro", i18n$t("Increment (ug/m3)"), 10, min = 1, step = 1, max = 100))
+              ),
+            ),
+            # Chronic exposure COPD mortality
+            div(
+              class = "grid-normal",
+              h3(strong(i18n$t("Chronic exposure COPD mortality")), class = "grid-heading"),
+              div(
+                class = "parameter-box left-parameter-box",
+                column(
+                  12,
+                  div(
+                    column(
+                      12,
+                      div(
+                        class = "",
+                        tags$label(i18n$t("Source"), class = "control-label"),
+                        p(i18n$t("Shin et al. 2014")),
+                      )
+                    ),
+                    column(
+                      12,
+                      div(
+                        class = "form-group shiny-input-container",
+                        tags$label(i18n$t("Regression type"), class = "control-label"),
+                        p("Gamma"),
+                        hidden(selectInput("rtypcopd", i18n$t("Regression type"), c("Gamma", "", "")))
+                      )
+                    )
+                  )
+                )
+              ),
+              div(
+                class = "parameter-box right-parameter-box",
+                column(12, numericInput("crfcopd", i18n$t("Shape"), 14.57, min = 1, step = 0.01, max = 150)),
+                column(12, numericInput("scalecopd", i18n$t("Scale"), 0.00601, min = 0, step = 0.0001, max = 1)),
+                column(12, numericInput("incrcopd", i18n$t("Increment (ug/m3)"), 10, min = 1, step = 1, max = 100))
+              )
+            ),
+            # Chronic exposure ischemic heart disease mortality
+            div(
+              class = "grid-normal",
+              h3(strong(i18n$t("Chronic exposure ischemic heart disease mortality")), class = "grid-heading"),
+              div(
+                class = "parameter-box left-parameter-box",
+                column(
+                  12,
+                  div(
+                    column(
+                      12,
+                      div(
+                        class = "",
+                        tags$label(i18n$t("Source"), class = "control-label"),
+                        p(i18n$t("Shin et al. 2014")),
+                      )
+                    ),
+                    column(
+                      12,
+                      div(
+                        class = "form-group shiny-input-container",
+                        tags$label(i18n$t("Regression type"), class = "control-label"),
+                        p("Gamma"),
+                        hidden(selectInput("rtypIschem", i18n$t("Regression type"), c("Gamma", "", "")))
+                      )
+                    )
+                  )
+                )
+              ),
+              div(
+                class = "parameter-box right-parameter-box",
+                column(12, numericInput("crfIschem", i18n$t("Shape"), 1.156, min = 1, step = 0.01, max = 50)),
+                column(12, numericInput("scaleIschem", i18n$t("Scale"), 0.2117, min = 0, step = 0.0001, max = 1)),
+                column(12, numericInput("incrIschem", i18n$t("Increment (ug/m3)"), 10, min = 1, step = 1, max = 100))
+              )
+            ),
+            hr(),
+          ),
+          # CRFs (O3, CO, SO2, NO2)
+          h2(i18n$t("CRFs (O3, CO, SO2, NO2)"), id = "crfs"),
+          p(i18n$t("This section lists CRFs for ozone (O3), carbon monoxide (CO), sulfur dioxide (SO2), nitrogen dioxide (NO2), and eight associated health endpoints. You may edit and use your own values."), class = "crf-description"),
+          p(i18n$t("Please note that the CRFs for acute exposure mortality associated with SO2 and CO are still considered 'suggestive' rather than 'causal' or 'likely causal'. We will continue to monitor and incorporate any new scientific evidence."), class = "crf-description"),
+          useShinyjs(),
+          div(
+            id = "form2",
+            createRestoreInstructions(i18n),
+            fluidRow(
+              column(4, actionButton("resetother", i18n$t("Restore default values"), class = "btn-primary", tabindex = "0")),
+            ),
+            br(),
+            fluidRow(
+              column(
+                12,
+                p(i18n$t("\"L95%CI\" refers to the lower 95% confidence interval and \"U95%CI\" refers to the upper 95% confidence interval."), )
+              )
+            ),
+            div(
+              class = "grid-linear",
+              # Title Header
+              h3(strong(i18n$t("O3 and acute exposure mortality")), class = "grid-heading"),
+              # Left parameter box containing Source and Regression type
+              div(
+                class = "parameter-box left-parameter-box",
+                div(
+                  column(
+                    12,
+                    div(
+                      class = "",
+                      tags$label(i18n$t("Source"), class = "control-label"),
+                      # Source information
+                      p(i18n$t("Burnett et al. 2004")),
+                    )
+                  ),
+                  column(
+                    12,
+                    div(
+                      class = "form-group shiny-input-container",
+                      tags$label(i18n$t("Regression type"), class = "control-label"),
+                      # Regression type information
+                      p(i18n$t("Log-linear")),
+                      # Hidden select input for regression type, default choice set to log-linear
+                      hidden(selectInput("o3_rtype1", i18n$t("Regression type"), c(i18n$t("log-linear"), i18n$t("linear")))),
+                    )
+                  )
+                )
+              ),
+              # Right parameter box containing numeric inputs
+              div(
+                class = "parameter-box right-parameter-box",
+                # First row with HR/RR/OR and Increment inputs
+                fluidRow(
+                  column(6, numericInput("o3_crf1", i18n$t("HR/RR/OR"), 1.0084, min = 1, step = 0.001, max = 5)),
+                  column(6, numericInput("o3_incr1", i18n$t("Increment (ppb)"), 10, min = 1, step = 1, max = 100))
+                ),
+                # Second row with L95%CI and U95%CI inputs
+                fluidRow(
+                  column(6, numericInput("o3_l95_1", i18n$t("L95%CI"), 1.0057, min = 1, step = 0.001, max = 5)),
+                  column(6, numericInput("o3_u95_1", i18n$t("U95%CI"), 1.011, min = 1, step = 0.001, max = 5))
+                )
+              )
+            ),
+            div(
+              class = "grid-linear",
+              # Title Header
+              h3(strong(i18n$t("Summer O3 and chronic exposure respiratory mortality")), class = "grid-heading"),
+              # Left parameter box containing Source and Regression type
+              div(
+                class = "parameter-box left-parameter-box",
+                div(
+                  column(
+                    12,
+                    div(
+                      class = "",
+                      tags$label(i18n$t("Source"), class = "control-label"),
+                      # Source information
+                      p(i18n$t("Jerrett et al. 2009")),
+                    )
+                  ),
+                  column(
+                    12,
+                    div(
+                      class = "form-group shiny-input-container",
+                      tags$label(i18n$t("Regression type"), class = "control-label"),
+                      # Regression type information
+                      p(i18n$t("Log-linear")),
+                      # Hidden select input for regression type, default choice set to log-linear
+                      hidden(selectInput("o3_rtype2", i18n$t("Regression type"), c(i18n$t("log-linear"), i18n$t("linear")))),
+                    )
+                  )
+                )
+              ),
+              # Right parameter box containing numeric inputs
+              div(
+                class = "parameter-box right-parameter-box",
+                # First row with HR/RR/OR and Increment inputs
+                fluidRow(
+                  column(6, numericInput("o3_crf2", i18n$t("HR/RR/OR"), 1.04, min = 1, step = 0.01, max = 5)),
+                  column(6, numericInput("o3_incr2", i18n$t("Increment (ppb)"), 10, min = 1, step = 1, max = 100))
+                ),
+                # Second row with L95%CI and U95%CI inputs
+                fluidRow(
+                  column(6, numericInput("o3_l95_2", i18n$t("L95%CI"), 1.0134, min = 1, step = 0.01, max = 5)),
+                  column(6, numericInput("o3_u95_2", i18n$t("U95%CI"), 1.0672, min = 1, step = 0.01, max = 5))
+                )
+              )
+            ),
+            div(
+              class = "grid-linear",
+              # Title Header
+              h3(strong(i18n$t("Summer O3 and acute respiratory symptom days")), class = "grid-heading"),
+              # Left parameter box containing Source and Regression type
+              div(
+                class = "parameter-box left-parameter-box",
+                div(
+                  column(
+                    12,
+                    div(
+                      class = "",
+                      tags$label(i18n$t("Source"), class = "control-label"),
+                      # Source information
+                      p(i18n$t("Krupnick et al. 1990")),
+                    )
+                  ),
+                  column(
+                    12,
+                    div(
+                      class = "form-group shiny-input-container",
+                      tags$label(i18n$t("Regression type"), class = "control-label"),
+                      # Regression type information
+                      p(i18n$t("Linear")),
+                      # Hidden select input for regression type, default choice set to linear
+                      hidden(selectInput("o3_rtype3", i18n$t("Regression type"), c(i18n$t("linear"), i18n$t("log-linear")))),
+                    )
+                  )
+                )
+              ),
+              # Right parameter box containing numeric inputs
+              div(
+                class = "parameter-box right-parameter-box",
+                # First row with HR/RR/OR and Increment inputs
+                fluidRow(
+                  column(6, numericInput("o3_crf3", i18n$t("HR/RR/OR"), 1.00786, min = 0, step = 0.0001, max = 5)),
+                  column(6, numericInput("o3_incr3", i18n$t("Increment (ppb)"), 10, min = 1, step = 1, max = 100))
+                ),
+                # Second row with L95%CI and U95%CI inputs
+                fluidRow(
+                  column(6, numericInput("o3_l95_3", i18n$t("L95%CI"), 1.0002944, min = 1, step = 0.0001, max = 5)),
+                  column(6, numericInput("o3_u95_3", i18n$t("U95%CI"), 1.01543, min = 1, step = 0.0001, max = 5))
+                )
+              )
+            ),
+            div(
+              class = "grid-linear",
+              # Title Header
+              h3(strong(i18n$t("Summer O3 and asthma symptom days")), class = "grid-heading"),
+              # Left parameter box containing Source and Regression type
+              div(
+                class = "parameter-box left-parameter-box",
+                div(
+                  column(
+                    12,
+                    div(
+                      class = "",
+                      tags$label(i18n$t("Source"), class = "control-label"),
+                      # Source information
+                      p(i18n$t("Mortimer et al. 2002; Schildcrout et al. 2006")),
+                    )
+                  ),
+                  column(
+                    12,
+                    div(
+                      class = "form-group shiny-input-container",
+                      tags$label(i18n$t("Regression type"), class = "control-label"),
+                      # Regression type information
+                      p(i18n$t("Log-linear")),
+                      # Hidden select input for regression type, default choice set to log-linear
+                      hidden(selectInput("o3_rtype4", i18n$t("Regression type"), c(i18n$t("log-linear"), i18n$t("linear")))),
+                    )
+                  )
+                )
+              ),
+              # Right parameter box containing numeric inputs
+              div(
+                class = "parameter-box right-parameter-box",
+                # First row with HR/RR/OR and Increment inputs
+                fluidRow(
+                  column(6, numericInput("o3_crf4", i18n$t("HR/RR/OR"), 1.0241, min = 1, step = 0.01, max = 5)),
+                  column(6, numericInput("o3_incr4", i18n$t("Increment (ppb)"), 10, min = 1, step = 1, max = 100))
+                ),
+                # Second row with L95%CI and U95%CI inputs
+                fluidRow(
+                  column(6, numericInput("o3_l95_4", i18n$t("L95%CI"), 0.9811, min = 0.9, step = 0.01, max = 5)),
+                  column(6, numericInput("o3_u95_4", i18n$t("U95%CI"), 1.07, min = 1, step = 0.01, max = 5))
+                )
+              )
+            ),
+            div(
+              class = "grid-linear",
+              # Title Header
+              h3(strong(i18n$t("Summer O3 and minor restricted activity days")), class = "grid-heading"),
+              # Left parameter box containing Source and Regression type
+              div(
+                class = "parameter-box left-parameter-box",
+                div(
+                  column(
+                    12,
+                    div(
+                      class = "",
+                      tags$label(i18n$t("Source"), class = "control-label"),
+                      # Source information
+                      p(i18n$t("Ostro and Rothschild 1989")),
+                    )
+                  ),
+                  column(
+                    12,
+                    div(
+                      class = "form-group shiny-input-container",
+                      tags$label(i18n$t("Regression type"), class = "control-label"),
+                      # Regression type information
+                      p(i18n$t("Log-linear")),
+                      # Hidden select input for regression type, default choice set to log-linear
+                      hidden(selectInput("o3_rtype5", i18n$t("Regression type"), c(i18n$t("log-linear"), i18n$t("linear")))),
+                    )
+                  )
+                )
+              ),
+              # Right parameter box containing numeric inputs
+              div(
+                class = "parameter-box right-parameter-box",
+                # First row with HR/RR/OR and Increment inputs
+                fluidRow(
+                  column(6, numericInput("o3_crf5", i18n$t("HR/RR/OR"), 1.0053, min = 1, step = 0.01, max = 5)),
+                  column(6, numericInput("o3_incr5", i18n$t("Increment (ppb)"), 10, min = 1, step = 1, max = 100))
+                ),
+                # Second row with L95%CI and U95%CI inputs
+                fluidRow(
+                  column(6, numericInput("o3_l95_5", i18n$t("L95%CI"), 0.95, min = 0.9, step = 0.001, max = 5)),
+                  column(6, numericInput("o3_u95_5", i18n$t("U95%CI"), 1.0643, min = 1, step = 0.001, max = 5))
+                )
+              )
+            ),
+            div(
+              class = "grid-linear",
+              # Title Header
+              h3(strong(i18n$t("Summer O3 and respiratory emergency room visits")), class = "grid-heading"),
+              # Left parameter box containing Source and Regression type
+              div(
+                class = "parameter-box left-parameter-box",
+                div(
+                  div(
+                    class = "form-group shiny-input-container",
+                    tags$label(i18n$t("Source"), class = "control-label"),
+                    # Source information
+                    p(i18n$t("Burnett et al. 1997a; Stieb et al. 2000")),
+                    hidden(textInput("o3_source6", i18n$t("Source"), value = "Burnett et al. 1997a; Stieb et al. 2000"))
+                  ),
+                  div(
+                    class = "form-group shiny-input-container",
+                    tags$label(i18n$t("Regression type"), class = "control-label"),
+                    # Regression type information
+                    p(i18n$t("Log-linear")),
+                    # Hidden select input for regression type, default choice set to log-linear
+                    hidden(selectInput("o3_rtype6", i18n$t("Regression type"), c(i18n$t("log-linear"), i18n$t("linear"))))
+                  )
+                )
+              ),
+              # Right parameter box containing numeric inputs
+              div(
+                class = "parameter-box right-parameter-box",
+                # First row with HR/RR/OR and Increment inputs
+                fluidRow(
+                  column(6, numericInput("o3_crf6", i18n$t("HR/RR/OR"), 1.008, min = 0.8, step = 0.001, max = 5)),
+                  column(6, numericInput("o3_incr6", i18n$t("Increment (ppb)"), 10, min = 1, step = 1, max = 100))
+                ),
+                # Second row with L95%CI and U95%CI inputs
+                fluidRow(
+                  column(6, numericInput("o3_l95_6", i18n$t("L95%CI"), 1.001, min = 0.8, step = 0.001, max = 5)),
+                  column(6, numericInput("o3_u95_6", i18n$t("U95%CI"), 1.015, min = 0.9, step = 0.001, max = 5))
+                )
+              )
+            ),
+            div(
+              class = "grid-linear",
+              # Title Header
+              h3(strong(i18n$t("Summer O3 and respiratory hospital admissions")), class = "grid-heading"),
+              # Left parameter box containing Source and Regression type
+              div(
+                class = "parameter-box left-parameter-box",
+                div(
+                  div(
+                    class = "form-group shiny-input-container",
+                    tags$label(i18n$t("Source"), class = "control-label"),
+                    # Source information
+                    p(i18n$t("Burnett et al. 1997a")),
+                    hidden(textInput("o3_source7", i18n$t("Source"), value = "Burnett et al. 1997a"))
+                  ),
+                  div(
+                    class = "form-group shiny-input-container",
+                    tags$label(i18n$t("Regression type"), class = "control-label"),
+                    # Regression type information
+                    p(i18n$t("Log-linear")),
+                    # Hidden select input for regression type, default choice set to log-linear
+                    hidden(selectInput("o3_rtype7", i18n$t("Regression type"), c(i18n$t("log-linear"), i18n$t("linear"))))
+                  )
+                )
+              ),
+              # Right parameter box containing numeric inputs
+              div(
+                class = "parameter-box right-parameter-box",
+                # First row with HR/RR/OR and Increment inputs
+                fluidRow(
+                  column(6, numericInput("o3_crf7", i18n$t("HR/RR/OR"), 1.008, min = 0.8, step = 0.001, max = 5)),
+                  column(6, numericInput("o3_incr7", i18n$t("Increment (ppb)"), 10, min = 1, step = 1, max = 100))
+                ),
+                # Second row with L95%CI and U95%CI inputs
+                fluidRow(
+                  column(6, numericInput("o3_l95_7", i18n$t("L95%CI"), 1.001, min = 0.8, step = 0.001, max = 5)),
+                  column(6, numericInput("o3_u95_7", i18n$t("U95%CI"), 1.015, min = 0.9, step = 0.001, max = 5))
+                )
+              )
+            ),
+            div(
+              class = "grid-linear",
+              # Title Header
+              h3(strong(i18n$t("NO2 and acute exposure mortality")), class = "grid-heading"),
+              # Left parameter box containing Source and Regression type
+              div(
+                class = "parameter-box left-parameter-box",
+                div(
+                  class = "form-group shiny-input-container",
+                  tags$label(i18n$t("Source"), class = "control-label"),
+                  # Source information
+                  p(i18n$t("Burnett et al. 2004")),
+                  hidden(textInput("no2_out", i18n$t("Source"), value = "Burnett et al. 2004"))
+                ),
+                div(
+                  class = "form-group shiny-input-container",
+                  tags$label(i18n$t("Regression type"), class = "control-label"),
+                  # Regression type information
+                  p(i18n$t("Log-linear")),
+                  # Hidden select input for regression type, default choice set to log-linear
+                  hidden(selectInput("no2_rtype", i18n$t("Regression type"), c(i18n$t("log-linear"), i18n$t("linear"))))
+                )
+              ),
+              # Right parameter box containing numeric inputs
+              div(
+                class = "parameter-box right-parameter-box",
+                # First row with HR/RR/OR and Increment inputs
+                fluidRow(
+                  column(6, numericInput("no2_crf", i18n$t("HR/RR/OR"), 1.0075, min = 1, step = 0.001, max = 5)),
+                  column(6, numericInput("no2_incr", i18n$t("Increment (ppb)"), 10, min = 1, step = 1, max = 100))
+                ),
+                # Second row with L95%CI and U95%CI inputs
+                fluidRow(
+                  column(6, numericInput("no2_l95", i18n$t("L95%CI"), 1.0026, min = 1, step = 0.001, max = 5)),
+                  column(6, numericInput("no2_u95", i18n$t("U95%CI"), 1.0124, min = 1, step = 0.001, max = 5))
+                )
+              )
+            ),
+            div(
+              class = "grid-linear",
+              # Title Header
+              h3(strong(i18n$t("SO2 and acute exposure mortality")), class = "grid-heading"),
+
+              # Left parameter box containing Source and Regression type
+              div(
+                class = "parameter-box left-parameter-box",
+                div(
+                  class = "form-group shiny-input-container",
+                  tags$label(i18n$t("Source"), class = "control-label"),
+                  # Source information
+                  p(i18n$t("Burnett et al. 2004")),
+                  hidden(textInput("so2_out", i18n$t("Source"), value = "Burnett et al. 2004"))
+                ),
+                div(
+                  class = "form-group shiny-input-container",
+                  tags$label(i18n$t("Regression type"), class = "control-label"),
+                  # Regression type information
+                  p(i18n$t("Log-linear")),
+                  # Hidden select input for regression type, default choice set to log-linear
+                  hidden(selectInput("so2_rtype", i18n$t("Regression type"), c(i18n$t("log-linear"), i18n$t("linear"))))
+                )
+              ),
+
+              # Right parameter box containing numeric inputs
+              div(
+                class = "parameter-box right-parameter-box",
+                # First row with HR/RR/OR and Increment inputs
+                fluidRow(
+                  column(6, numericInput("so2_crf", i18n$t("HR/RR/OR"), 1.0046, min = 1, step = 0.001, max = 5)),
+                  column(6, numericInput("so2_incr", i18n$t("Increment (ppb)"), 10, min = 1, step = 1, max = 100))
+                ),
+                # Second row with L95%CI and U95%CI inputs
+                fluidRow(
+                  column(6, numericInput("so2_l95", i18n$t("L95%CI"), 1.00028, min = 1, step = 0.001, max = 5)),
+                  column(6, numericInput("so2_u95", i18n$t("U95%CI"), 1.00894, min = 1, step = 0.001, max = 5))
+                )
+              )
+            ),
+            div(
+              class = "grid-linear",
+              # Title Header
+              h3(strong(i18n$t("24h-CO and acute exposure mortality")), class = "grid-heading"),
+
+              # Left parameter box containing Source and Regression type
+              div(
+                class = "parameter-box left-parameter-box",
+                div(
+                  class = "form-group shiny-input-container",
+                  tags$label(i18n$t("Source"), class = "control-label"),
+                  # Source information
+                  p(i18n$t("Burnett et al. 2004")),
+                  hidden(textInput("co24_source", i18n$t("Source"), value = "Burnett et al. 2004"))
+                ),
+                div(
+                  class = "form-group shiny-input-container",
+                  tags$label(i18n$t("Regression type"), class = "control-label"),
+                  # Regression type information
+                  p(i18n$t("Log-linear")),
+                  # Hidden select input for regression type, default choice set to log-linear
+                  hidden(selectInput("co24_rtype", i18n$t("Regression type"), c(i18n$t("log-linear"), i18n$t("linear"))))
+                )
+              ),
+              # Right parameter box containing numeric inputs
+              div(
+                class = "parameter-box right-parameter-box",
+                # First row with HR/RR/OR and Increment inputs
+                fluidRow(
+                  column(6, numericInput("co24_crf", i18n$t("HR/RR/OR"), 1.0192, min = 1, step = 0.01, max = 5)),
+                  column(6, numericInput("co24_incr", i18n$t("Increment (ppm)"), 10, min = 1, step = 1, max = 100))
+                ),
+                # Second row with L95%CI and U95%CI inputs
+                fluidRow(
+                  column(6, numericInput("co24_l95", i18n$t("L95%CI"), 0.969, min = 0.9, step = 0.01, max = 5)),
+                  column(6, numericInput("co24_u95", i18n$t("U95%CI"), 1.072, min = 1, step = 0.01, max = 5))
+                )
+              )
+            ),
+            div(
+              class = "grid-linear",
+              # Title Header
+              h3(strong(i18n$t("1h-CO and elderly cardiac hospital admissions")), class = "grid-heading"),
+
+              # Left parameter box containing Source and Regression type
+              div(
+                class = "parameter-box left-parameter-box",
+                div(
+                  class = "form-group shiny-input-container",
+                  tags$label(i18n$t("Source"), class = "control-label"),
+                  # Source information
+                  p(i18n$t("Burnett et al. 1997b; Schwartz and Morris 1995")),
+                  hidden(textInput("co1_source", i18n$t("Source"), value = "Burnett et al. 1997b; Schwartz and Morris 1995"))
+                ),
+                div(
+                  class = "form-group shiny-input-container",
+                  tags$label(i18n$t("Regression type"), class = "control-label"),
+                  # Regression type information
+                  p(i18n$t("Linear")),
+                  # Hidden select input for regression type, default choice set to linear
+                  hidden(selectInput("co1_rtype", i18n$t("Regression type"), c(i18n$t("linear"), i18n$t("log-linear"))))
+                )
+              ),
+
+              # Right parameter box containing numeric inputs
+              div(
+                class = "parameter-box right-parameter-box",
+                # First row with HR/RR/OR and Increment inputs
+                fluidRow(
+                  column(6, numericInput("co1_crf", i18n$t("HR/RR/OR"), 1.277, min = 0, step = 0.001, max = 5)),
+                  column(6, numericInput("co1_incr", i18n$t("Increment (ppm)"), 10, min = 1, step = 1, max = 100))
+                ),
+                # Second row with L95%CI and U95%CI inputs
+                fluidRow(
+                  column(6, numericInput("co1_l95", i18n$t("L95%CI"), 1.02612, min = 0, step = 0.001, max = 5)),
+                  column(6, numericInput("co1_u95", i18n$t("U95%CI"), 1.5279, min = 0, step = 0.001, max = 5))
+                )
+              )
+            ),
+          ),
+          hr(),
+          h2(i18n$t("Toxics"), id = "toxics"),
+          p(i18n$t("This section provides reference concentrations for benzene, formaldehyde, and acetaldehyde."), class = "crf-description"),
+          useShinyjs(),
+          createRestoreInstructions(i18n),
+          div(
+            id = "form3",
+            fluidRow(
+              column(4, actionButton("resetother1", i18n$t("Restore default values"), class = "btn-primary", tabindex = "0")),
+            ),
+            br(),
+            fluidRow(
+              column(
+                12,
+                p(i18n$t("\"DALYs\" refers to disability-adjusted life years."), )
+              )
+            ),
+            div(
+              class = "grid-linear mt-32",
+              div(
+                class = "parameter-box left-parameter-box",
+                div(
+                  class = "form-group shiny-input-container",
+                  tags$label(i18n$t("Source"), class = "control-label"),
+                  p(i18n$t("Health Canada 2015")), # Updated source
+                ),
+                div(
+                  class = "form-group",
+                  tags$label(i18n$t("Pollutant"), class = "control-label"),
+                  p(i18n$t("1,3-Butadiene")), # Updated pollutant
+                  hidden(textInput("btname1", "Pollutant", value = i18n$t("1,3-Butadiene")))
+                ),
+                div(
+                  class = "form-group",
+                  tags$label(i18n$t("Outcome"), class = "control-label"),
+                  p("Cancer"), # Updated outcome
+                  hidden(textInput("btoutcome1", "Outcome", value = "Cancer"))
+                ),
+              ),
+              div(
+                class = "parameter-box right-parameter-box",
+                fluidRow(
+                  column(12, numericInput("btiur", i18n$t("Inhalation unit risk per ug/m3"), 0.00000588, min = 0, step = 0.0000001, max = 0.00001)),
+                  column(12, numericInput("btdaly", i18n$t("DALYs per case"), 13.7, min = 0, step = 0.1, max = 50)),
+                ),
+              ),
+            ),
+            div(
+              class = "grid-linear mt-32",
+              div(
+                class = "parameter-box left-parameter-box",
+                div(
+                  class = "form-group shiny-input-container",
+                  tags$label(i18n$t("Source"), class = "control-label"),
+                  # Regression type information
+                  p(i18n$t("Health Canada 2010")),
+                ),
+                div(
+                  class = "form-group",
+                  tags$label(i18n$t("Pollutant"), class = "control-label"),
+                  # Source information
+                  p(i18n$t("Benzene")),
+                  hidden(textInput("bzname1", "Pollutant", value = i18n$t("Benzene")))
+                ),
+                div(
+                  class = "form-group",
+                  tags$label(i18n$t("Outcome"), class = "control-label"),
+                  # Source information
+                  p("Cancer"),
+                  hidden(textInput("bzoutcome1", "Outcome", value = "Cancer"))
+                ),
+              ),
+              # Right parameter box containing numeric inputs
+              div(
+                class = "parameter-box right-parameter-box",
+                # First row with HR/RR/OR and Increment inputs
+                fluidRow(
+                  column(12, numericInput("bziur", i18n$t("Inhalation unit risk per ug/m3"), 0.0000033, min = 0, step = 0.0000001, max = 0.00001)),
+                  column(12, numericInput("bzdaly", i18n$t("DALYs per case"), 13.7, min = 0, step = 0.1, max = 50)),
+                ),
+              ),
+            ),
+            div(
+              class = "grid-linear mt-32",
+              div(
+                class = "parameter-box left-parameter-box",
+                div(
+                  class = "form-group shiny-input-container",
+                  tags$label(i18n$t("Source"), class = "control-label"),
+                  p(i18n$t("California OEHHA 2016")), # Updated source
+                ),
+                div(
+                  class = "form-group",
+                  tags$label(i18n$t("Pollutant"), class = "control-label"),
+                  p(i18n$t("Benzene")), # Updated pollutant
+                  hidden(textInput("bzname2", "Pollutant", value = i18n$t("Benzene")))
+                ),
+                div(
+                  class = "form-group",
+                  tags$label(i18n$t("Outcome"), class = "control-label"),
+                  p(i18n$t("Hematological")), # Updated outcome
+                  hidden(textInput("bzoutcome2", "Outcome", value = i18n$t("Hematological")))
+                ),
+              ),
+              div(
+                class = "parameter-box right-parameter-box",
+                fluidRow(
+                  column(12, numericInput("bzanrfc", i18n$t("Reference concentration (annual ug/m3)"), 3, min = 0, step = 1, max = 1000)),
+                ),
+              ),
+            ),
+            div(
+              class = "grid-linear mt-32",
+              div(
+                class = "parameter-box left-parameter-box",
+                div(
+                  class = "form-group shiny-input-container",
+                  tags$label(i18n$t("Source"), class = "control-label"),
+                  p(i18n$t("Health Canada 2016a")), # Updated source
+                ),
+                div(
+                  class = "form-group",
+                  tags$label(i18n$t("Pollutant"), class = "control-label"),
+                  p(i18n$t("Formaldehyde")), # Updated pollutant
+                  hidden(textInput("fmname2", "Pollutant", value = i18n$t("Formaldehyde")))
+                ),
+                div(
+                  class = "form-group",
+                  tags$label(i18n$t("Outcome"), class = "control-label"),
+                  p(i18n$t("Respiratory (asthma)")), # Updated outcome
+                  hidden(textInput("fmoutcome2", "Outcome", value = i18n$t("Respiratory (asthma)")))
+                ),
+              ),
+              div(
+                class = "parameter-box right-parameter-box",
+                fluidRow(
+                  column(12, numericInput("fmanrfc", i18n$t("Reference concentration (annual ug/m3)"), 50, min = 0, step = 1, max = 1000)),
+                ),
+              ),
+            ),
+            div(
+              class = "grid-linear mt-32",
+              div(
+                class = "parameter-box left-parameter-box",
+                div(
+                  class = "form-group shiny-input-container",
+                  tags$label(i18n$t("Source"), class = "control-label"),
+                  p(i18n$t("Health Canada 2016b")), # Updated source
+                ),
+                div(
+                  class = "form-group",
+                  tags$label(i18n$t("Pollutant"), class = "control-label"),
+                  p(i18n$t("Acetaldehyde")), # Updated pollutant
+                  hidden(textInput("acname2", "Pollutant", value = i18n$t("Acetaldehyde")))
+                ),
+                div(
+                  class = "form-group",
+                  tags$label(i18n$t("Outcome"), class = "control-label"),
+                  p(i18n$t("Respiratory (histological)")), # Updated outcome
+                  hidden(textInput("acoutcome2", "Outcome", value = i18n$t("Respiratory (histological)")))
+                ),
+              ),
+              div(
+                class = "parameter-box right-parameter-box",
+                fluidRow(
+                  column(12, numericInput("acanrfc", i18n$t("Reference concentration (annual ug/m3)"), 280, min = 0, step = 1, max = 1000)),
+                ),
+              ),
+            ),
+          ), # div3
+          hr(),
+          h2(i18n$t("Other parameters"), id = "other"),
+          p(i18n$t("This section lists the:"), class = "crf-description"),
+          tags$ul(
+            tags$li(i18n$t("prevalence of asthma for those aged < 20 years (default is 17.7%)")),
+            tags$li(i18n$t("numbers of iterations to be used for Monte Carlo simulations (default is 10,000 for simulation iterations)")),
+          ),
+          fluidRow(
+            column(
+              12,
+              p(i18n$t("You may edit and use your own values."))
+            )
+          ),
           createRestoreInstructions(i18n),
           fluidRow(
-            column(4, actionButton("resetother", i18n$t("Restore default values"), class = "btn-primary", tabindex = "0")),
+            column(4, actionButton("resetall3", i18n$t("Restore default values"), class = "btn-primary", tabindex = "0")),
           ),
           br(),
-          fluidRow(
-            column(
-              12,
-              p(i18n$t("\"L95%CI\" refers to the lower 95% confidence interval and \"U95%CI\" refers to the upper 95% confidence interval."), )
+          useShinyjs(),
+          div(
+            id = "form4",
+            class = "parameter-box",
+            style = "margin-bottom: 32px;",
+            fluidRow(
+              column(6, numericInput("asprev", i18n$t("Prevalence of asthma (age < 20 years)"), 17.7, min = 1, step = 1, max = 25, width = "100%")),
+              column(6, numericInput("itn", i18n$t("Iterations"), 10000, min = 1, step = 100, max = 15000, width = "100%")),
+              textOutput("pasthma"),
             )
-          ),
-          div(
-            class = "grid-linear",
-            # Title Header
-            h3(strong(i18n$t("O3 and acute exposure mortality")), class = "grid-heading"),
-            # Left parameter box containing Source and Regression type
-            div(
-              class = "parameter-box left-parameter-box",
-              div(
-                column(
-                  12,
-                  div(
-                    class = "",
-                    tags$label(i18n$t("Source"), class = "control-label"),
-                    # Source information
-                    p(i18n$t("Burnett et al. 2004")),
-                  )
-                ),
-                column(
-                  12,
-                  div(
-                    class = "form-group shiny-input-container",
-                    tags$label(i18n$t("Regression type"), class = "control-label"),
-                    # Regression type information
-                    p(i18n$t("Log-linear")),
-                    # Hidden select input for regression type, default choice set to log-linear
-                    hidden(selectInput("o3_rtype1", i18n$t("Regression type"), c(i18n$t("log-linear"), i18n$t("linear")))),
-                  )
-                )
-              )
-            ),
-            # Right parameter box containing numeric inputs
-            div(
-              class = "parameter-box right-parameter-box",
-              # First row with HR/RR/OR and Increment inputs
-              fluidRow(
-                column(6, numericInput("o3_crf1", i18n$t("HR/RR/OR"), 1.0084, min = 1, step = 0.001, max = 5)),
-                column(6, numericInput("o3_incr1", i18n$t("Increment (ppb)"), 10, min = 1, step = 1, max = 100))
-              ),
-              # Second row with L95%CI and U95%CI inputs
-              fluidRow(
-                column(6, numericInput("o3_l95_1", i18n$t("L95%CI"), 1.0057, min = 1, step = 0.001, max = 5)),
-                column(6, numericInput("o3_u95_1", i18n$t("U95%CI"), 1.011, min = 1, step = 0.001, max = 5))
-              )
-            )
-          ),
-          div(
-            class = "grid-linear",
-            # Title Header
-            h3(strong(i18n$t("Summer O3 and chronic exposure respiratory mortality")), class = "grid-heading"),
-            # Left parameter box containing Source and Regression type
-            div(
-              class = "parameter-box left-parameter-box",
-              div(
-                column(
-                  12,
-                  div(
-                    class = "",
-                    tags$label(i18n$t("Source"), class = "control-label"),
-                    # Source information
-                    p(i18n$t("Jerrett et al. 2009")),
-                  )
-                ),
-                column(
-                  12,
-                  div(
-                    class = "form-group shiny-input-container",
-                    tags$label(i18n$t("Regression type"), class = "control-label"),
-                    # Regression type information
-                    p(i18n$t("Log-linear")),
-                    # Hidden select input for regression type, default choice set to log-linear
-                    hidden(selectInput("o3_rtype2", i18n$t("Regression type"), c(i18n$t("log-linear"), i18n$t("linear")))),
-                  )
-                )
-              )
-            ),
-            # Right parameter box containing numeric inputs
-            div(
-              class = "parameter-box right-parameter-box",
-              # First row with HR/RR/OR and Increment inputs
-              fluidRow(
-                column(6, numericInput("o3_crf2", i18n$t("HR/RR/OR"), 1.04, min = 1, step = 0.01, max = 5)),
-                column(6, numericInput("o3_incr2", i18n$t("Increment (ppb)"), 10, min = 1, step = 1, max = 100))
-              ),
-              # Second row with L95%CI and U95%CI inputs
-              fluidRow(
-                column(6, numericInput("o3_l95_2", i18n$t("L95%CI"), 1.0134, min = 1, step = 0.01, max = 5)),
-                column(6, numericInput("o3_u95_2", i18n$t("U95%CI"), 1.0672, min = 1, step = 0.01, max = 5))
-              )
-            )
-          ),
-          div(
-            class = "grid-linear",
-            # Title Header
-            h3(strong(i18n$t("Summer O3 and acute respiratory symptom days")), class = "grid-heading"),
-            # Left parameter box containing Source and Regression type
-            div(
-              class = "parameter-box left-parameter-box",
-              div(
-                column(
-                  12,
-                  div(
-                    class = "",
-                    tags$label(i18n$t("Source"), class = "control-label"),
-                    # Source information
-                    p(i18n$t("Krupnick et al. 1990")),
-                  )
-                ),
-                column(
-                  12,
-                  div(
-                    class = "form-group shiny-input-container",
-                    tags$label(i18n$t("Regression type"), class = "control-label"),
-                    # Regression type information
-                    p(i18n$t("Linear")),
-                    # Hidden select input for regression type, default choice set to linear
-                    hidden(selectInput("o3_rtype3", i18n$t("Regression type"), c(i18n$t("linear"), i18n$t("log-linear")))),
-                  )
-                )
-              )
-            ),
-            # Right parameter box containing numeric inputs
-            div(
-              class = "parameter-box right-parameter-box",
-              # First row with HR/RR/OR and Increment inputs
-              fluidRow(
-                column(6, numericInput("o3_crf3", i18n$t("HR/RR/OR"), 1.00786, min = 0, step = 0.0001, max = 5)),
-                column(6, numericInput("o3_incr3", i18n$t("Increment (ppb)"), 10, min = 1, step = 1, max = 100))
-              ),
-              # Second row with L95%CI and U95%CI inputs
-              fluidRow(
-                column(6, numericInput("o3_l95_3", i18n$t("L95%CI"), 1.0002944, min = 1, step = 0.0001, max = 5)),
-                column(6, numericInput("o3_u95_3", i18n$t("U95%CI"), 1.01543, min = 1, step = 0.0001, max = 5))
-              )
-            )
-          ),
-          div(
-            class = "grid-linear",
-            # Title Header
-            h3(strong(i18n$t("Summer O3 and asthma symptom days")), class = "grid-heading"),
-            # Left parameter box containing Source and Regression type
-            div(
-              class = "parameter-box left-parameter-box",
-              div(
-                column(
-                  12,
-                  div(
-                    class = "",
-                    tags$label(i18n$t("Source"), class = "control-label"),
-                    # Source information
-                    p(i18n$t("Mortimer et al. 2002; Schildcrout et al. 2006")),
-                  )
-                ),
-                column(
-                  12,
-                  div(
-                    class = "form-group shiny-input-container",
-                    tags$label(i18n$t("Regression type"), class = "control-label"),
-                    # Regression type information
-                    p(i18n$t("Log-linear")),
-                    # Hidden select input for regression type, default choice set to log-linear
-                    hidden(selectInput("o3_rtype4", i18n$t("Regression type"), c(i18n$t("log-linear"), i18n$t("linear")))),
-                  )
-                )
-              )
-            ),
-            # Right parameter box containing numeric inputs
-            div(
-              class = "parameter-box right-parameter-box",
-              # First row with HR/RR/OR and Increment inputs
-              fluidRow(
-                column(6, numericInput("o3_crf4", i18n$t("HR/RR/OR"), 1.0241, min = 1, step = 0.01, max = 5)),
-                column(6, numericInput("o3_incr4", i18n$t("Increment (ppb)"), 10, min = 1, step = 1, max = 100))
-              ),
-              # Second row with L95%CI and U95%CI inputs
-              fluidRow(
-                column(6, numericInput("o3_l95_4", i18n$t("L95%CI"), 0.9811, min = 0.9, step = 0.01, max = 5)),
-                column(6, numericInput("o3_u95_4", i18n$t("U95%CI"), 1.07, min = 1, step = 0.01, max = 5))
-              )
-            )
-          ),
-          div(
-            class = "grid-linear",
-            # Title Header
-            h3(strong(i18n$t("Summer O3 and minor restricted activity days")), class = "grid-heading"),
-            # Left parameter box containing Source and Regression type
-            div(
-              class = "parameter-box left-parameter-box",
-              div(
-                column(
-                  12,
-                  div(
-                    class = "",
-                    tags$label(i18n$t("Source"), class = "control-label"),
-                    # Source information
-                    p(i18n$t("Ostro and Rothschild 1989")),
-                  )
-                ),
-                column(
-                  12,
-                  div(
-                    class = "form-group shiny-input-container",
-                    tags$label(i18n$t("Regression type"), class = "control-label"),
-                    # Regression type information
-                    p(i18n$t("Log-linear")),
-                    # Hidden select input for regression type, default choice set to log-linear
-                    hidden(selectInput("o3_rtype5", i18n$t("Regression type"), c(i18n$t("log-linear"), i18n$t("linear")))),
-                  )
-                )
-              )
-            ),
-            # Right parameter box containing numeric inputs
-            div(
-              class = "parameter-box right-parameter-box",
-              # First row with HR/RR/OR and Increment inputs
-              fluidRow(
-                column(6, numericInput("o3_crf5", i18n$t("HR/RR/OR"), 1.0053, min = 1, step = 0.01, max = 5)),
-                column(6, numericInput("o3_incr5", i18n$t("Increment (ppb)"), 10, min = 1, step = 1, max = 100))
-              ),
-              # Second row with L95%CI and U95%CI inputs
-              fluidRow(
-                column(6, numericInput("o3_l95_5", i18n$t("L95%CI"), 0.95, min = 0.9, step = 0.001, max = 5)),
-                column(6, numericInput("o3_u95_5", i18n$t("U95%CI"), 1.0643, min = 1, step = 0.001, max = 5))
-              )
-            )
-          ),
-          div(
-            class = "grid-linear",
-            # Title Header
-            h3(strong(i18n$t("Summer O3 and respiratory emergency room visits")), class = "grid-heading"),
-            # Left parameter box containing Source and Regression type
-            div(
-              class = "parameter-box left-parameter-box",
-              div(
-                div(
-                  class = "form-group shiny-input-container",
-                  tags$label(i18n$t("Source"), class = "control-label"),
-                  # Source information
-                  p(i18n$t("Burnett et al. 1997a; Stieb et al. 2000")),
-                  hidden(textInput("o3_source6", i18n$t("Source"), value = "Burnett et al. 1997a; Stieb et al. 2000"))
-                ),
-                div(
-                  class = "form-group shiny-input-container",
-                  tags$label(i18n$t("Regression type"), class = "control-label"),
-                  # Regression type information
-                  p(i18n$t("Log-linear")),
-                  # Hidden select input for regression type, default choice set to log-linear
-                  hidden(selectInput("o3_rtype6", i18n$t("Regression type"), c(i18n$t("log-linear"), i18n$t("linear"))))
-                )
-              )
-            ),
-            # Right parameter box containing numeric inputs
-            div(
-              class = "parameter-box right-parameter-box",
-              # First row with HR/RR/OR and Increment inputs
-              fluidRow(
-                column(6, numericInput("o3_crf6", i18n$t("HR/RR/OR"), 1.008, min = 0.8, step = 0.001, max = 5)),
-                column(6, numericInput("o3_incr6", i18n$t("Increment (ppb)"), 10, min = 1, step = 1, max = 100))
-              ),
-              # Second row with L95%CI and U95%CI inputs
-              fluidRow(
-                column(6, numericInput("o3_l95_6", i18n$t("L95%CI"), 1.001, min = 0.8, step = 0.001, max = 5)),
-                column(6, numericInput("o3_u95_6", i18n$t("U95%CI"), 1.015, min = 0.9, step = 0.001, max = 5))
-              )
-            )
-          ),
-          div(
-            class = "grid-linear",
-            # Title Header
-            h3(strong(i18n$t("Summer O3 and respiratory hospital admissions")), class = "grid-heading"),
-            # Left parameter box containing Source and Regression type
-            div(
-              class = "parameter-box left-parameter-box",
-              div(
-                div(
-                  class = "form-group shiny-input-container",
-                  tags$label(i18n$t("Source"), class = "control-label"),
-                  # Source information
-                  p(i18n$t("Burnett et al. 1997a")),
-                  hidden(textInput("o3_source7", i18n$t("Source"), value = "Burnett et al. 1997a"))
-                ),
-                div(
-                  class = "form-group shiny-input-container",
-                  tags$label(i18n$t("Regression type"), class = "control-label"),
-                  # Regression type information
-                  p(i18n$t("Log-linear")),
-                  # Hidden select input for regression type, default choice set to log-linear
-                  hidden(selectInput("o3_rtype7", i18n$t("Regression type"), c(i18n$t("log-linear"), i18n$t("linear"))))
-                )
-              )
-            ),
-            # Right parameter box containing numeric inputs
-            div(
-              class = "parameter-box right-parameter-box",
-              # First row with HR/RR/OR and Increment inputs
-              fluidRow(
-                column(6, numericInput("o3_crf7", i18n$t("HR/RR/OR"), 1.008, min = 0.8, step = 0.001, max = 5)),
-                column(6, numericInput("o3_incr7", i18n$t("Increment (ppb)"), 10, min = 1, step = 1, max = 100))
-              ),
-              # Second row with L95%CI and U95%CI inputs
-              fluidRow(
-                column(6, numericInput("o3_l95_7", i18n$t("L95%CI"), 1.0003, min = 0.8, step = 0.001, max = 5)),
-                column(6, numericInput("o3_u95_7", i18n$t("U95%CI"), 1.015, min = 0.9, step = 0.001, max = 5))
-              )
-            )
-          ),
-          div(
-            class = "grid-linear",
-            # Title Header
-            h3(strong(i18n$t("NO2 and acute exposure mortality")), class = "grid-heading"),
-            # Left parameter box containing Source and Regression type
-            div(
-              class = "parameter-box left-parameter-box",
-              div(
-                class = "form-group shiny-input-container",
-                tags$label(i18n$t("Source"), class = "control-label"),
-                # Source information
-                p(i18n$t("Burnett et al. 2004")),
-                hidden(textInput("no2_out", i18n$t("Source"), value = "Burnett et al. 2004"))
-              ),
-              div(
-                class = "form-group shiny-input-container",
-                tags$label(i18n$t("Regression type"), class = "control-label"),
-                # Regression type information
-                p(i18n$t("Log-linear")),
-                # Hidden select input for regression type, default choice set to log-linear
-                hidden(selectInput("no2_rtype", i18n$t("Regression type"), c(i18n$t("log-linear"), i18n$t("linear"))))
-              )
-            ),
-            # Right parameter box containing numeric inputs
-            div(
-              class = "parameter-box right-parameter-box",
-              # First row with HR/RR/OR and Increment inputs
-              fluidRow(
-                column(6, numericInput("no2_crf", i18n$t("HR/RR/OR"), 1.0075, min = 1, step = 0.001, max = 5)),
-                column(6, numericInput("no2_incr", i18n$t("Increment (ppb)"), 10, min = 1, step = 1, max = 100))
-              ),
-              # Second row with L95%CI and U95%CI inputs
-              fluidRow(
-                column(6, numericInput("no2_l95", i18n$t("L95%CI"), 1.0026, min = 1, step = 0.001, max = 5)),
-                column(6, numericInput("no2_u95", i18n$t("U95%CI"), 1.0124, min = 1, step = 0.001, max = 5))
-              )
-            )
-          ),
-          div(
-            class = "grid-linear",
-            # Title Header
-            h3(strong(i18n$t("SO2 and acute exposure mortality")), class = "grid-heading"),
-
-            # Left parameter box containing Source and Regression type
-            div(
-              class = "parameter-box left-parameter-box",
-              div(
-                class = "form-group shiny-input-container",
-                tags$label(i18n$t("Source"), class = "control-label"),
-                # Source information
-                p(i18n$t("Burnett et al. 2004")),
-                hidden(textInput("so2_out", i18n$t("Source"), value = "Burnett et al. 2004"))
-              ),
-              div(
-                class = "form-group shiny-input-container",
-                tags$label(i18n$t("Regression type"), class = "control-label"),
-                # Regression type information
-                p(i18n$t("Log-linear")),
-                # Hidden select input for regression type, default choice set to log-linear
-                hidden(selectInput("so2_rtype", i18n$t("Regression type"), c(i18n$t("log-linear"), i18n$t("linear"))))
-              )
-            ),
-
-            # Right parameter box containing numeric inputs
-            div(
-              class = "parameter-box right-parameter-box",
-              # First row with HR/RR/OR and Increment inputs
-              fluidRow(
-                column(6, numericInput("so2_crf", i18n$t("HR/RR/OR"), 1.0046, min = 1, step = 0.001, max = 5)),
-                column(6, numericInput("so2_incr", i18n$t("Increment (ppb)"), 10, min = 1, step = 1, max = 100))
-              ),
-              # Second row with L95%CI and U95%CI inputs
-              fluidRow(
-                column(6, numericInput("so2_l95", i18n$t("L95%CI"), 1.00028, min = 1, step = 0.001, max = 5)),
-                column(6, numericInput("so2_u95", i18n$t("U95%CI"), 1.00894, min = 1, step = 0.001, max = 5))
-              )
-            )
-          ),
-          div(
-            class = "grid-linear",
-            # Title Header
-            h3(strong(i18n$t("24h-CO and acute exposure mortality")), class = "grid-heading"),
-
-            # Left parameter box containing Source and Regression type
-            div(
-              class = "parameter-box left-parameter-box",
-              div(
-                class = "form-group shiny-input-container",
-                tags$label(i18n$t("Source"), class = "control-label"),
-                # Source information
-                p(i18n$t("Burnett et al. 2004")),
-                hidden(textInput("co24_source", i18n$t("Source"), value = "Burnett et al. 2004"))
-              ),
-              div(
-                class = "form-group shiny-input-container",
-                tags$label(i18n$t("Regression type"), class = "control-label"),
-                # Regression type information
-                p(i18n$t("Log-linear")),
-                # Hidden select input for regression type, default choice set to log-linear
-                hidden(selectInput("co24_rtype", i18n$t("Regression type"), c(i18n$t("log-linear"), i18n$t("linear"))))
-              )
-            ),
-            # Right parameter box containing numeric inputs
-            div(
-              class = "parameter-box right-parameter-box",
-              # First row with HR/RR/OR and Increment inputs
-              fluidRow(
-                column(6, numericInput("co24_crf", i18n$t("HR/RR/OR"), 1.0192, min = 1, step = 0.01, max = 5)),
-                column(6, numericInput("co24_incr", i18n$t("Increment (ppm)"), 10, min = 1, step = 1, max = 100))
-              ),
-              # Second row with L95%CI and U95%CI inputs
-              fluidRow(
-                column(6, numericInput("co24_l95", i18n$t("L95%CI"), 0.969, min = 0.9, step = 0.01, max = 5)),
-                column(6, numericInput("co24_u95", i18n$t("U95%CI"), 1.072, min = 1, step = 0.01, max = 5))
-              )
-            )
-          ),
-          div(
-            class = "grid-linear",
-            # Title Header
-            h3(strong(i18n$t("1h-CO and elderly cardiac hospital admissions")), class = "grid-heading"),
-
-            # Left parameter box containing Source and Regression type
-            div(
-              class = "parameter-box left-parameter-box",
-              div(
-                class = "form-group shiny-input-container",
-                tags$label(i18n$t("Source"), class = "control-label"),
-                # Source information
-                p(i18n$t("Burnett et al. 1997b; Schwartz and Morris 1995")),
-                hidden(textInput("co1_source", i18n$t("Source"), value = "Burnett et al. 1997b; Schwartz and Morris 1995"))
-              ),
-              div(
-                class = "form-group shiny-input-container",
-                tags$label(i18n$t("Regression type"), class = "control-label"),
-                # Regression type information
-                p(i18n$t("Linear")),
-                # Hidden select input for regression type, default choice set to linear
-                hidden(selectInput("co1_rtype", i18n$t("Regression type"), c(i18n$t("linear"), i18n$t("log-linear"))))
-              )
-            ),
-
-            # Right parameter box containing numeric inputs
-            div(
-              class = "parameter-box right-parameter-box",
-              # First row with HR/RR/OR and Increment inputs
-              fluidRow(
-                column(6, numericInput("co1_crf", i18n$t("HR/RR/OR"), 1.277, min = 0, step = 0.001, max = 5)),
-                column(6, numericInput("co1_incr", i18n$t("Increment (ppm)"), 10, min = 1, step = 1, max = 100))
-              ),
-              # Second row with L95%CI and U95%CI inputs
-              fluidRow(
-                column(6, numericInput("co1_l95", i18n$t("L95%CI"), 1.02612, min = 0, step = 0.001, max = 5)),
-                column(6, numericInput("co1_u95", i18n$t("U95%CI"), 1.5279, min = 0, step = 0.001, max = 5))
-              )
-            )
-          ),
-        ),
-        hr(),
-        h2(i18n$t("Toxics"), id = "toxics"),
-        p(i18n$t("This section provides reference concentrations for benzene, formaldehyde, and acetaldehyde."), class = "crf-description"),
-        tabindex = "0",
-        useShinyjs(),
-        createRestoreInstructions(i18n),
-        div(
-          id = "form3",
-          fluidRow(
-            column(4, actionButton("resetother1", i18n$t("Restore default values"), class = "btn-primary", tabindex = "0")),
-          ),
-          br(),
-          fluidRow(
-            column(
-              12,
-              p(i18n$t("\"DALYs\" refers to disability-adjusted life years."), )
-            )
-          ),
-          div(
-            class = "grid-linear mt-32",
-            div(
-              class = "parameter-box left-parameter-box",
-              div(
-                class = "form-group shiny-input-container",
-                tags$label(i18n$t("Source"), class = "control-label"),
-                p(i18n$t("Health Canada 2015")), # Updated source
-              ),
-              div(
-                class = "form-group",
-                tags$label(i18n$t("Pollutant"), class = "control-label"),
-                p(i18n$t("1,3-Butadiene")), # Updated pollutant
-                hidden(textInput("btname1", "Pollutant", value = i18n$t("1,3-Butadiene")))
-              ),
-              div(
-                class = "form-group",
-                tags$label(i18n$t("Outcome"), class = "control-label"),
-                p("Cancer"), # Updated outcome
-                hidden(textInput("btoutcome1", "Outcome", value = "Cancer"))
-              ),
-            ),
-            div(
-              class = "parameter-box right-parameter-box",
-              fluidRow(
-                column(12, numericInput("btiur", i18n$t("Inhalation unit risk per ug/m3"), 0.00000588, min = 0, step = 0.0000001, max = 0.00001)),
-                column(12, numericInput("btdaly", i18n$t("DALYs per case"), 13.7, min = 0, step = 0.1, max = 50)),
-              ),
-            ),
-          ),
-          div(
-            class = "grid-linear mt-32",
-            div(
-              class = "parameter-box left-parameter-box",
-              div(
-                class = "form-group shiny-input-container",
-                tags$label(i18n$t("Source"), class = "control-label"),
-                # Regression type information
-                p(i18n$t("Health Canada 2010")),
-              ),
-              div(
-                class = "form-group",
-                tags$label(i18n$t("Pollutant"), class = "control-label"),
-                # Source information
-                p(i18n$t("Benzene")),
-                hidden(textInput("bzname1", "Pollutant", value = i18n$t("Benzene")))
-              ),
-              div(
-                class = "form-group",
-                tags$label(i18n$t("Outcome"), class = "control-label"),
-                # Source information
-                p("Cancer"),
-                hidden(textInput("bzoutcome1", "Outcome", value = "Cancer"))
-              ),
-            ),
-            # Right parameter box containing numeric inputs
-            div(
-              class = "parameter-box right-parameter-box",
-              # First row with HR/RR/OR and Increment inputs
-              fluidRow(
-                column(12, numericInput("bziur", i18n$t("Inhalation unit risk per ug/m3"), 0.0000033, min = 0, step = 0.0000001, max = 0.00001)),
-                column(12, numericInput("bzdaly", i18n$t("DALYs per case"), 13.7, min = 0, step = 0.1, max = 50)),
-              ),
-            ),
-          ),
-          div(
-            class = "grid-linear mt-32",
-            div(
-              class = "parameter-box left-parameter-box",
-              div(
-                class = "form-group shiny-input-container",
-                tags$label(i18n$t("Source"), class = "control-label"),
-                p(i18n$t("California OEHHA 2016")), # Updated source
-              ),
-              div(
-                class = "form-group",
-                tags$label(i18n$t("Pollutant"), class = "control-label"),
-                p(i18n$t("Benzene")), # Updated pollutant
-                hidden(textInput("bzname2", "Pollutant", value = i18n$t("Benzene")))
-              ),
-              div(
-                class = "form-group",
-                tags$label(i18n$t("Outcome"), class = "control-label"),
-                p(i18n$t("Hematological")), # Updated outcome
-                hidden(textInput("bzoutcome2", "Outcome", value = i18n$t("Hematological")))
-              ),
-            ),
-            div(
-              class = "parameter-box right-parameter-box",
-              fluidRow(
-                column(12, numericInput("bzanrfc", i18n$t("Reference concentration (annual ug/m3)"), 3, min = 0, step = 1, max = 1000)),
-              ),
-            ),
-          ),
-          div(
-            class = "grid-linear mt-32",
-            div(
-              class = "parameter-box left-parameter-box",
-              div(
-                class = "form-group shiny-input-container",
-                tags$label(i18n$t("Source"), class = "control-label"),
-                p(i18n$t("Health Canada 2016a")), # Updated source
-              ),
-              div(
-                class = "form-group",
-                tags$label(i18n$t("Pollutant"), class = "control-label"),
-                p(i18n$t("Formaldehyde")), # Updated pollutant
-                hidden(textInput("fmname2", "Pollutant", value = i18n$t("Formaldehyde")))
-              ),
-              div(
-                class = "form-group",
-                tags$label(i18n$t("Outcome"), class = "control-label"),
-                p(i18n$t("Respiratory (asthma)")), # Updated outcome
-                hidden(textInput("fmoutcome2", "Outcome", value = i18n$t("Respiratory (asthma)")))
-              ),
-            ),
-            div(
-              class = "parameter-box right-parameter-box",
-              fluidRow(
-                column(12, numericInput("fmanrfc", i18n$t("Reference concentration (annual ug/m3)"), 50, min = 0, step = 1, max = 1000)),
-              ),
-            ),
-          ),
-          div(
-            class = "grid-linear mt-32",
-            div(
-              class = "parameter-box left-parameter-box",
-              div(
-                class = "form-group shiny-input-container",
-                tags$label(i18n$t("Source"), class = "control-label"),
-                p(i18n$t("Health Canada 2016b")), # Updated source
-              ),
-              div(
-                class = "form-group",
-                tags$label(i18n$t("Pollutant"), class = "control-label"),
-                p(i18n$t("Acetaldehyde")), # Updated pollutant
-                hidden(textInput("acname2", "Pollutant", value = i18n$t("Acetaldehyde")))
-              ),
-              div(
-                class = "form-group",
-                tags$label(i18n$t("Outcome"), class = "control-label"),
-                p(i18n$t("Respiratory (histological)")), # Updated outcome
-                hidden(textInput("acoutcome2", "Outcome", value = i18n$t("Respiratory (histological)")))
-              ),
-            ),
-            div(
-              class = "parameter-box right-parameter-box",
-              fluidRow(
-                column(12, numericInput("acanrfc", i18n$t("Reference concentration (annual ug/m3)"), 280, min = 0, step = 1, max = 1000)),
-              ),
-            ),
-          ),
-        ), # div3
-        hr(),
-        h2(i18n$t("Other parameters"), id = "other"),
-        p(i18n$t("This section lists the:"), class = "crf-description"),
-        tags$ul(
-          tags$li(i18n$t("prevalence of asthma for those aged < 20 years (default is 17.7%)")),
-          tags$li(i18n$t("numbers of iterations to be used for Monte Carlo simulations (default is 10,000 for simulation iterations)")),
-        ),
-        fluidRow(
-          column(
-            12,
-            p(i18n$t("You may edit and use your own values."))
-          )
-        ),
-        createRestoreInstructions(i18n),
-        fluidRow(
-          column(4, actionButton("resetall3", i18n$t("Restore default values"), class = "btn-primary", tabindex = "0")),
-        ),
-        br(),
-        useShinyjs(),
-        div(
-          id = "form4",
-          class = "parameter-box",
-          style = "margin-bottom: 32px;",
-          fluidRow(
-            column(6, numericInput("asprev", i18n$t("Prevalence of asthma (age < 20 years)"), 17.7, min = 1, step = 1, max = 25, width = "100%")),
-            column(6, numericInput("itn", i18n$t("Iterations"), 10000, min = 1, step = 100, max = 15000, width = "100%")),
-            textOutput("pasthma"),
-          )
-        ), # div4
-      ),
-      tabPanel(
-        i18n$t("Valuation"),
-        value = i18n$t("valuation"),
-        createStepUI(i18n, stepNumber = 2, totalSteps = 4, progressMax = 4),
-        p(i18n$t("Review the economic valuation estimates. The default values provided below are Health Canada-endorsed economic valuation estimates to support the health impact assessment of air pollution. Change them as needed for your scenario by entering your desired values.")),
-        # actionLink("link_instruction5", "Click here to view details about the 'CRFs' tab under the 'Instructions'."),
-        # br(),
-        tags$h3(HTML(i18n$t("About valuation estimates"))),
-        p(i18n$t("These values are economic welfare values. AQBAT provides economic valuation estimates that consider the potential welfare impacts associated with treatment costs, lost productivity, pain and suffering, and the impacts of increased mortality risk. The page displays corresponding economic values associated with health risks identified by AQBAT."), class = ""),
-        HTML(i18n$t("Currency year ranges from 2010 to 2023. To learn more about the sources included in this page, please refer to the <a id='references-link' class='internal-link' data-target='references' href='javascript:void(0)'>references</a>.")),
-        br(),
-        br(),
-        # Discount rate
-        # actionLink("link_instruction3", "Click here to view details about the 'Valuation' tab under the 'Instructions'."),
-        # hr(),
-        p(i18n$t("Click \"Restore default values\" to restore the values of each cell back to its preset (the values that show up automatically when the website first loads). Default values are restored in this tab only.")),
-        useShinyjs(),
-        div(
-          id = "formval",
-          style = "margin-top: 20px;",
-          fluidRow(
-            column(3, actionButton("resetval", i18n$t("Restore default values"), class = "btn-primary")),
-            column(3, numericInput("curr", i18n$t("Currency year"), 2016, min = 2010, step = 1, max = 2023)),
-            column(3, numericInput("baseyr", i18n$t("Base year"), 2016, min = 1990, step = 1, max = 2023)),
-            column(3, numericInput("discountrate", i18n$t("Discount rate (%)"), 0, min = 0, step = 1, max = 30)),
-            textOutput("curryear")
-          ),
-          div(
-            class = "grid-discrete",
-            h3(strong(i18n$t("Mortality valuation")), class = "grid-heading"),
-            div(
-              class = "parameter-box left-parameter-box",
-              column(
-                12,
-                div(
-                  class = "",
-                  tags$label(i18n$t("Source"), class = "control-label"),
-                  p(i18n$t("Chestnut and DeCivita 2009")),
-                ),
-              ),
-              column(12, textInput("vslyr", i18n$t("Source year"), value = "2007")),
-              # column(3, textInput("vslfm", i18n$t("Estimate form"), c("discrete"))),
-              column(
-                12,
-                div(
-                  class = "form-group shiny-input-container",
-                  tags$label(i18n$t("Estimate form"), class = "control-label"),
-                  p(i18n$t("Discrete")),
-                  hidden(selectInput("vslfm", NULL, c(i18n$t("discrete")), selected = i18n$t("discrete")))
-                ),
-              ),
-            ),
-            div(
-              class = "parameter-box center-parameter-box",
-              column(12, numericInput("vsl", i18n$t("Central ($million)"), 6.5, min = 1, step = 0.5, max = 100)),
-              column(12, numericInput("lvsl", i18n$t("Low ($million)"), 3.5, min = 0.5, step = 0.5, max = 100)),
-              column(12, numericInput("uvsl", i18n$t("High ($million)"), 9.5, min = 7, step = 0.5, max = 100)),
-            ),
-            div(
-              class = "parameter-box right-parameter-box",
-              column(12, numericInput("pcvsl", i18n$t("Probability central"), 0.5, min = 0.1, step = 0.1, max = 1)),
-              column(12, numericInput("plvsl", i18n$t("Probability low"), 0.25, min = 0.1, step = 0.1, max = 0.9)),
-            ),
-          ),
-          # Acute Respiratory Symptom Days$
-          div(
-            class = "grid-normal",
-            h3(strong(i18n$t("Acute respiratory symptom days valuation")), class = "grid-heading"),
-            div(
-              class = "parameter-box left-parameter-box",
-              column(
-                12,
-                div(
-                  class = "",
-                  tags$label(i18n$t("Source"), class = "control-label"),
-                  p(i18n$t("Stieb et al. 2002")),
-                ),
-              ),
-              column(12, textInput("vsl2yr", i18n$t("Source year"), value = "1997")),
-              # column(3, selectInput("vsl2fm", i18n$t("Estimate form"), c("normal"))),
-              column(
-                12,
-                div(
-                  class = "form-group shiny-input-container",
-                  tags$label(i18n$t("Estimate form"), class = "control-label"),
-                  p(i18n$t("Normal")),
-                  hidden(selectInput("vsl2fm", NULL, c(i18n$t("normal")), selected = i18n$t("normal")))
-                )
-              ),
-            ),
-            div(
-              class = "parameter-box right-parameter-box",
-              column(12, numericInput("vsl2", i18n$t("Mean ($)"), 13, min = 1, step = 0.5, max = 100)),
-              column(12, numericInput("lvsl2", i18n$t("Standard error"), 7, min = 0, step = 0.5, max = 100))
-            ),
-          ),
-          # Adult Chronic Bronchitis Cases$
-          div(
-            class = "grid-discrete",
-            h3(strong(i18n$t("Adult chronic bronchitis cases valuation")), class = "grid-heading"),
-            div(
-              class = "parameter-box left-parameter-box",
-              column(
-                12,
-                div(
-                  class = "",
-                  tags$label(i18n$t("Source"), class = "control-label"),
-                  p(i18n$t("Krupnick and Cropper 1992; Viscusi et al. 1991")),
-                ),
-              ),
-              column(12, textInput("vsl3yr", i18n$t("Source year"), value = "1996")),
-              # column(3, selectInput("vsl3fm", i18n$t("Estimate form"), c("discrete"))),
-              column(
-                12,
-                div(
-                  class = "form-group shiny-input-container",
-                  tags$label(i18n$t("Estimate form"), class = "control-label"),
-                  p(i18n$t("Discrete")),
-                  hidden(selectInput("vsl3fm", NULL, c(i18n$t("discrete")), selected = i18n$t("discrete")))
-                )
-              ),
-            ),
-            div(
-              class = "parameter-box center-parameter-box",
-              column(12, numericInput("vsl3", i18n$t("Central ($1000)"), 266, min = 1, step = 0.5, max = 1000)),
-              column(12, numericInput("lvsl3", i18n$t("Low ($1000)"), 175, min = 0.5, step = 0.5, max = 1000)),
-              column(12, numericInput("uvsl3", i18n$t("High ($1000)"), 465, min = 7, step = 0.5, max = 1000)),
-            ),
-            div(
-              class = "parameter-box right-parameter-box",
-              column(12, numericInput("pcvsl3", i18n$t("Probability central"), 0.34, min = 0.1, step = 0.1, max = 1)),
-              column(12, numericInput("plvsl3", i18n$t("Probability low"), 0.33, min = 0.1, step = 0.1, max = 0.9)),
-            ),
-          ),
-          # Asthma Symptom Days $
-          div(
-            class = "grid-normal",
-            h3(strong(i18n$t("Asthma symptom days valuation")), class = "grid-heading"),
-            div(
-              class = "parameter-box left-parameter-box",
-              column(
-                12,
-                div(
-                  class = "",
-                  tags$label(i18n$t("Source"), class = "control-label"),
-                  p(i18n$t("Stieb et al. 2002")),
-                ),
-              ),
-              column(12, textInput("sourcevsl4b", i18n$t("Source year"), value = "1997")),
-              # column(3, selectInput("sourcevsl4c", i18n$t("Estimate form"), c("triangular"))),
-              column(
-                12,
-                div(
-                  class = "form-group shiny-input-container",
-                  tags$label(i18n$t("Estimate form"), class = "control-label"),
-                  p(i18n$t("Triangular")),
-                  hidden(selectInput("sourcevsl4c", NULL, c(i18n$t("triangular")), selected = i18n$t("triangular")))
-                )
-              ),
-            ),
-            div(
-              class = "parameter-box right-parameter-box",
-              column(12, numericInput("vsl4", i18n$t("Likely ($)"), 28, min = 1, step = 0.5, max = 100)),
-              column(12, numericInput("lvsl4", "Min ($)", 7, min = 0.5, step = 0.5, max = 100)),
-              column(12, numericInput("uvsl4", "Max ($)", 120, min = 7, step = 0.5, max = 300)),
-            ),
-          ),
-          div(
-            class = "grid-normal",
-            h3(strong(i18n$t("Cardiac emergency room visits valuation")), class = "grid-heading"),
-            div(
-              class = "parameter-box left-parameter-box",
-              column(
-                12,
-                div(
-                  class = "",
-                  tags$label(i18n$t("Source"), class = "control-label"),
-                  p(i18n$t("Stieb et al. 2002")),
-                ),
-              ),
-              column(12, textInput("sourcevsl5b", i18n$t("Source year"), value = "1997")),
-              # column(3, selectInput("sourcevsl5c", i18n$t("Estimate form"), c("normal"))),
-              column(
-                12,
-                div(
-                  class = "form-group shiny-input-container",
-                  tags$label(i18n$t("Estimate form"), class = "control-label"),
-                  p(i18n$t("Normal")),
-                  hidden(selectInput("sourcevsl5c", NULL, c(i18n$t("normal")), selected = i18n$t("normal")))
-                )
-              ),
-            ),
-            div(
-              class = "parameter-box right-parameter-box",
-              column(12, numericInput("vsl5", i18n$t("Mean ($)"), 4400, min = 1, step = 0.5, max = 10000)),
-              column(12, numericInput("lvsl5", i18n$t("Standard error"), 590, min = 0.5, step = 0.5, max = 10000)),
-            ),
-          ),
-          # hr(),
-          # Child Acute Bronchitis Episodes$
-          div(
-            class = "grid-discrete",
-            h3(strong(i18n$t("Child acute bronchitis episodes valuation")), class = "grid-heading"),
-            div(
-              class = "parameter-box left-parameter-box",
-              column(
-                12,
-                div(
-                  class = "",
-                  tags$label(i18n$t("Source"), class = "control-label"),
-                  p(i18n$t("Krupnick and Cropper 1989")),
-                ),
-              ),
-              column(12, textInput("sourcevsl6b", i18n$t("Source year"), value = "1996")),
-              # column(3, selectInput("sourcevsl6c", i18n$t("Estimate form"), c("discrete"))),
-              column(
-                12,
-                div(
-                  class = "form-group shiny-input-container",
-                  tags$label(i18n$t("Estimate form"), class = "control-label"),
-                  p(i18n$t("Discrete")),
-                  hidden(selectInput("sourcevsl6c", NULL, c(i18n$t("discrete")), selected = i18n$t("discrete")))
-                )
-              ),
-            ),
-            div(
-              class = "parameter-box center-parameter-box",
-              column(12, numericInput("vsl6", i18n$t("Central ($)"), 310, min = 1, step = 0.5, max = 1000)),
-              column(12, numericInput("lvsl6", i18n$t("Low ($)"), 150, min = 0.5, step = 0.5, max = 1000)),
-              column(12, numericInput("uvsl6", i18n$t("High ($)"), 460, min = 7, step = 0.5, max = 1000)),
-            ),
-            div(
-              class = "parameter-box center-parameter-box",
-              column(12, numericInput("pcvsl6", i18n$t("Probability central"), 0.34, min = 0.1, step = 0.1, max = 1)),
-              column(12, numericInput("plvsl6", i18n$t("Probability low"), 0.33, min = 0.1, step = 0.1, max = 0.9))
-            ),
-          ),
-          # Elderly Cardiac Hospital Admissions $
-          div(
-            class = "grid-normal",
-            h3(strong(i18n$t("Elderly cardiac hospital admissions valuation")), class = "grid-heading"),
-            div(
-              class = "parameter-box left-parameter-box",
-              column(
-                12,
-                div(
-                  class = "",
-                  tags$label(i18n$t("Source"), class = "control-label"),
-                  p(i18n$t("Stieb et al. 2002")),
-                ),
-              ),
-              column(12, textInput("sourcevsl7b", i18n$t("Source year"), value = "1997")),
-              # column(3, selectInput("sourcevsl7c", i18n$t("Estimate form"), c("normal"))),
-              column(
-                12,
-                div(
-                  class = "form-group shiny-input-container",
-                  tags$label(i18n$t("Estimate form"), class = "control-label"),
-                  p(i18n$t("Normal")),
-                  hidden(selectInput("sourcevsl7c", NULL, c(i18n$t("normal")), selected = i18n$t("normal")))
-                )
-              ),
-            ),
-            div(
-              class = "parameter-box right-parameter-box",
-              column(12, numericInput("vsl7", i18n$t("Mean ($)"), 5200, min = 1, step = 5, max = 10000)),
-              column(12, numericInput("lvsl7", i18n$t("Standard error"), 610, min = 5, step = 5, max = 10000))
-            )
-          ),
-          # hr(),
-          # Minor Restricted Activity Days$
-          div(
-            class = "grid-normal",
-            h3(strong(i18n$t("Minor restricted activity days valuation")), class = "grid-heading"),
-            div(
-              class = "parameter-box left-parameter-box",
-              column(
-                12,
-                div(
-                  class = "",
-                  tags$label(i18n$t("Source"), class = "control-label"),
-                  p(i18n$t("Stieb et al. 2002")),
-                ),
-              ),
-              column(12, textInput("sourcevsl8b", i18n$t("Source year"), value = "1997")),
-              # column(3, selectInput("sourcevsl8c", i18n$t("Estimate form"), c("normal"))),
-              column(
-                12,
-                div(
-                  class = "form-group shiny-input-container",
-                  tags$label(i18n$t("Estimate form"), class = "control-label"),
-                  p(i18n$t("Normal")),
-                  hidden(selectInput("sourcevsl8c", NULL, c(i18n$t("normal")), selected = i18n$t("normal")))
-                )
-              ),
-            ),
-            div(
-              class = "parameter-box right-parameter-box",
-              column(12, numericInput("vsl8", i18n$t("Mean ($)"), 22, min = 1, step = 5, max = 1000)),
-              column(12, numericInput("lvsl8", i18n$t("Standard error"), 9, min = 5, step = 5, max = 1000))
-            ),
-          ),
-          # hr(),
-          # Respiratory Emergency Room Visits$
-          div(
-            class = "grid-normal",
-            h3(strong(i18n$t("Respiratory emergency room visits valuation")), class = "grid-heading"),
-            div(
-              class = "parameter-box left-parameter-box",
-              column(
-                12,
-                div(
-                  class = "",
-                  tags$label(i18n$t("Source"), class = "control-label"),
-                  p(i18n$t("Stieb et al. 2002")),
-                ),
-              ),
-              column(12, textInput("sourcevsl9b", i18n$t("Source year"), value = "1997")),
-              # column(3, selectInput("sourcevsl9c", i18n$t("Estimate form"), c(i18n$t("normal")))),
-              column(
-                12,
-                div(
-                  class = "form-group shiny-input-container",
-                  tags$label(i18n$t("Estimate form"), class = "control-label"),
-                  p(i18n$t("Normal")),
-                  hidden(selectInput("sourcevsl9c", NULL, c(i18n$t("normal")), selected = i18n$t("normal")))
-                )
-              ),
-            ),
-            div(
-              class = "parameter-box right-parameter-box",
-              column(12, numericInput("vsl9", i18n$t("Mean ($)"), 2000, min = 10, step = 5, max = 10000)),
-              column(12, numericInput("lvsl9", i18n$t("Standard error"), 210, min = 5, step = 5, max = 10000))
-            ),
-          ),
-          # hr(),
-          div(
-            class = "grid-normal",
-            h3(strong(i18n$t("Restricted activity days valuation")), class = "grid-heading"),
-            div(
-              class = "parameter-box left-parameter-box",
-              column(
-                12,
-                div(
-                  class = "",
-                  tags$label(i18n$t("Source"), class = "control-label"),
-                  p(i18n$t("Stieb et al. 2002")),
-                ),
-              ),
-              column(12, textInput("sourcevsl10b", i18n$t("Source year"), value = "1997")),
-              column(
-                12,
-                div(
-                  class = "form-group shiny-input-container",
-                  tags$label(i18n$t("Estimate form"), class = "control-label"),
-                  p(i18n$t("Normal")),
-                  hidden(selectInput("sourcevsl10c", NULL, c(i18n$t("normal")), selected = i18n$t("normal")))
-                )
-              ),
-            ),
-            div(
-              class = "parameter-box right-parameter-box",
-              column(12, numericInput("vsl10", i18n$t("Mean ($)"), 48, min = 1, step = 5, max = 1000)),
-              column(12, numericInput("lvsl10", i18n$t("Standard error"), 18, min = 5, step = 5, max = 1000))
-            ),
           ), # div4
-        )
-      ),
-      tabPanel(
-        i18n$t("Pollutant data upload"),
-        value = i18n$t("pollutant-data-upload"),
-        createStepUI(i18n, stepNumber = 3, totalSteps = 4, progressMax = 4),
-        p(i18n$t("Upload your pollutant data by clicking \"Upload\" to browse your file system and select files. A preview of your upload will appear below.")),
-        p(i18n$t("Your uploaded data is temporary and will not be saved for future visits or stored on your device.")),
-        p(i18n$t("Only CSV files are supported. UTF-8 encoding is recommended.")),
-        div(
-          tags$section(
-            id = "dataUploadedInfo",
-            style = "margin-bottom: 0",
-            role = "alert",
-            class = "alert alert-info hidden",
-            tags$h3(id = "dataUploadedHeader", i18n$t("Sample data has been uploaded")), # Header for dynamic content
-            p(id = "dataUploadedInstruction", i18n$t('To upload new data, please click \"Clear all data and restart\".')) # Instruction text
+        ),
+        tabPanel(
+          i18n$t("Valuation"),
+          value = i18n$t("valuation"),
+          tabindex = "-1",
+          createStepUI(i18n, stepNumber = 2, totalSteps = 4, progressMax = 4, lang = lang),
+          p(i18n$t("Review the economic valuation estimates. The default values provided below are Health Canada-endorsed economic valuation estimates to support the health impact assessment of air pollution. Change them as needed for your scenario by entering your desired values.")),
+          # actionLink("link_instruction5", "Click here to view details about the 'CRFs' tab under the 'Instructions'."),
+          # br(),
+          tags$h3(HTML(i18n$t("About valuation estimates"))),
+          p(i18n$t("These values are economic welfare values. AQBAT provides economic valuation estimates that consider the potential welfare impacts associated with treatment costs, lost productivity, pain and suffering, and the impacts of increased mortality risk. The page displays corresponding economic values associated with health risks identified by AQBAT."), class = ""),
+          HTML(i18n$t("Currency year ranges from 2010 to 2023. To learn more about the sources included in this page, please refer to the <a id='references-link' class='internal-link' data-target='references' href='javascript:void(0)'>references</a>.")),
+          br(),
+          br(),
+          # Discount rate
+          # actionLink("link_instruction3", "Click here to view details about the 'Valuation' tab under the 'Instructions'."),
+          # hr(),
+          p(i18n$t("Click \"Restore default values\" to restore the values of each cell back to its preset (the values that show up automatically when the website first loads). Default values are restored in this tab only.")),
+          useShinyjs(),
+          div(
+            id = "formval",
+            style = "margin-top: 20px;",
+            fluidRow(
+              column(3, actionButton("resetval", i18n$t("Restore default values"), class = "btn-primary")),
+              column(3, numericInput("curr", i18n$t("Currency year"), 2016, min = 2010, step = 1, max = 2023)),
+              column(3, numericInput("baseyr", i18n$t("Base year"), 2016, min = 1990, step = 1, max = 2023)),
+              column(3, numericInput("discountrate", i18n$t("Discount rate (%)"), 0, min = 0, step = 1, max = 30)),
+              textOutput("curryear")
+            ),
+            div(
+              class = "grid-discrete",
+              h3(strong(i18n$t("Mortality valuation")), class = "grid-heading"),
+              div(
+                class = "parameter-box left-parameter-box",
+                column(
+                  12,
+                  div(
+                    class = "",
+                    tags$label(i18n$t("Source"), class = "control-label"),
+                    p(i18n$t("Chestnut and DeCivita 2009")),
+                  ),
+                ),
+                column(12, textInput("vslyr", i18n$t("Source year"), value = "2007")),
+                # column(3, textInput("vslfm", i18n$t("Estimate form"), c("discrete"))),
+                column(
+                  12,
+                  div(
+                    class = "form-group shiny-input-container",
+                    tags$label(i18n$t("Estimate form"), class = "control-label"),
+                    p(i18n$t("Discrete")),
+                    hidden(selectInput("vslfm", NULL, c(i18n$t("discrete")), selected = i18n$t("discrete")))
+                  ),
+                ),
+              ),
+              div(
+                class = "parameter-box center-parameter-box",
+                column(12, numericInput("vsl", i18n$t("Central ($million)"), 6.5, min = 1, step = 0.5, max = 100)),
+                column(12, numericInput("lvsl", i18n$t("Low ($million)"), 3.5, min = 0.5, step = 0.5, max = 100)),
+                column(12, numericInput("uvsl", i18n$t("High ($million)"), 9.5, min = 7, step = 0.5, max = 100)),
+              ),
+              div(
+                class = "parameter-box right-parameter-box",
+                column(12, numericInput("pcvsl", i18n$t("Probability central"), 0.5, min = 0.1, step = 0.1, max = 1)),
+                column(12, numericInput("plvsl", i18n$t("Probability low"), 0.25, min = 0.1, step = 0.1, max = 0.9)),
+              ),
+            ),
+            # Acute Respiratory Symptom Days$
+            div(
+              class = "grid-normal",
+              h3(strong(i18n$t("Acute respiratory symptom days valuation")), class = "grid-heading"),
+              div(
+                class = "parameter-box left-parameter-box",
+                column(
+                  12,
+                  div(
+                    class = "",
+                    tags$label(i18n$t("Source"), class = "control-label"),
+                    p(i18n$t("Stieb et al. 2002")),
+                  ),
+                ),
+                column(12, textInput("vsl2yr", i18n$t("Source year"), value = "1997")),
+                # column(3, selectInput("vsl2fm", i18n$t("Estimate form"), c("normal"))),
+                column(
+                  12,
+                  div(
+                    class = "form-group shiny-input-container",
+                    tags$label(i18n$t("Estimate form"), class = "control-label"),
+                    p(i18n$t("Normal")),
+                    hidden(selectInput("vsl2fm", NULL, c(i18n$t("normal")), selected = i18n$t("normal")))
+                  )
+                ),
+              ),
+              div(
+                class = "parameter-box right-parameter-box",
+                column(12, numericInput("vsl2", i18n$t("Mean ($)"), 13, min = 1, step = 0.5, max = 100)),
+                column(12, numericInput("lvsl2", i18n$t("Standard error"), 7, min = 0, step = 0.5, max = 100))
+              ),
+            ),
+            # Adult Chronic Bronchitis Cases$
+            div(
+              class = "grid-discrete",
+              h3(strong(i18n$t("Adult chronic bronchitis cases valuation")), class = "grid-heading"),
+              div(
+                class = "parameter-box left-parameter-box",
+                column(
+                  12,
+                  div(
+                    class = "",
+                    tags$label(i18n$t("Source"), class = "control-label"),
+                    p(i18n$t("Krupnick and Cropper 1992; Viscusi et al. 1991")),
+                  ),
+                ),
+                column(12, textInput("vsl3yr", i18n$t("Source year"), value = "1996")),
+                # column(3, selectInput("vsl3fm", i18n$t("Estimate form"), c("discrete"))),
+                column(
+                  12,
+                  div(
+                    class = "form-group shiny-input-container",
+                    tags$label(i18n$t("Estimate form"), class = "control-label"),
+                    p(i18n$t("Discrete")),
+                    hidden(selectInput("vsl3fm", NULL, c(i18n$t("discrete")), selected = i18n$t("discrete")))
+                  )
+                ),
+              ),
+              div(
+                class = "parameter-box center-parameter-box",
+                column(12, numericInput("vsl3", i18n$t("Central ($1000)"), 266, min = 1, step = 0.5, max = 1000)),
+                column(12, numericInput("lvsl3", i18n$t("Low ($1000)"), 175, min = 0.5, step = 0.5, max = 1000)),
+                column(12, numericInput("uvsl3", i18n$t("High ($1000)"), 465, min = 7, step = 0.5, max = 1000)),
+              ),
+              div(
+                class = "parameter-box right-parameter-box",
+                column(12, numericInput("pcvsl3", i18n$t("Probability central"), 0.34, min = 0.1, step = 0.1, max = 1)),
+                column(12, numericInput("plvsl3", i18n$t("Probability low"), 0.33, min = 0.1, step = 0.1, max = 0.9)),
+              ),
+            ),
+            # Asthma Symptom Days $
+            div(
+              class = "grid-normal",
+              h3(strong(i18n$t("Asthma symptom days valuation")), class = "grid-heading"),
+              div(
+                class = "parameter-box left-parameter-box",
+                column(
+                  12,
+                  div(
+                    class = "",
+                    tags$label(i18n$t("Source"), class = "control-label"),
+                    p(i18n$t("Stieb et al. 2002")),
+                  ),
+                ),
+                column(12, textInput("sourcevsl4b", i18n$t("Source year"), value = "1997")),
+                # column(3, selectInput("sourcevsl4c", i18n$t("Estimate form"), c("triangular"))),
+                column(
+                  12,
+                  div(
+                    class = "form-group shiny-input-container",
+                    tags$label(i18n$t("Estimate form"), class = "control-label"),
+                    p(i18n$t("Triangular")),
+                    hidden(selectInput("sourcevsl4c", NULL, c(i18n$t("triangular")), selected = i18n$t("triangular")))
+                  )
+                ),
+              ),
+              div(
+                class = "parameter-box right-parameter-box",
+                column(12, numericInput("vsl4", i18n$t("Likely ($)"), 28, min = 1, step = 0.5, max = 100)),
+                column(12, numericInput("lvsl4", "Min ($)", 7, min = 0.5, step = 0.5, max = 100)),
+                column(12, numericInput("uvsl4", "Max ($)", 120, min = 7, step = 0.5, max = 300)),
+              ),
+            ),
+            div(
+              class = "grid-normal",
+              h3(strong(i18n$t("Cardiac emergency room visits valuation")), class = "grid-heading"),
+              div(
+                class = "parameter-box left-parameter-box",
+                column(
+                  12,
+                  div(
+                    class = "",
+                    tags$label(i18n$t("Source"), class = "control-label"),
+                    p(i18n$t("Stieb et al. 2002")),
+                  ),
+                ),
+                column(12, textInput("sourcevsl5b", i18n$t("Source year"), value = "1997")),
+                # column(3, selectInput("sourcevsl5c", i18n$t("Estimate form"), c("normal"))),
+                column(
+                  12,
+                  div(
+                    class = "form-group shiny-input-container",
+                    tags$label(i18n$t("Estimate form"), class = "control-label"),
+                    p(i18n$t("Normal")),
+                    hidden(selectInput("sourcevsl5c", NULL, c(i18n$t("normal")), selected = i18n$t("normal")))
+                  )
+                ),
+              ),
+              div(
+                class = "parameter-box right-parameter-box",
+                column(12, numericInput("vsl5", i18n$t("Mean ($)"), 4400, min = 1, step = 0.5, max = 10000)),
+                column(12, numericInput("lvsl5", i18n$t("Standard error"), 590, min = 0.5, step = 0.5, max = 10000)),
+              ),
+            ),
+            # hr(),
+            # Child Acute Bronchitis Episodes$
+            div(
+              class = "grid-discrete",
+              h3(strong(i18n$t("Child acute bronchitis episodes valuation")), class = "grid-heading"),
+              div(
+                class = "parameter-box left-parameter-box",
+                column(
+                  12,
+                  div(
+                    class = "",
+                    tags$label(i18n$t("Source"), class = "control-label"),
+                    p(i18n$t("Krupnick and Cropper 1989")),
+                  ),
+                ),
+                column(12, textInput("sourcevsl6b", i18n$t("Source year"), value = "1996")),
+                # column(3, selectInput("sourcevsl6c", i18n$t("Estimate form"), c("discrete"))),
+                column(
+                  12,
+                  div(
+                    class = "form-group shiny-input-container",
+                    tags$label(i18n$t("Estimate form"), class = "control-label"),
+                    p(i18n$t("Discrete")),
+                    hidden(selectInput("sourcevsl6c", NULL, c(i18n$t("discrete")), selected = i18n$t("discrete")))
+                  )
+                ),
+              ),
+              div(
+                class = "parameter-box center-parameter-box",
+                column(12, numericInput("vsl6", i18n$t("Central ($)"), 310, min = 1, step = 0.5, max = 1000)),
+                column(12, numericInput("lvsl6", i18n$t("Low ($)"), 150, min = 0.5, step = 0.5, max = 1000)),
+                column(12, numericInput("uvsl6", i18n$t("High ($)"), 460, min = 7, step = 0.5, max = 1000)),
+              ),
+              div(
+                class = "parameter-box center-parameter-box",
+                column(12, numericInput("pcvsl6", i18n$t("Probability central"), 0.34, min = 0.1, step = 0.1, max = 1)),
+                column(12, numericInput("plvsl6", i18n$t("Probability low"), 0.33, min = 0.1, step = 0.1, max = 0.9))
+              ),
+            ),
+            # Elderly Cardiac Hospital Admissions $
+            div(
+              class = "grid-normal",
+              h3(strong(i18n$t("Elderly cardiac hospital admissions valuation")), class = "grid-heading"),
+              div(
+                class = "parameter-box left-parameter-box",
+                column(
+                  12,
+                  div(
+                    class = "",
+                    tags$label(i18n$t("Source"), class = "control-label"),
+                    p(i18n$t("Stieb et al. 2002")),
+                  ),
+                ),
+                column(12, textInput("sourcevsl7b", i18n$t("Source year"), value = "1997")),
+                # column(3, selectInput("sourcevsl7c", i18n$t("Estimate form"), c("normal"))),
+                column(
+                  12,
+                  div(
+                    class = "form-group shiny-input-container",
+                    tags$label(i18n$t("Estimate form"), class = "control-label"),
+                    p(i18n$t("Normal")),
+                    hidden(selectInput("sourcevsl7c", NULL, c(i18n$t("normal")), selected = i18n$t("normal")))
+                  )
+                ),
+              ),
+              div(
+                class = "parameter-box right-parameter-box",
+                column(12, numericInput("vsl7", i18n$t("Mean ($)"), 5200, min = 1, step = 5, max = 10000)),
+                column(12, numericInput("lvsl7", i18n$t("Standard error"), 610, min = 5, step = 5, max = 10000))
+              )
+            ),
+            # hr(),
+            # Minor Restricted Activity Days$
+            div(
+              class = "grid-normal",
+              h3(strong(i18n$t("Minor restricted activity days valuation")), class = "grid-heading"),
+              div(
+                class = "parameter-box left-parameter-box",
+                column(
+                  12,
+                  div(
+                    class = "",
+                    tags$label(i18n$t("Source"), class = "control-label"),
+                    p(i18n$t("Stieb et al. 2002")),
+                  ),
+                ),
+                column(12, textInput("sourcevsl8b", i18n$t("Source year"), value = "1997")),
+                # column(3, selectInput("sourcevsl8c", i18n$t("Estimate form"), c("normal"))),
+                column(
+                  12,
+                  div(
+                    class = "form-group shiny-input-container",
+                    tags$label(i18n$t("Estimate form"), class = "control-label"),
+                    p(i18n$t("Normal")),
+                    hidden(selectInput("sourcevsl8c", NULL, c(i18n$t("normal")), selected = i18n$t("normal")))
+                  )
+                ),
+              ),
+              div(
+                class = "parameter-box right-parameter-box",
+                column(12, numericInput("vsl8", i18n$t("Mean ($)"), 22, min = 1, step = 5, max = 1000)),
+                column(12, numericInput("lvsl8", i18n$t("Standard error"), 9, min = 5, step = 5, max = 1000))
+              ),
+            ),
+            # hr(),
+            # Respiratory Emergency Room Visits$
+            div(
+              class = "grid-normal",
+              h3(strong(i18n$t("Respiratory emergency room visits valuation")), class = "grid-heading"),
+              div(
+                class = "parameter-box left-parameter-box",
+                column(
+                  12,
+                  div(
+                    class = "",
+                    tags$label(i18n$t("Source"), class = "control-label"),
+                    p(i18n$t("Stieb et al. 2002")),
+                  ),
+                ),
+                column(12, textInput("sourcevsl9b", i18n$t("Source year"), value = "1997")),
+                # column(3, selectInput("sourcevsl9c", i18n$t("Estimate form"), c(i18n$t("normal")))),
+                column(
+                  12,
+                  div(
+                    class = "form-group shiny-input-container",
+                    tags$label(i18n$t("Estimate form"), class = "control-label"),
+                    p(i18n$t("Normal")),
+                    hidden(selectInput("sourcevsl9c", NULL, c(i18n$t("normal")), selected = i18n$t("normal")))
+                  )
+                ),
+              ),
+              div(
+                class = "parameter-box right-parameter-box",
+                column(12, numericInput("vsl9", i18n$t("Mean ($)"), 2000, min = 10, step = 5, max = 10000)),
+                column(12, numericInput("lvsl9", i18n$t("Standard error"), 210, min = 5, step = 5, max = 10000))
+              ),
+            ),
+            # hr(),
+            div(
+              class = "grid-normal",
+              h3(strong(i18n$t("Restricted activity days valuation")), class = "grid-heading"),
+              div(
+                class = "parameter-box left-parameter-box",
+                column(
+                  12,
+                  div(
+                    class = "",
+                    tags$label(i18n$t("Source"), class = "control-label"),
+                    p(i18n$t("Stieb et al. 2002")),
+                  ),
+                ),
+                column(12, textInput("sourcevsl10b", i18n$t("Source year"), value = "1997")),
+                column(
+                  12,
+                  div(
+                    class = "form-group shiny-input-container",
+                    tags$label(i18n$t("Estimate form"), class = "control-label"),
+                    p(i18n$t("Normal")),
+                    hidden(selectInput("sourcevsl10c", NULL, c(i18n$t("normal")), selected = i18n$t("normal")))
+                  )
+                ),
+              ),
+              div(
+                class = "parameter-box right-parameter-box",
+                column(12, numericInput("vsl10", i18n$t("Mean ($)"), 48, min = 1, step = 5, max = 1000)),
+                column(12, numericInput("lvsl10", i18n$t("Standard error"), 18, min = 5, step = 5, max = 1000))
+              ),
+            ), # div4
           )
         ),
-        fileInput("pollutants", label = "", accept = c(".csv", ".tsv"), multiple = TRUE, width = "350px"),
-        textOutput("message1"),
-        h3(i18n$t("Preview of the uploaded data"), id = "data-preview", class = "hidden"),
-        tableOutput("dataPreviewTable"),
-        p(i18n$t("If you have previously uploaded data (including the sample data), please clear all data and restart the app before uploading new pollutant data. You will return to the \"CRFs\" tab of the website. Data in all tabs in and results will be reset to defaults.")),
-        createClearDataButton("upload", i18n),
-        h3(i18n$t("Instructions for new users")),
-        p(i18n$t("Pollutant concentrations are annual averages of daily values (24 hours), except for O3 and summer O3 (May to September), which use daily 1-hour maximum averages for the annual and summer periods, respectively. CO includes both annual daily averages and daily 1-hour maximum averages."), class = ""),
-        p(i18n$t("Before using AQBAT, you need to prepare your pollutant data so you can upload it onto the tool. We provide a sample file you can use to help structure your data for upload. It includes sample air quality data for PM2.5, O3, and NO2 for 2016. These data were derived from multiple national sources and mapped to 293 census divisions in Canada. We use data from the sample file if you do not input your own data."), class = ""),
-        downloadButton("xsample", i18n$t("Download sample input file"), class = "btn-primary"),
-        br(),
-        br(),
-        p(i18n$t("Please ensure that the formatting of your data matches the sample data provided. The following variables are included in the sample data:")),
-        tags$div(
-          tags$ul(
-            tags$li(i18n$t("year (2001-2063)")),
-            tags$li(i18n$t("scenario")),
-            tags$li(i18n$t("census division unique identifier (CDUID)")),
-            tags$li(i18n$t("fine particulate matter (pm25_1 and pm25_2)")),
-            tags$li(i18n$t("nitrogen dioxide (no2_1 and no2_2)")),
-            tags$li(i18n$t("ozone (o3_1 and o3_2)")),
-            tags$li(i18n$t("summer ozone (summero3_1 and summero3_2)")),
-            tags$li(i18n$t("24-hour carbon monoxide (co24h_1 and co24h_2)")),
-            tags$li(i18n$t("1-hour carbon monoxide (co1h_1 and co1h_2)")),
-            tags$li(i18n$t("sulfur dioxide (so2_1 and so2_2)")),
-            tags$li(i18n$t("benzene (bz_1 and bz_2)")),
-            tags$li(i18n$t("1,3-butadiene (bt_1 and bt_2)")),
-            tags$li(i18n$t("acetaldehyde (ac_1 and ac_2)")),
-            tags$li(i18n$t("formaldehyde (fm_1 and fm_2)"))
-          )
-        ),
-        p(i18n$t("The \"year\", \"scenario\", and \"CDUID\" columns are mandatory, as well as a minimum of one type of pollutant (status quo and counterfactual concentrations). Both the \"year\" and \"scenario\" columns need to be numeric variables. There cannot be repetitive scenario years and numbers in combination. For example, if the year is 2016, each scenario must have a different number.")),
-        p(i18n$t("AQBAT uses the difference between status quo and counterfactual concentrations to estimate health benefits or damages from air quality changes. In the sample file:")),
-        tags$div(
-          tags$ul(
-            tags$li(i18n$t("columns with \"_2\" in the header are status quo concentrations (for example, \"pm25_2\")")),
-            tags$li(i18n$t("columns with \"_1\" in the header are counterfactual concentrations, like natural background concentrations (for example, \"pm25_1\")"))
-          )
-        ),
-        tags$script(HTML("
+        tabPanel(
+          i18n$t("Pollutant data upload"),
+          value = i18n$t("pollutant-data-upload"),
+          tabindex = "-1",
+          createStepUI(i18n, stepNumber = 3, totalSteps = 4, progressMax = 4, lang = lang),
+          p(i18n$t("Upload your pollutant data by clicking \"Upload\" to browse your file system and select files. A preview of your upload will appear below.")),
+          p(i18n$t("Your uploaded data is temporary and will not be saved for future visits or stored on your device.")),
+          p(i18n$t("Only CSV files are supported. UTF-8 encoding is recommended.")),
+          div(
+            tags$section(
+              id = "dataUploadedInfo",
+              style = "margin-bottom: 0",
+              role = "alert",
+              class = "alert alert-info hidden",
+              tags$h3(id = "dataUploadedHeader", i18n$t("Sample data has been uploaded")), # Header for dynamic content
+              p(id = "dataUploadedInstruction", i18n$t('To upload new data, please click \"Clear all data and restart\".')) # Instruction text
+            )
+          ),
+          fileInput("pollutants", label = "", accept = c(".csv", ".tsv"), multiple = TRUE, width = "350px"),
+          textOutput("message1"),
+          h3(i18n$t("Preview of the uploaded data"), id = "data-preview", class = "hidden"),
+          tableOutput("dataPreviewTable"),
+          p(i18n$t("If you have previously uploaded data (including the sample data), please clear all data and restart the app before uploading new pollutant data. You will return to the \"CRFs\" tab of the website. Data in all tabs in and results will be reset to defaults.")),
+          createClearDataButton("upload", i18n),
+          h3(i18n$t("Instructions for new users")),
+          p(i18n$t("Pollutant concentrations are annual averages of daily values (24 hours), except for O3 and summer O3 (May to September), which use daily 1-hour maximum averages for the annual and summer periods, respectively. CO includes both annual daily averages and daily 1-hour maximum averages."), class = ""),
+          p(i18n$t("Before using AQBAT, you need to prepare your pollutant data so you can upload it onto the tool. We provide a sample file you can use to help structure your data for upload. It includes sample air quality data for PM2.5, O3, and NO2 for 2016. These data were derived from multiple national sources and mapped to 293 census divisions in Canada. We use data from the sample file if you do not input your own data."), class = ""),
+          if (lang == "fr") {
+            downloadButton("xsample_fr", i18n$t("Download sample input file"), class = "btn-primary")
+          } else {
+            downloadButton("xsample_en", i18n$t("Download sample input file"), class = "btn-primary")
+          },
+          br(),
+          br(),
+          p(i18n$t("Please ensure that the formatting of your data matches the sample data provided. The following variables are included in the sample data:")),
+          tags$div(
+            tags$ul(
+              tags$li(i18n$t("year (2001-2063)")),
+              tags$li(i18n$t("scenario")),
+              tags$li(i18n$t("census division unique identifier (CDUID)")),
+              tags$li(i18n$t("fine particulate matter (pm25_1 and pm25_2)")),
+              tags$li(i18n$t("nitrogen dioxide (no2_1 and no2_2)")),
+              tags$li(i18n$t("ozone (o3_1 and o3_2)")),
+              tags$li(i18n$t("summer ozone (summero3_1 and summero3_2)")),
+              tags$li(i18n$t("24-hour carbon monoxide (co24h_1 and co24h_2)")),
+              tags$li(i18n$t("1-hour carbon monoxide (co1h_1 and co1h_2)")),
+              tags$li(i18n$t("sulfur dioxide (so2_1 and so2_2)")),
+              tags$li(i18n$t("benzene (bz_1 and bz_2)")),
+              tags$li(i18n$t("1,3-butadiene (bt_1 and bt_2)")),
+              tags$li(i18n$t("acetaldehyde (ac_1 and ac_2)")),
+              tags$li(i18n$t("formaldehyde (fm_1 and fm_2)"))
+            )
+          ),
+          p(i18n$t("The \"year\", \"scenario\", and \"CDUID\" columns are mandatory, as well as a minimum of one type of pollutant (status quo and counterfactual concentrations). Both the \"year\" and \"scenario\" columns need to be numeric variables. There cannot be repetitive scenario years and numbers in combination. For example, if the year is 2016, each scenario must have a different number.")),
+          p(i18n$t("AQBAT uses the difference between status quo and counterfactual concentrations to estimate health benefits or damages from air quality changes. In the sample file:")),
+          tags$div(
+            tags$ul(
+              tags$li(i18n$t("columns with \"_2\" in the header are status quo concentrations (for example, \"pm25_2\")")),
+              tags$li(i18n$t("columns with \"_1\" in the header are counterfactual concentrations, like natural background concentrations (for example, \"pm25_1\")"))
+            )
+          ),
+          tags$script(HTML("
           // Listen for Shiny messages to enable/disable input
           Shiny.addCustomMessageHandler('toggleFileInput', function(enable) {
             if (enable) {
@@ -2301,236 +2299,232 @@ ui <- function(request = NULL) {
             }
           });
         ")),
-      ),
-      tabPanel(
-        i18n$t("Results"),
-        value = i18n$t("results"),
-        createStepUI(i18n, stepNumber = 4, totalSteps = 4, progressMax = 4),
-        p(i18n$t("View and download the results of your scenario. Details on the methodology for how AQBAT estimates human health effects and the associated economic value are provided in the AQBAT appendix.")),
-        downloadButton("download_aqbat_appendix_en", i18n$t("Download AQBAT appendix"), class = "btn-primary", style = "display: none;"),
-        downloadButton("download_aqbat_appendix_fr", i18n$t("Télécharger l'annexe d'OEBQA"), class = "btn-primary", style = "display: none;"),
-        tags$nav(
-          h3(i18n$t("On this page")),
-          tags$ul(
-            tags$li(tags$a(
-              i18n$t("Overall results"),
-              href = "#overall",
-            )),
-            # tags$li(tags$a(
-            #   i18n$t("Maps"),
-            #   href = "#maps",
-            #   class = "scroll-link"
-            # )),
-            tags$li(tags$a(
-              i18n$t("Population-weighted exposure"),
-              href = "#population-weighted",
-            )),
-            tags$li(tags$a(
-              i18n$t("Cause-specific mortality"),
-              href = "#cause-specific",
-            )),
-            tags$li(tags$a(
-              i18n$t("Non-linear shape constrained health impact function (SCHIF)"),
-              href = "#schif",
-            )),
-            tags$li(tags$a(
-              i18n$t("Toxics"),
-              href = "#toxics-results",
-            )),
-            tags$li(tags$a(
-              i18n$t("Input parameters"),
-              href = "#input-params",
-            )),
-            tags$li(tags$a(
-              i18n$t("Baseline data"),
-              href = "#baseline",
-            ))
-          )
         ),
-        h3("Instructions"),
-        p(i18n$t("You must specify a currency year in the \"Valuation\" tab and import pollutant data in the \"Pollutant data upload\" tab to get results. The default results based on sample pollutant data will be generated when no pollutant data is uploaded.")),
-        p(i18n$t("Click \"Clear all data and restart\" to restart the app for a new scenario. You will return to the \"CRFs\" tab of the website. Data in all tabs and results will be reset to defaults.")),
-        br(),
-        div(
-          tags$section(
-            id = "sampleDataUploadedInfo",
-            style = "margin-bottom: 0",
-            class = "alert alert-info hidden",
-            h3(i18n$t("Sample data has been uploaded")),
-            p(i18n$t('To upload your own data, please click "Clear all data and restart", and then upload your data at the "Pollutant data upload" tab before visiting this page')),
+        tabPanel(
+          i18n$t("Results"),
+          value = i18n$t("results"),
+          tabindex = "-1",
+          createStepUI(i18n, stepNumber = 4, totalSteps = 4, progressMax = 4, lang = lang),
+          p(i18n$t("View and download the results of your scenario. Details on the methodology for how AQBAT estimates human health effects and the associated economic value are provided in the AQBAT appendix.")),
+          downloadButton("download_aqbat_appendix_en", i18n$t("Download AQBAT appendix"), class = "btn-primary", style = "display: none;"),
+          downloadButton("download_aqbat_appendix_fr", i18n$t("Télécharger l'annexe d'OEBQA"), class = "btn-primary", style = "display: none;"),
+          tags$nav(
+            h3(i18n$t("On this page")),
+            tags$ul(
+              tags$li(tags$a(
+                i18n$t("Overall results"),
+                href = "#overall",
+              )),
+              # tags$li(tags$a(
+              #   i18n$t("Maps"),
+              #   href = "#maps",
+              #   class = "scroll-link"
+              # )),
+              tags$li(tags$a(
+                i18n$t("Population-weighted exposure"),
+                href = "#population-weighted",
+              )),
+              tags$li(tags$a(
+                i18n$t("Cause-specific mortality"),
+                href = "#cause-specific",
+              )),
+              tags$li(tags$a(
+                i18n$t("Non-linear shape constrained health impact function (SCHIF)"),
+                href = "#schif",
+              )),
+              tags$li(tags$a(
+                i18n$t("Toxics"),
+                href = "#toxics-results",
+              )),
+              tags$li(tags$a(
+                i18n$t("Input parameters"),
+                href = "#input-params",
+              )),
+              tags$li(tags$a(
+                i18n$t("Baseline data"),
+                href = "#baseline",
+              ))
+            )
           ),
-        ),
-        br(),
-        createClearDataButton("results", i18n),
+          h3("Instructions"),
+          p(i18n$t("You must specify a currency year in the \"Valuation\" tab and import pollutant data in the \"Pollutant data upload\" tab to get results. The default results based on sample pollutant data will be generated when no pollutant data is uploaded.")),
+          p(i18n$t("Click \"Clear all data and restart\" to restart the app for a new scenario. You will return to the \"CRFs\" tab of the website. Data in all tabs and results will be reset to defaults.")),
+          br(),
+          div(
+            tags$section(
+              id = "sampleDataUploadedInfo",
+              style = "margin-bottom: 0",
+              class = "alert alert-info hidden",
+              h3(i18n$t("Sample data has been uploaded")),
+              p(i18n$t('To upload your own data, please click "Clear all data and restart", and then upload your data at the "Pollutant data upload" tab before visiting this page')),
+            ),
+          ),
+          br(),
+          createClearDataButton("results", i18n),
 
-        # OVERALL RESULTS
-        tags$section(
-          class = "section",
-          h2(i18n$t("Overall results"), id = "overall"),
-          p(i18n$t("Results at census division, provincial and territorial levels along with national summaries. Please note that the table below is just a preview of the output. To see the full results, please select \"Download overall results\".")),
-          p(i18n$t("\"L95CI\" refers to the lower 95% confidence interval and \"U95CI\" refers to the upper 95% confidence interval.")),
-          p(i18n$t("\"CDUID\" refers to the census division unique identifier.")),
-          tableOutput("outputcd"),
-          createErrorMessage("An error occurred. Please refresh the page and start again.", i18n, "outputcd"),
-          createLoader(loadingMessage = i18n$t("Loading...")),
-          downloadButton("d2", i18n$t("Download overall results"), class = "download-button btn-primary"),
-        ),
-        # MAPS
-        # tags$section(
-        #   class = "section",
-        #   h2(i18n$t("Maps"), id="maps"),
-        #   p(i18n$t("Interactive and static maps of baseline health outcome rates, status quo pollutant concentrations and selected results.")),
-        #   value = i18n$t("Maps"),
-        #   uiOutput("xmap")
-        # ),
-        # POPULATION-WEIGHTED EXPOSURE
-        tags$section(
-          class = "section",
-          h2(i18n$t("Population-weighted exposure"), id = "population-weighted"),
-          p(i18n$t("An estimate of population-weighted average air pollutant exposure nationally and by province. Please note that the table below is just a preview of the output. To see the full results, please select \"Download population-weighted exposure results\".")),
-          tableOutput("outputexposure"),
-          createErrorMessage("An error occurred. Please refresh the page and start again.", i18n, "outputexposure"),
-          createLoader(loadingMessage = i18n$t("Loading...")),
-          downloadButton("d5", i18n$t("Download population-weighted exposure results"), class = "download-button btn-primary")
-        ),
-        # CAUSE-SPECIFIC MORTALITY
-        tags$section(
-          class = "section",
-          h2(i18n$t("Cause-specific mortality"), id = "cause-specific"),
-          p(i18n$t("The results for four cause-specific chronic exposure type mortalities, including chronic exposure cerebrovascular mortality, chronic exposure COPD mortality, chronic exposure ischemic heart disease mortality, and chronic exposure lung cancer mortality. Please note that the table below is just a preview of the output. To see the full results, please select \"Download cause-specific mortality results\".")),
-          p(i18n$t("\"L95CI\" refers to the lower 95% confidence interval and \"U95CI\" refers to the upper 95% confidence interval.")),
-          tableOutput("outputmort"),
-          createErrorMessage("An error occurred. Please refresh the page and start again.", i18n, "outputmort"),
-          createLoader(loadingMessage = i18n$t("Loading...")),
-          downloadButton("d3", i18n$t("Download cause-specific mortality results"), class = "download-button btn-primary")
-        ),
-        # NON-LINEAR SCHIF
-        tags$section(
-          class = "section",
-          h2(i18n$t("Non-linear shape constrained health impact function (SCHIF)"), id = "schif"),
-          p(i18n$t("The results for mortality related to long term exposure to PM2.5. Please note that the table below is just a preview of the output. To see the full results, please select \"Download non-linear shape constrained health impact function results\".")),
-          p(i18n$t("\"L95CI\" refers to the lower 95% confidence interval and \"U95CI\" refers to the upper 95% confidence interval.")),
-          tableOutput("outputschif"),
-          createErrorMessage("An error occurred. Please refresh the page and start again.", i18n, "outputschif"),
-          createLoader(loadingMessage = i18n$t("Loading...")),
-          downloadButton("d4", i18n$t("Download non-linear shape constrained health impact function results"), class = "download-button btn-primary")
-        ),
-        # TOXICS
-        tags$section(
-          class = "section",
-          h2(i18n$t("Toxics"), id = "toxics-results"),
-          p(
-            i18n$t("Results for cancer and non-cancer outcomes of air toxics."),
-            i18n$t("Please note that the table below is just a preview of the output. To see the full results, please select \"Download toxics results\". If you would like to view non-cancer outcomes, please click on the \"Non-cancer\" sheet within the downloaded table.")
+          # OVERALL RESULTS
+          tags$section(
+            class = "section",
+            h2(i18n$t("Overall results"), id = "overall"),
+            p(i18n$t("Results at census division, provincial and territorial levels along with national summaries. Please note that the table below is just a preview of the output. To see the full results, please select \"Download overall results\".")),
+            p(i18n$t("\"L95CI\" refers to the lower 95% confidence interval and \"U95CI\" refers to the upper 95% confidence interval.")),
+            p(i18n$t("\"CDUID\" refers to the census division unique identifier.")),
+            tableOutput("outputcd"),
+            createErrorMessage("An error occurred. Please refresh the page and start again.", i18n, "outputcd"),
+            createLoader(loadingMessage = i18n$t("Loading..."), lang = lang),
+            downloadButton("d2", i18n$t("Download overall results"), class = "download-button btn-primary"),
           ),
-          tableOutput("outputtox"),
-          createErrorMessage("An error occurred. Please refresh the page and start again.", i18n, "outputtox"),
-          createLoader(loadingMessage = i18n$t("Loading...")),
-          downloadButton("d6", i18n$t("Download toxics results"), class = "download-button btn-primary")
+          # MAPS
+          # tags$section(
+          #   class = "section",
+          #   h2(i18n$t("Maps"), id="maps"),
+          #   p(i18n$t("Interactive and static maps of baseline health outcome rates, status quo pollutant concentrations and selected results.")),
+          #   value = i18n$t("Maps"),
+          #   uiOutput("xmap")
+          # ),
+          # POPULATION-WEIGHTED EXPOSURE
+          tags$section(
+            class = "section",
+            h2(i18n$t("Population-weighted exposure"), id = "population-weighted"),
+            p(i18n$t("An estimate of population-weighted average air pollutant exposure nationally and by province. Please note that the table below is just a preview of the output. To see the full results, please select \"Download population-weighted exposure results\".")),
+            tableOutput("outputexposure"),
+            createErrorMessage("An error occurred. Please refresh the page and start again.", i18n, "outputexposure"),
+            createLoader(loadingMessage = i18n$t("Loading..."), lang = lang),
+            downloadButton("d5", i18n$t("Download population-weighted exposure results"), class = "download-button btn-primary")
+          ),
+          # CAUSE-SPECIFIC MORTALITY
+          tags$section(
+            class = "section",
+            h2(i18n$t("Cause-specific mortality"), id = "cause-specific"),
+            p(i18n$t("The results for four cause-specific chronic exposure type mortalities, including chronic exposure cerebrovascular mortality, chronic exposure COPD mortality, chronic exposure ischemic heart disease mortality, and chronic exposure lung cancer mortality. Please note that the table below is just a preview of the output. To see the full results, please select \"Download cause-specific mortality results\".")),
+            p(i18n$t("\"L95CI\" refers to the lower 95% confidence interval and \"U95CI\" refers to the upper 95% confidence interval.")),
+            tableOutput("outputmort"),
+            createErrorMessage("An error occurred. Please refresh the page and start again.", i18n, "outputmort"),
+            createLoader(loadingMessage = i18n$t("Loading..."), lang = lang),
+            downloadButton("d3", i18n$t("Download cause-specific mortality results"), class = "download-button btn-primary")
+          ),
+          # NON-LINEAR SCHIF
+          tags$section(
+            class = "section",
+            h2(i18n$t("Non-linear shape constrained health impact function (SCHIF)"), id = "schif"),
+            p(i18n$t("The results for mortality related to long term exposure to PM2.5. Please note that the table below is just a preview of the output. To see the full results, please select \"Download non-linear shape constrained health impact function results\".")),
+            p(i18n$t("\"L95CI\" refers to the lower 95% confidence interval and \"U95CI\" refers to the upper 95% confidence interval.")),
+            tableOutput("outputschif"),
+            createErrorMessage("An error occurred. Please refresh the page and start again.", i18n, "outputschif"),
+            createLoader(loadingMessage = i18n$t("Loading..."), lang = lang),
+            downloadButton("d4", i18n$t("Download non-linear shape constrained health impact function results"), class = "download-button btn-primary")
+          ),
+          # TOXICS
+          tags$section(
+            class = "section",
+            h2(i18n$t("Toxics"), id = "toxics-results"),
+            p(
+              i18n$t("Results for cancer and non-cancer outcomes of air toxics."),
+              i18n$t("Please note that the table below is just a preview of the output. To see the full results, please select \"Download toxics results\". If you would like to view non-cancer outcomes, please click on the \"Non-cancer\" sheet within the downloaded table.")
+            ),
+            tableOutput("outputtox"),
+            createErrorMessage("An error occurred. Please refresh the page and start again.", i18n, "outputtox"),
+            createLoader(loadingMessage = i18n$t("Loading..."), lang = lang),
+            downloadButton("d6", i18n$t("Download toxics results"), class = "download-button btn-primary")
+          ),
+          # INPUT PARAMETERS
+          tags$section(
+            class = "section",
+            h2(i18n$t("Input parameters"), id = "input-params"),
+            p(i18n$t("A list of all inputs defining your modelled scenario. Please note that the table below is just a preview of the output. To see the full results, please select \"Download input parameters\".")),
+            tableOutput("allinputa"),
+            createErrorMessage("An error occurred. Please refresh the page and start again.", i18n, "allinputa"),
+            createLoader(loadingMessage = i18n$t("Loading..."), lang = lang),
+            downloadButton("allinputb", i18n$t("Download input parameters"), class = "download-button btn-primary")
+          ),
+          # BASELINE DATA
+          tags$section(
+            class = "section",
+            h2(i18n$t("Baseline data"), id = "baseline"),
+            p(i18n$t("Annual baseline rates for health outcomes (per million). Please note that the table below is just a preview of the output. To see the full results, including population sizes, please select \"Download baseline data\".")),
+            tableOutput("outputbaserate"),
+            createErrorMessage("An error occurred. Please refresh the page and start again.", i18n, "outputbaserate"),
+            createLoader(loadingMessage = i18n$t("Loading..."), lang = lang),
+            downloadButton("d7", i18n$t("Download baseline data"), class = "download-button btn-primary")
+          ),
         ),
-        # INPUT PARAMETERS
-        tags$section(
-          class = "section",
-          h2(i18n$t("Input parameters"), id = "input-params"),
-          p(i18n$t("A list of all inputs defining your modelled scenario. Please note that the table below is just a preview of the output. To see the full results, please select \"Download input parameters\".")),
-          tableOutput("allinputa"),
-          createErrorMessage("An error occurred. Please refresh the page and start again.", i18n, "allinputa"),
-          createLoader(loadingMessage = i18n$t("Loading...")),
-          downloadButton("allinputb", i18n$t("Download input parameters"), class = "download-button btn-primary")
-        ),
-        # BASELINE DATA
-        tags$section(
-          class = "section",
-          h2(i18n$t("Baseline data"), id = "baseline"),
-          p(i18n$t("Annual baseline rates for health outcomes (per million). Please note that the table below is just a preview of the output. To see the full results, including population sizes, please select \"Download baseline data\".")),
-          tableOutput("outputbaserate"),
-          createErrorMessage("An error occurred. Please refresh the page and start again.", i18n, "outputbaserate"),
-          createLoader(loadingMessage = i18n$t("Loading...")),
-          downloadButton("d7", i18n$t("Download baseline data"), class = "download-button btn-primary")
-        ),
-      ),
-      tabPanel(
-        i18n$t("References"),
-        value = i18n$t("references"),
-        h2(i18n$t("References")),
-        p(i18n$t("These selected references are cited as key sources within the \"CRFs\" and \"Valuation\" tabs. Select any of the links for more information on that specific reference. Please note that selected links will open in the same window and you will not be able to return to your scenario. If you wish to avoid this, please open links in a new window or tab.")),
-        tags$nav(
-          h3(i18n$t("On this page")),
-          tags$ul(
-            tags$li(tags$a(
-              i18n$t("PM2.5 CRFs"),
-              href = "#PM25-CRFs",
-            )),
-            tags$li(tags$a(
-              i18n$t("Other CRFs"),
-              href = "#others",
-            )),
-            tags$li(tags$a(
-              i18n$t("Valuation estimates"),
-              href = "#value",
-            ))
-          )
-        ),
-        h2(i18n$t("PM2.5 CRFs"), id = "PM25-CRFs"),
-        lapply(1:nrow(pmReferences), function(i) {
-          # Debugging print
-          # print(pmReferences[i, ])
-          tags$div(
-            htmlTemplate("templates/reference.html",
-              heading = pmReferences$heading[i],
-              description = pmReferences$description[i],
-              authors = pmReferences$authors[i],
-              source = pmReferences$source[i],
-              articleTitle = pmReferences$articleTitle[i],
-              publication = pmReferences$publication[i],
-              lang = pmReferences$lang[i],
+        tabPanel(
+          i18n$t("References"),
+          value = i18n$t("references"),
+          tabindex = "-1",
+          h2(i18n$t("References")),
+          p(i18n$t("These selected references are cited as key sources within the \"CRFs\" and \"Valuation\" tabs. Select any of the links for more information on that specific reference. Please note that selected links will open in the same window and you will not be able to return to your scenario. If you wish to avoid this, please open links in a new window or tab.")),
+          tags$nav(
+            h3(i18n$t("On this page")),
+            tags$ul(
+              tags$li(tags$a(
+                i18n$t("PM2.5 CRFs"),
+                href = "#PM25-CRFs",
+              )),
+              tags$li(tags$a(
+                i18n$t("Other CRFs"),
+                href = "#others",
+              )),
+              tags$li(tags$a(
+                i18n$t("Valuation estimates"),
+                href = "#value",
+              ))
             )
-          )
-        }),
-        hr(),
-        h2(i18n$t("Other CRFs"), id = "others"),
-        lapply(1:nrow(otherReferences), function(i) {
-          # Debugging print
-          # print(otherReferences[i, ])
-          tags$div(
-            htmlTemplate("templates/reference.html",
-              heading = otherReferences$heading[i],
-              description = otherReferences$description[i],
-              authors = otherReferences$authors[i],
-              source = otherReferences$source[i],
-              articleTitle = otherReferences$articleTitle[i],
-              publication = otherReferences$publication[i],
-              lang = otherReferences$lang[i],
+          ),
+          h2(i18n$t("PM2.5 CRFs"), id = "PM25-CRFs"),
+          lapply(1:nrow(pmRefs), function(i) {
+            tags$div(
+              htmlTemplate("templates/reference.html",
+                heading = pmRefs$heading[i],
+                description = pmRefs$description[i],
+                authors = pmRefs$authors[i],
+                source = pmRefs$source[i],
+                articleTitle = pmRefs$articleTitle[i],
+                publication = pmRefs$publication[i],
+                lang = pmRefs$lang[i],
+              )
             )
-          )
-        }),
-        hr(),
-        h2(i18n$t("Valuation estimates"), id = "value"),
-        lapply(1:nrow(valuationReferences), function(i) {
-          # Debugging print
-          # print(pmReferences[i, ])
-          tags$div(
-            htmlTemplate("templates/reference.html",
-              heading = valuationReferences$heading[i],
-              description = valuationReferences$description[i],
-              authors = valuationReferences$authors[i],
-              source = valuationReferences$source[i],
-              articleTitle = valuationReferences$articleTitle[i],
-              publication = valuationReferences$publication[i],
-              lang = valuationReferences$lang[i],
+          }),
+          hr(),
+          h2(i18n$t("Other CRFs"), id = "others"),
+          lapply(1:nrow(otherRefs), function(i) {
+            tags$div(
+              htmlTemplate("templates/reference.html",
+                heading = otherRefs$heading[i],
+                description = otherRefs$description[i],
+                authors = otherRefs$authors[i],
+                source = otherRefs$source[i],
+                articleTitle = otherRefs$articleTitle[i],
+                publication = otherRefs$publication[i],
+                lang = otherRefs$lang[i],
+              )
             )
-          )
-        }),
-      ),
-      # tabPanel ("Reset/Restart" ),
-    )
-  ),
-  # tags$script(src = "scripts/wet-boew-4.min.js", type = "text/javascript"),
-  tags$script(src = "scripts/wet-boew.min.js", type = "text/javascript"),
-  tags$script(src = "scripts/wet-table.js", type = "text/javascript"),
-  # Disconnect button for testing purposes only
-  # actionButton("disconnect_button", "Disconnect")
-)
+          }),
+          hr(),
+          h2(i18n$t("Valuation estimates"), id = "value"),
+          lapply(1:nrow(valuationRefs), function(i) {
+            tags$div(
+              htmlTemplate("templates/reference.html",
+                heading = valuationRefs$heading[i],
+                description = valuationRefs$description[i],
+                authors = valuationRefs$authors[i],
+                source = valuationRefs$source[i],
+                articleTitle = valuationRefs$articleTitle[i],
+                publication = valuationRefs$publication[i],
+                lang = valuationRefs$lang[i],
+              )
+            )
+          }),
+        ),
+        # tabPanel ("Reset/Restart" ),
+      )
+    ),
+    # tags$script(src = "scripts/wet-boew-4.min.js", type = "text/javascript"),
+    tags$script(src = "scripts/wet-boew.min.js", type = "text/javascript"),
+    tags$script(src = "scripts/wet-table.js", type = "text/javascript"),
+    # Disconnect button for testing purposes only
+    # actionButton("disconnect_button", "Disconnect")
+  )
 }
 
 one_en <- data.frame(
@@ -2586,43 +2580,45 @@ vec1co24h <- c(
 wtnum <- c(0.005, 0.01, 0.01, 0.01, 0.01, 0.03, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.03, 0.01, 0.01, 0.01, 0.01, 0.005) # weighted numbers
 
 
-
 # server
 server <- function(input, output, session) {
   # Pass URL query string to ui(request) so ?lang=fr works for French
   enableBookmarking(store = "url")
 
-  # Set this session's language once from the initial URL; never overwrite (so other tabs can't poison it)
-  observe({
-    if (is.null(session$userData$lang)) {
-      url_search <- session$clientData$url_search
-      if (!is.null(url_search) && nzchar(url_search)) {
-        query <- parseQueryString(url_search)
-        if (!is.null(query$lang) && query$lang %in% c("en", "fr")) {
-          session$userData$lang <- query$lang
-          return()
-        }
-      }
-      session$userData$lang <- "en"
-    }
-  })
-
-  # Get language for this session (for downloads / sample data). Uses session$userData$lang set once above.
+  # Session language: from hidden input (set when this page was built), else URL, else cache. No globals.
   get_session_lang <- function() {
-    if (!is.null(session$userData$lang) && session$userData$lang %in% c("en", "fr")) {
-      return(session$userData$lang)
+    if (!is.null(input$session_lang) && input$session_lang %in% c("en", "fr")) {
+      session$userData$lang <- input$session_lang
+      return(input$session_lang)
     }
-    # Fallback if observer hasn't run yet: read from URL now and cache
     url_search <- session$clientData$url_search
     if (!is.null(url_search) && nzchar(url_search)) {
       query <- parseQueryString(url_search)
       if (!is.null(query$lang) && query$lang %in% c("en", "fr")) {
         session$userData$lang <- query$lang
-        return(session$userData$lang)
+        return(query$lang)
       }
+    }
+    if (!is.null(session$userData$lang) && session$userData$lang %in% c("en", "fr")) {
+      return(session$userData$lang)
     }
     session$userData$lang <- "en"
     "en"
+  }
+
+  # Session-scoped data (cross-tab fix): use _en/_fr so other tabs cannot overwrite
+  get_session_xprov <- function() if (get_session_lang() == "en") xprov_en else xprov_fr
+  get_session_geocode <- function() if (get_session_lang() == "en") geocode_en else geocode_fr
+  get_session_three <- function() if (get_session_lang() == "en") three_en else three_fr
+  get_session_one <- function() if (get_session_lang() == "en") one_en else one_fr
+  get_session_cpi <- function() if (get_session_lang() == "en") cpi_en else cpi_fr
+
+  # Translate for this session without changing global i18n (cross-tab fix)
+  get_session_t <- function(key) {
+    old <- i18n$get_translation_language()
+    on.exit(i18n$set_translation_language(old))
+    i18n$set_translation_language(get_session_lang())
+    i18n$t(key)
   }
 
   # understand whether the user uploaded data, or we uploaded sample data
@@ -2664,26 +2660,12 @@ server <- function(input, output, session) {
     session$sendCustomMessage("toggleFileInput", FALSE)
 
     # Check if the uploaded file is a valid CSV
-    if (input$pollutants$size > 0 && tools::file_ext(input$pollutants$name) == "csv") {
-      shinyjs::addClass(selector = "#dataUploadedInfo", class = "alert-success")
-      shinyjs::removeClass(selector = "#data-preview", class = "hidden")
-      # Use i18n to translate the messages
-      header_message <- i18n$t("Your data has been uploaded")
-      instruction_message <- i18n$t("To upload new data, please click 'Clear all data and restart'.")
-
-      # Set innerHTML using JavaScript with translated messages
-      shinyjs::runjs(sprintf('
-      document.getElementById("dataUploadedHeader").innerHTML = "%s";
-      document.getElementById("dataUploadedInstruction").innerHTML = "%s";
-    ', header_message, instruction_message))
-
-      uploadStatus("user-data")
-    } else {
+    if (!(input$pollutants$size > 0 && tools::file_ext(input$pollutants$name) == "csv")) {
       shinyjs::addClass(selector = "#dataUploadedInfo", class = "alert-danger")
 
-      # Use i18n to translate the error messages
-      error_header_message <- i18n$t("Error: Invalid file type.")
-      error_instruction_message <- i18n$t("Please restart the application and upload a valid CSV file.")
+      # Session language for error messages (cross-tab fix)
+      error_header_message <- gsub("\\\\", "\\\\\\\\", gsub('"', '\\\\"', get_session_t("Error: Invalid file type.")))
+      error_instruction_message <- gsub("\\\\", "\\\\\\\\", gsub('"', '\\\\"', get_session_t("Please restart the application and upload a valid CSV file.")))
 
       # Set innerHTML using JavaScript with translated error messages
       shinyjs::runjs(sprintf('
@@ -2691,8 +2673,62 @@ server <- function(input, output, session) {
       document.getElementById("dataUploadedInstruction").innerHTML = "%s";
     ', error_header_message, error_instruction_message))
 
+      shinyjs::addClass(selector = ".download-button", class = "hidden")
       return() # Prevent further reactivity
     }
+
+    # Check for UTF-8 encoding
+    is_utf8 <- TRUE
+    tryCatch(
+      {
+        # Check first 100KB of the file
+        con <- file(input$pollutants$datapath, "rb")
+        bytes <- readBin(con, "raw", n = 100000)
+        close(con)
+        # Try to convert to UTF-8
+        test_conv <- iconv(list(bytes), from = "UTF-8", to = "UTF-8")
+        if (any(is.na(test_conv))) {
+          is_utf8 <- FALSE
+        }
+      },
+      error = function(e) {
+        is_utf8 <- FALSE
+      }
+    )
+
+    if (!is_utf8) {
+      shinyjs::removeClass(selector = "#dataUploadedInfo", class = "alert-success")
+      shinyjs::addClass(selector = "#dataUploadedInfo", class = "alert-danger")
+
+      # Session language for error messages (cross-tab fix)
+      error_header_message <- gsub("\\\\", "\\\\\\\\", gsub('"', '\\\\"', get_session_t("Error: Invalid file encoding.")))
+      error_instruction_message <- gsub("\\\\", "\\\\\\\\", gsub('"', '\\\\"', get_session_t("Please ensure your CSV file is UTF-8 encoded. If you are using Excel, save as 'CSV UTF-8 (comma delimited)'.")))
+
+      # Set innerHTML using JavaScript with translated error messages
+      shinyjs::runjs(sprintf('
+      document.getElementById("dataUploadedHeader").innerHTML = "%s";
+      document.getElementById("dataUploadedInstruction").innerHTML = "%s";
+    ', error_header_message, error_instruction_message))
+
+      shinyjs::addClass(selector = ".download-button", class = "hidden")
+      return() # Prevent further reactivity
+    }
+
+    # If all checks pass, show success message
+    shinyjs::removeClass(selector = ".download-button", class = "hidden")
+    shinyjs::addClass(selector = "#dataUploadedInfo", class = "alert-success")
+    shinyjs::removeClass(selector = "#data-preview", class = "hidden")
+    # Session language so message matches this tab (cross-tab fix)
+    header_message <- gsub("\\\\", "\\\\\\\\", gsub('"', '\\\\"', get_session_t("Your data has been uploaded")))
+    instruction_message <- gsub("\\\\", "\\\\\\\\", gsub('"', '\\\\"', get_session_t("To upload new data, please click 'Clear all data and restart'.")))
+
+    # Set innerHTML using JavaScript with translated messages
+    shinyjs::runjs(sprintf('
+      document.getElementById("dataUploadedHeader").innerHTML = "%s";
+      document.getElementById("dataUploadedInstruction").innerHTML = "%s";
+    ', header_message, instruction_message))
+
+    uploadStatus("user-data")
   })
 
   session$allowReconnect(TRUE)
@@ -2709,319 +2745,319 @@ server <- function(input, output, session) {
   session$sendCustomMessage("bindInternalLinks", list())
 
   canproresults1a_endpoint <- reactive({
-    if (currentlanguage == "en") canproresults1a()$endpoint else canproresults1a()$paramètre
+    if (get_session_lang() == "en") canproresults1a()$endpoint else canproresults1a()$paramètre
   })
 
   canprovsummary_endpoint <- reactive({
-    if (currentlanguage == "en") canprovsummary()$endpoint else canprovsummary()$paramètre
+    if (get_session_lang() == "en") canprovsummary()$endpoint else canprovsummary()$paramètre
   })
 
   Canprowexposure1_Acetaldehyde <- reactive({
-    if (currentlanguage == "en") Canprowexposure1()$Acetaldehyde else Canprowexposure1()$Acétaldéhyde
+    if (get_session_lang() == "en") Canprowexposure1()$Acetaldehyde else Canprowexposure1()$Acétaldéhyde
   })
 
   Canprowexposure1_Benzene <- reactive({
-    if (currentlanguage == "en") Canprowexposure1()$Benzene else Canprowexposure1()$Benzène
+    if (get_session_lang() == "en") Canprowexposure1()$Benzene else Canprowexposure1()$Benzène
   })
 
   Canprowexposure1_Formaldehyde <- reactive({
-    if (currentlanguage == "en") Canprowexposure1()$Formaldehyde else Canprowexposure1()$Formaldéhyde
+    if (get_session_lang() == "en") Canprowexposure1()$Formaldehyde else Canprowexposure1()$Formaldéhyde
   })
 
   cpi_year <- reactive({
-    if (currentlanguage == "en") cpi$year else cpi$année
+    if (get_session_lang() == "en") cpi_en$year else cpi_fr$année
   })
 
   four_age25plus <- reactive({
-    if (currentlanguage == "en") four()$age25plus else four()$ans25plus
+    if (get_session_lang() == "en") four()$age25plus else four()$ans25plus
   })
 
   four_age30plus <- reactive({
-    if (currentlanguage == "en") four()$age30plus else four()$ans30plus
+    if (get_session_lang() == "en") four()$age30plus else four()$ans30plus
   })
 
   four_Mort_cerebro <- reactive({
-    if (currentlanguage == "en") four()$Mort_cerebro else four()$Mort_cérébro
+    if (get_session_lang() == "en") four()$Mort_cerebro else four()$Mort_cérébro
   })
 
   four_Mort_chronic <- reactive({
-    if (currentlanguage == "en") four()$Mort_chronic else four()$Mort_chronique
+    if (get_session_lang() == "en") four()$Mort_chronic else four()$Mort_chronique
   })
 
   four_Mort_copd <- reactive({
-    if (currentlanguage == "en") four()$Mort_copd else four()$Mort_mpoc
+    if (get_session_lang() == "en") four()$Mort_copd else four()$Mort_mpoc
   })
 
   four_Mort_ischemic <- reactive({
-    if (currentlanguage == "en") four()$Mort_ischemic else four()$Mort_ischémique
+    if (get_session_lang() == "en") four()$Mort_ischemic else four()$Mort_ischémique
   })
 
   foura_age25plus <- reactive({
-    if (currentlanguage == "en") foura()$age25plus else foura()$ans25plus
+    if (get_session_lang() == "en") foura()$age25plus else foura()$ans25plus
   })
 
   foura_age5_19 <- reactive({
-    if (currentlanguage == "en") foura()$age5_19 else foura()$ans5_19
+    if (get_session_lang() == "en") foura()$age5_19 else foura()$ans5_19
   })
 
   foura_allages <- reactive({
-    if (currentlanguage == "en") foura()$allages else foura()$touslesâges
+    if (get_session_lang() == "en") foura()$allages else foura()$touslesâges
   })
 
   foura_scenario <- reactive({
-    if (currentlanguage == "en") foura()$scenario else foura()$scénario
+    if (get_session_lang() == "en") foura()$scenario else foura()$scénario
   })
 
   foura_summero3_1 <- reactive({
-    if (currentlanguage == "en") foura()$summero3_1 else foura()$o3été_1
+    if (get_session_lang() == "en") foura()$summero3_1 else foura()$o3été_1
   })
 
   foura_summero3_2 <- reactive({
-    if (currentlanguage == "en") foura()$summero3_2 else foura()$o3été_2
+    if (get_session_lang() == "en") foura()$summero3_2 else foura()$o3été_2
   })
 
   foura_year <- reactive({
-    if (currentlanguage == "en") foura()$year else foura()$année
+    if (get_session_lang() == "en") foura()$year else foura()$année
   })
 
   fouracbc_Adult_Chronic_Bronchitis_Cases <- reactive({
-    if (currentlanguage == "en") fouracbc()$Adult_Chronic_Bronchitis_Cases else fouracbc()$Cas_bronchites_chroniques_adultes
+    if (get_session_lang() == "en") fouracbc()$Adult_Chronic_Bronchitis_Cases else fouracbc()$Cas_bronchites_chroniques_adultes
   })
 
   fouracbc_age25plus <- reactive({
-    if (currentlanguage == "en") fouracbc()$age25plus else fouracbc()$ans25plus
+    if (get_session_lang() == "en") fouracbc()$age25plus else fouracbc()$ans25plus
   })
 
   fouraem_allages <- reactive({
-    if (currentlanguage == "en") fouraem()$allages else fouraem()$touslesâges
+    if (get_session_lang() == "en") fouraem()$allages else fouraem()$touslesâges
   })
 
   fouraem_Mort_acute <- reactive({
-    if (currentlanguage == "en") fouraem()$Mort_acute else fouraem()$Mort_aiguë
+    if (get_session_lang() == "en") fouraem()$Mort_acute else fouraem()$Mort_aiguë
   })
 
   fourarsd_Acute_Resp_Symptom_Days <- reactive({
-    if (currentlanguage == "en") fourarsd()$Acute_Resp_Symptom_Days else fourarsd()$Jours_symptômes_resp_aigus
+    if (get_session_lang() == "en") fourarsd()$Acute_Resp_Symptom_Days else fourarsd()$Jours_symptômes_resp_aigus
   })
 
   fourarsd_age20plus <- reactive({
-    if (currentlanguage == "en") fourarsd()$age20plus else fourarsd()$ans20plus
+    if (get_session_lang() == "en") fourarsd()$age20plus else fourarsd()$ans20plus
   })
 
   fourarsd_age5_19 <- reactive({
-    if (currentlanguage == "en") fourarsd()$age5_19 else fourarsd()$ans5_19
+    if (get_session_lang() == "en") fourarsd()$age5_19 else fourarsd()$ans5_19
   })
 
   fourasd_age5_19 <- reactive({
-    if (currentlanguage == "en") fourasd()$age5_19 else fourasd()$ans5_19
+    if (get_session_lang() == "en") fourasd()$age5_19 else fourasd()$ans5_19
   })
 
   fourasd_Asthma_Symptom_Days <- reactive({
-    if (currentlanguage == "en") fourasd()$Asthma_Symptom_Days else fourasd()$Jours_symptômes_asthme
+    if (get_session_lang() == "en") fourasd()$Asthma_Symptom_Days else fourasd()$Jours_symptômes_asthme
   })
 
   fourb_allages <- reactive({
-    if (currentlanguage == "en") fourb()$allages else fourb()$touslesâges
+    if (get_session_lang() == "en") fourb()$allages else fourb()$touslesâges
   })
 
   fourb_scenario <- reactive({
-    if (currentlanguage == "en") fourb()$scenario else fourb()$scénario
+    if (get_session_lang() == "en") fourb()$scenario else fourb()$scénario
   })
 
   fourb_year <- reactive({
-    if (currentlanguage == "en") fourb()$year else fourb()$année
+    if (get_session_lang() == "en") fourb()$year else fourb()$année
   })
 
   fourcabe_age5_19 <- reactive({
-    if (currentlanguage == "en") fourcabe()$age5_19 else fourcabe()$ans5_19
+    if (get_session_lang() == "en") fourcabe()$age5_19 else fourcabe()$ans5_19
   })
 
   fourcabe_Child_Acute_Bronchitis <- reactive({
-    if (currentlanguage == "en") fourcabe()$Child_Acute_Bronchitis else fourcabe()$Bronchite_aiguë_enfant
+    if (get_session_lang() == "en") fourcabe()$Child_Acute_Bronchitis else fourcabe()$Bronchite_aiguë_enfant
   })
 
   fourcerv_allages <- reactive({
-    if (currentlanguage == "en") fourcerv()$allages else fourcerv()$touslesâges
+    if (get_session_lang() == "en") fourcerv()$allages else fourcerv()$touslesâges
   })
 
   fourcerv_Cardiac_Emergency_Room <- reactive({
-    if (currentlanguage == "en") fourcerv()$Cardiac_Emergency_Room else fourcerv()$Visites_urgence_problèmes_cardiaques
+    if (get_session_lang() == "en") fourcerv()$Cardiac_Emergency_Room else fourcerv()$Visites_urgence_problèmes_cardiaques
   })
 
   fourcha_allages <- reactive({
-    if (currentlanguage == "en") fourcha()$allages else fourcha()$touslesâges
+    if (get_session_lang() == "en") fourcha()$allages else fourcha()$touslesâges
   })
 
   fourcha_Cardiac_Hospital <- reactive({
-    if (currentlanguage == "en") fourcha()$Cardiac_Hospital else fourcha()$Hôpital_problèmes_cardiaques
+    if (get_session_lang() == "en") fourcha()$Cardiac_Hospital else fourcha()$Hôpital_problèmes_cardiaques
   })
 
   fourco24aem_allages <- reactive({
-    if (currentlanguage == "en") fourco24aem()$allages else fourco24aem()$touslesâges
+    if (get_session_lang() == "en") fourco24aem()$allages else fourco24aem()$touslesâges
   })
 
   fourco24aem_Mort_acute <- reactive({
-    if (currentlanguage == "en") fourco24aem()$Mort_acute else fourco24aem()$Mort_aiguë
+    if (get_session_lang() == "en") fourco24aem()$Mort_acute else fourco24aem()$Mort_aiguë
   })
 
   fourecha_age65plus <- reactive({
-    if (currentlanguage == "en") fourecha()$age65plus else fourecha()$ans65plus
+    if (get_session_lang() == "en") fourecha()$age65plus else fourecha()$ans65plus
   })
 
   fourecha_Elderly_Cardiac_Hospital <- reactive({
-    if (currentlanguage == "en") fourecha()$Elderly_Cardiac_Hospital else fourecha()$Hôpital_problèmes_cardiaques_ainés
+    if (get_session_lang() == "en") fourecha()$Elderly_Cardiac_Hospital else fourecha()$Hôpital_problèmes_cardiaques_ainés
   })
 
   fourmrad_age20plus <- reactive({
-    if (currentlanguage == "en") fourmrad()$age20plus else fourmrad()$ans20plus
+    if (get_session_lang() == "en") fourmrad()$age20plus else fourmrad()$ans20plus
   })
 
   fourmrad_age5_19 <- reactive({
-    if (currentlanguage == "en") fourmrad()$age5_19 else fourmrad()$ans5_19
+    if (get_session_lang() == "en") fourmrad()$age5_19 else fourmrad()$ans5_19
   })
 
   fourmrad_Minor_Restricted_Activity <- reactive({
-    if (currentlanguage == "en") fourmrad()$Minor_Restricted_Activity else fourmrad()$Activité_restreinte_mineure
+    if (get_session_lang() == "en") fourmrad()$Minor_Restricted_Activity else fourmrad()$Activité_restreinte_mineure
   })
 
   fouro3aem_allages <- reactive({
-    if (currentlanguage == "en") fouro3aem()$allages else fouro3aem()$touslesâges
+    if (get_session_lang() == "en") fouro3aem()$allages else fouro3aem()$touslesâges
   })
 
   fouro3aem_Mort_acute <- reactive({
-    if (currentlanguage == "en") fouro3aem()$Mort_acute else fouro3aem()$Mort_aiguë
+    if (get_session_lang() == "en") fouro3aem()$Mort_acute else fouro3aem()$Mort_aiguë
   })
 
   fouro3arsd_Acute_Resp_Symptom_Days <- reactive({
-    if (currentlanguage == "en") fouro3arsd()$Acute_Resp_Symptom_Days else fouro3arsd()$Jours_symptômes_resp_aigus
+    if (get_session_lang() == "en") fouro3arsd()$Acute_Resp_Symptom_Days else fouro3arsd()$Jours_symptômes_resp_aigus
   })
 
   fouro3arsd_age20plus <- reactive({
-    if (currentlanguage == "en") fouro3arsd()$age20plus else fouro3arsd()$ans20plus
+    if (get_session_lang() == "en") fouro3arsd()$age20plus else fouro3arsd()$ans20plus
   })
 
   fouro3arsd_age5_19 <- reactive({
-    if (currentlanguage == "en") fouro3arsd()$age5_19 else fouro3arsd()$ans5_19
+    if (get_session_lang() == "en") fouro3arsd()$age5_19 else fouro3arsd()$ans5_19
   })
 
   fouro3asd_age5_19 <- reactive({
-    if (currentlanguage == "en") fouro3asd()$age5_19 else fouro3asd()$ans5_19
+    if (get_session_lang() == "en") fouro3asd()$age5_19 else fouro3asd()$ans5_19
   })
 
   fouro3asd_Asthma_Symptom_Days <- reactive({
-    if (currentlanguage == "en") fouro3asd()$Asthma_Symptom_Days else fouro3asd()$Jours_symptômes_asthme
+    if (get_session_lang() == "en") fouro3asd()$Asthma_Symptom_Days else fouro3asd()$Jours_symptômes_asthme
   })
 
   fouro3cerm_age30plus <- reactive({
-    if (currentlanguage == "en") fouro3cerm()$age30plus else fouro3cerm()$ans30plus
+    if (get_session_lang() == "en") fouro3cerm()$age30plus else fouro3cerm()$ans30plus
   })
 
   fouro3cerm_allages <- reactive({
-    if (currentlanguage == "en") fouro3cerm()$allages else fouro3cerm()$touslesâges
+    if (get_session_lang() == "en") fouro3cerm()$allages else fouro3cerm()$touslesâges
   })
 
   fouro3cerm_Mort_respiratory <- reactive({
-    if (currentlanguage == "en") fouro3cerm()$Mort_respiratory else fouro3cerm()$Mort_respiratoire
+    if (get_session_lang() == "en") fouro3cerm()$Mort_respiratory else fouro3cerm()$Mort_respiratoire
   })
 
   fouro3cerm_summero3_1 <- reactive({
-    if (currentlanguage == "en") fouro3cerm()$summero3_1 else fouro3cerm()$o3été_1
+    if (get_session_lang() == "en") fouro3cerm()$summero3_1 else fouro3cerm()$o3été_1
   })
 
   fouro3cerm_summero3_2 <- reactive({
-    if (currentlanguage == "en") fouro3cerm()$summero3_2 else fouro3cerm()$o3été_2
+    if (get_session_lang() == "en") fouro3cerm()$summero3_2 else fouro3cerm()$o3été_2
   })
 
   fouro3rerv_allages <- reactive({
-    if (currentlanguage == "en") fouro3rerv()$allages else fouro3rerv()$touslesâges
+    if (get_session_lang() == "en") fouro3rerv()$allages else fouro3rerv()$touslesâges
   })
 
   fouro3rerv_Respiratory_Emergency_Room <- reactive({
-    if (currentlanguage == "en") fouro3rerv()$Respiratory_Emergency_Room else fouro3rerv()$Visites_urgence_problèmes_respiratoires
+    if (get_session_lang() == "en") fouro3rerv()$Respiratory_Emergency_Room else fouro3rerv()$Visites_urgence_problèmes_respiratoires
   })
 
   fouro3rha_allages <- reactive({
-    if (currentlanguage == "en") fouro3rha()$allages else fouro3rha()$touslesâges
+    if (get_session_lang() == "en") fouro3rha()$allages else fouro3rha()$touslesâges
   })
 
   fouro3rha_Respiratory_Hospital <- reactive({
-    if (currentlanguage == "en") fouro3rha()$Respiratory_Hospital else fouro3rha()$Hôpital_problèmes_respiratoires
+    if (get_session_lang() == "en") fouro3rha()$Respiratory_Hospital else fouro3rha()$Hôpital_problèmes_respiratoires
   })
 
   fourrad_age20plus <- reactive({
-    if (currentlanguage == "en") fourrad()$age20plus else fourrad()$ans20plus
+    if (get_session_lang() == "en") fourrad()$age20plus else fourrad()$ans20plus
   })
 
   fourrad_Restricted_Activity_Days <- reactive({
-    if (currentlanguage == "en") fourrad()$Restricted_Activity_Days else fourrad()$Jours_activité_restreinte
+    if (get_session_lang() == "en") fourrad()$Restricted_Activity_Days else fourrad()$Jours_activité_restreinte
   })
 
   fourrerv_allages <- reactive({
-    if (currentlanguage == "en") fourrerv()$allages else fourrerv()$touslesâges
+    if (get_session_lang() == "en") fourrerv()$allages else fourrerv()$touslesâges
   })
 
   fourrerv_Respiratory_Emergency_Room <- reactive({
-    if (currentlanguage == "en") fourrerv()$Respiratory_Emergency_Room else fourrerv()$Visites_urgence_problèmes_respiratoires
+    if (get_session_lang() == "en") fourrerv()$Respiratory_Emergency_Room else fourrerv()$Visites_urgence_problèmes_respiratoires
   })
 
   fourrha_allages <- reactive({
-    if (currentlanguage == "en") fourrha()$allages else fourrha()$touslesâges
+    if (get_session_lang() == "en") fourrha()$allages else fourrha()$touslesâges
   })
 
   fourrha_Respiratory_Hospital <- reactive({
-    if (currentlanguage == "en") fourrha()$Respiratory_Hospital else fourrha()$Hôpital_problèmes_respiratoires
+    if (get_session_lang() == "en") fourrha()$Respiratory_Hospital else fourrha()$Hôpital_problèmes_respiratoires
   })
 
   fourso2aem_allages <- reactive({
-    if (currentlanguage == "en") fourso2aem()$allages else fourso2aem()$touslesâges
+    if (get_session_lang() == "en") fourso2aem()$allages else fourso2aem()$touslesâges
   })
 
   fourso2aem_Mort_acute <- reactive({
-    if (currentlanguage == "en") fourso2aem()$Mort_acute else fourso2aem()$Mort_aiguë
+    if (get_session_lang() == "en") fourso2aem()$Mort_acute else fourso2aem()$Mort_aiguë
   })
 
   pnamemortfinal_Geocode <- reactive({
-    if (currentlanguage == "en") pnamemortfinal()$Geocode else pnamemortfinal()$Géocode
+    if (get_session_lang() == "en") pnamemortfinal()$Geocode else pnamemortfinal()$Géocode
   })
 
   pnameschiff_Geocode <- reactive({
-    if (currentlanguage == "en") pnameschiff()$Geocode else pnameschiff()$Géocode
+    if (get_session_lang() == "en") pnameschiff()$Geocode else pnameschiff()$Géocode
   })
 
   pnametoxic_Geocode <- reactive({
-    if (currentlanguage == "en") pnametoxic()$Geocode else pnametoxic()$Géocode
+    if (get_session_lang() == "en") pnametoxic()$Geocode else pnametoxic()$Géocode
   })
 
   pwexposure1_allages <- reactive({
-    if (currentlanguage == "en") pwexposure1()$allages else pwexposure1()$touslesâges
+    if (get_session_lang() == "en") pwexposure1()$allages else pwexposure1()$touslesâges
   })
 
   twelveb_endpoint <- reactive({
-    if (currentlanguage == "en") twelveb()$endpoint else twelveb()$paramètre
+    if (get_session_lang() == "en") twelveb()$endpoint else twelveb()$paramètre
   })
 
   wexposure1_allages <- reactive({
-    if (currentlanguage == "en") wexposure1()$allages else wexposure1()$touslesâges
+    if (get_session_lang() == "en") wexposure1()$allages else wexposure1()$touslesâges
   })
 
   # output$xmap <- renderUI({
   #   if (is.null(input$pollutants)) {
   #     div(
-  #       i18n$t("The image below is an example of output that would be generated when a dataset is uploaded to the \"Pollutant data upload\" tab. The image shows the counts for chronic exposure mortality per 100,000 for the pollutant PM2.5 in 2016 with scenario set as \"1\". The census division for 'Toronto' in Ontario is selected as an example."),
+  #       get_session_t("The image below is an example of output that would be generated when a dataset is uploaded to the \"Pollutant data upload\" tab. The image shows the counts for chronic exposure mortality per 100,000 for the pollutant PM2.5 in 2016 with scenario set as \"1\". The census division for 'Toronto' in Ontario is selected as an example."),
   #       br(),
-  #       strong(i18n$t("Note:")),
-  #       i18n$t("These are static images."),
-  #       strong(i18n$t("They cannot be interacted with.")),
-  #       i18n$t("Interaction, customization, and more visualization options will be presented once data has been uploaded."),
+  #       strong(get_session_t("Note:")),
+  #       get_session_t("These are static images."),
+  #       strong(get_session_t("They cannot be interacted with.")),
+  #       get_session_t("Interaction, customization, and more visualization options will be presented once data has been uploaded."),
   #     # div(img(src = "Map Options.jpg", height = 250, width = 1600)),
-  #       div(img(src = "map_screenshot.jpg", class="dummy-map", alt=i18n$t("A demo map showing pollutant concentration levels across Canada.") ))
+  #       div(img(src = "map_screenshot.jpg", class="dummy-map", alt=get_session_t("A demo map showing pollutant concentration levels across Canada.") ))
   #     )
   #   } else {
   #     useShinyjs()
   #     div(
   #       id = "formmap",
-  #       i18n$t("Click \"Restore default values\" to restore the values of each cell back to its preset. In this case, it will clear all map inputs. Default values are restored in this tab only."),
-  #       p(actionButton("resetmap", i18n$t("Restore default values"), style = "background-color: #ec7063 ; border: none; position:absoulute; bottom: 50px;", tabindex="0")),
+  #       get_session_t("Click \"Restore default values\" to restore the values of each cell back to its preset. In this case, it will clear all map inputs. Default values are restored in this tab only."),
+  #       p(actionButton("resetmap", get_session_t("Restore default values"), style = "background-color: #ec7063 ; border: none; position:absoulute; bottom: 50px;", tabindex="0")),
   #       br(),
   #       tags$section(
   #         id = "map-instructions",
@@ -3030,17 +3066,17 @@ server <- function(input, output, session) {
   #           class = "panel-heading",
   #           tags$h3(
   #             class = "panel-title",
-  #             i18n$t("Instructions for maps")
+  #             get_session_t("Instructions for maps")
   #           )
   #         ),
   #         tags$div(
   #           class = "panel-body",
   #           tags$p(
-  #             i18n$t("Select year, scenario, pollutant, endpoint and metric, then click \"Generate map\"."),
+  #             get_session_t("Select year, scenario, pollutant, endpoint and metric, then click \"Generate map\"."),
   #             br(),
-  #             i18n$t("To map the baseline mortality rate, set the scenario and pollutant to \"None\"."),
+  #             get_session_t("To map the baseline mortality rate, set the scenario and pollutant to \"None\"."),
   #             br(),
-  #             i18n$t("To map status quo pollutant concentration, select a year, scenario and pollutant, and set endpoint to \"None\".")
+  #             get_session_t("To map status quo pollutant concentration, select a year, scenario and pollutant, and set endpoint to \"None\".")
   #             )
   #         )
   #       ),
@@ -3053,315 +3089,315 @@ server <- function(input, output, session) {
   # div(
   #   class="flex-row",
   #   # setup user inputs for maps; make subsequent selections conditional on previous selections
-  #   div(class="map-options", selectInput("mdy", i18n$t("Year"), c("", 2000:2063))),
-  #   div(class="map-options", selectInput("scenario", i18n$t("Scenario"), c(i18n$t("None"), 1:50))),
-  #   div(class="map-options",selectInput("mdp", i18n$t("Pollutant"), c("", i18n$t("None"), i18n$t("PM2.5"), "CO 24h", "NO2", "O3", i18n$t("O3 Summer"), "SO2", i18n$t("All (CO, NO2, O3, PM2.5, SO2)"), i18n$t("Benzene"), i18n$t("1,3-Butadiene"), i18n$t("Acetaldehyde"), i18n$t("Formaldehyde"), i18n$t("All Toxics (cancer)"), i18n$t("All Toxics (non-cancer)")))),
+  #   div(class="map-options", selectInput("mdy", get_session_t("Year"), c("", 2000:2063))),
+  #   div(class="map-options", selectInput("scenario", get_session_t("Scenario"), c(get_session_t("None"), 1:50))),
+  #   div(class="map-options",selectInput("mdp", get_session_t("Pollutant"), c("", get_session_t("None"), get_session_t("PM2.5"), "CO 24h", "NO2", "O3", get_session_t("O3 Summer"), "SO2", get_session_t("All (CO, NO2, O3, PM2.5, SO2)"), get_session_t("Benzene"), get_session_t("1,3-Butadiene"), get_session_t("Acetaldehyde"), get_session_t("Formaldehyde"), get_session_t("All Toxics (cancer)"), get_session_t("All Toxics (non-cancer)")))),
   #   div(class="map-options",
   #     conditionalPanel(
-  #       if (currentlanguage == "en") {
+  #       if (get_session_lang() == "en") {
   #         condition = "input.mdp == 'PM2.5'"
   #       } else {
   #         condition = "input.mdp == 'PM2,5'"
   #       },
-  #       selectInput("mde1", i18n$t("Endpoint"), c(i18n$t("None"), i18n$t("Chronic Exposure Mortality")))
+  #       selectInput("mde1", get_session_t("Endpoint"), c(get_session_t("None"), get_session_t("Chronic Exposure Mortality")))
   #     ),
   #
   #     conditionalPanel(
   #       condition = "input.mdp == 'NO2'",
-  #       selectInput("mde2", i18n$t("Endpoint"), c(i18n$t("None"), i18n$t("Acute Exposure Mortality")))
+  #       selectInput("mde2", get_session_t("Endpoint"), c(get_session_t("None"), get_session_t("Acute Exposure Mortality")))
   #     ),
   #
   #     conditionalPanel(
   #       condition = "input.mdp == 'CO 24h'",
-  #       selectInput("mde3", i18n$t("Endpoint"), c(i18n$t("None"), i18n$t("Acute Exposure Mortality")))
+  #       selectInput("mde3", get_session_t("Endpoint"), c(get_session_t("None"), get_session_t("Acute Exposure Mortality")))
   #     ),
   #
   #     conditionalPanel(
-  #       if (currentlanguage == "en") {
+  #       if (get_session_lang() == "en") {
   #         condition = "input.mdp == 'All (CO, NO2, O3, PM2.5, SO2)'"
   #       } else {
   #         condition = "input.mdp == 'Tous (CO, NO2, O3, PM2,5, SO2)'"
   #       },
-  #       selectInput("mde4", i18n$t("Endpoint"), c(i18n$t("Total Mortality"), i18n$t("Total Valuation")))
+  #       selectInput("mde4", get_session_t("Endpoint"), c(get_session_t("Total Mortality"), get_session_t("Total Valuation")))
   #     ),
   #
   #     conditionalPanel(
-  #       if (currentlanguage == "en") {
+  #       if (get_session_lang() == "en") {
   #         condition = "input.mdp == 'Benzene'"
   #       } else {
   #         condition = "input.mdp == 'Benzène'"
   #       },
-  #       selectInput("mde5", i18n$t("Endpoint"), c(i18n$t("None"), i18n$t("Cancer"), i18n$t("Hematological")))
+  #       selectInput("mde5", get_session_t("Endpoint"), c(get_session_t("None"), get_session_t("Cancer"), get_session_t("Hematological")))
   #     ),
   #
   #     conditionalPanel(
-  #       if (currentlanguage == "en") {
+  #       if (get_session_lang() == "en") {
   #         condition = "input.mdp == '1,3-Butadiene'"
   #       } else {
   #         condition = "input.mdp == '1,3-butadiène'"
   #       },
-  #       selectInput("mde6", i18n$t("Endpoint"), c(i18n$t("None"), i18n$t("Cancer")))
+  #       selectInput("mde6", get_session_t("Endpoint"), c(get_session_t("None"), get_session_t("Cancer")))
   #     ),
   #
   #     conditionalPanel(
-  #       if (currentlanguage == "en") {
+  #       if (get_session_lang() == "en") {
   #         condition = "input.mdp == 'Formaldehyde'"
   #       } else {
   #         condition = "input.mdp == 'Formaldéhyde'"
   #       },
-  #       selectInput("mde7", i18n$t("Endpoint"), c(i18n$t("None"), i18n$t("Respiratory (asthma)")))
+  #       selectInput("mde7", get_session_t("Endpoint"), c(get_session_t("None"), get_session_t("Respiratory (asthma)")))
   #     ),
   #
   #     conditionalPanel(
-  #       if (currentlanguage == "en") {
+  #       if (get_session_lang() == "en") {
   #         condition = "input.mdp == 'Acetaldehyde'"
   #       } else {
   #         condition = "input.mdp == 'Acétaldéhyde'"
   #       },
-  #       selectInput("mde8", i18n$t("Endpoint"), c(i18n$t("None"), i18n$t("Respiratory (histological)")))
+  #       selectInput("mde8", get_session_t("Endpoint"), c(get_session_t("None"), get_session_t("Respiratory (histological)")))
   #     ),
   #
   #     conditionalPanel(
-  #       if (currentlanguage == "en") {
+  #       if (get_session_lang() == "en") {
   #         condition = "input.mdp == 'All Toxics (cancer)'"
   #       } else {
   #         condition = "input.mdp == 'Toutes toxiques (cancer)'"
   #       },
-  #       selectInput("mde9", i18n$t("Endpoint"), c(i18n$t("Cancer")))
+  #       selectInput("mde9", get_session_t("Endpoint"), c(get_session_t("Cancer")))
   #     ),
   #
   #     conditionalPanel(
-  #       if (currentlanguage == "en") {
+  #       if (get_session_lang() == "en") {
   #         condition = "input.mdp == 'All Toxics (non-cancer)'"
   #       } else {
   #         condition = "input.mdp == 'Toutes toxiques (non-cancérigène)'"
   #       },
-  #       selectInput("mde10", i18n$t("Endpoint"), c(i18n$t("Non-cancer")))
+  #       selectInput("mde10", get_session_t("Endpoint"), c(get_session_t("Non-cancer")))
   #     ),
 
   # conditionalPanel(
   #   condition = "input.mdp == 'SO2'",
-  #   selectInput("mde11", i18n$t("Endpoint"), c(i18n$t("None"), i18n$t("Acute Exposure Mortality")))
+  #   selectInput("mde11", get_session_t("Endpoint"), c(get_session_t("None"), get_session_t("Acute Exposure Mortality")))
   # ),
 
   # conditionalPanel(
   #   condition = "input.mdp == 'O3'",
-  #   selectInput("mde12", i18n$t("Endpoint"), c(i18n$t("None"), i18n$t("Acute Exposure Mortality")))
+  #   selectInput("mde12", get_session_t("Endpoint"), c(get_session_t("None"), get_session_t("Acute Exposure Mortality")))
   # ),
 
   # conditionalPanel(
-  #   if (currentlanguage == "en") {
+  #   if (get_session_lang() == "en") {
   #     condition = "input.mdp == 'O3 Summer'"
   #   } else {
   #     condition = "input.mdp == 'O3 en été'"
   #   },
-  #   selectInput("mde13", i18n$t("Endpoint"), c(i18n$t("None"), i18n$t("Chronic Exposure Respiratory Mortality")))
+  #   selectInput("mde13", get_session_t("Endpoint"), c(get_session_t("None"), get_session_t("Chronic Exposure Respiratory Mortality")))
   # ),
 
   # conditionalPanel(
-  #   if (currentlanguage == "en") {
+  #   if (get_session_lang() == "en") {
   #     condition = "input.mdp == 'Benzene'"
   #   } else {
   #     condition = "input.mdp == 'Benzène'"
   #   },
-  #   selectInput("mde5", i18n$t("Endpoint"), c(i18n$t("None"), "Cancer", i18n$t("Hematological")))
+  #   selectInput("mde5", get_session_t("Endpoint"), c(get_session_t("None"), "Cancer", get_session_t("Hematological")))
   # ),
 
   # conditionalPanel(
-  #   if (currentlanguage == "en") {
+  #   if (get_session_lang() == "en") {
   #     condition = "input.mdp == '1,3-Butadiene'"
   #   } else {
   #     condition = "input.mdp == '1,3-butadiène'"
   #   },
-  #   selectInput("mde6", i18n$t("Endpoint"), c(i18n$t("None"), "Cancer")))
+  #   selectInput("mde6", get_session_t("Endpoint"), c(get_session_t("None"), "Cancer")))
   # ),
 
   # conditionalPanel(
-  #   if (currentlanguage == "en") {
+  #   if (get_session_lang() == "en") {
   #     condition = "input.mde7 == 'None' & input.mdp=='Formaldehyde'"
   #   } else {
   #     condition = "input.mde7 == 'Aucun' & input.mdp=='Formaldéhyde'"
   #   },
-  #   selectInput("mdc6", i18n$t("Metric"), c(i18n$t("Pollutant concentration")))
+  #   selectInput("mdc6", get_session_t("Metric"), c(get_session_t("Pollutant concentration")))
   # ),
   #
   # conditionalPanel(
-  #   if (currentlanguage == "en") {
+  #   if (get_session_lang() == "en") {
   #     condition = "input.mde3 == 'None' & input.mdp=='CO 24h'"
   #   } else {
   #     condition = "input.mde3 == 'Aucun' & input.mdp=='CO 24h'"
   #   },
-  #   selectInput("mdc7", i18n$t("Metric"), c(i18n$t("Pollutant concentration")))
+  #   selectInput("mdc7", get_session_t("Metric"), c(get_session_t("Pollutant concentration")))
   # ),
   #
   # conditionalPanel(
-  #   if (currentlanguage == "en") {
+  #   if (get_session_lang() == "en") {
   #     condition = "input.mde11 == 'None' & input.mdp=='SO2'"
   #   } else {
   #     condition = "input.mde11 == 'Aucun' & input.mdp=='SO2'"
   #   },
-  #   selectInput("mdc8", i18n$t("Metric"), c(i18n$t("Pollutant concentration")))
+  #   selectInput("mdc8", get_session_t("Metric"), c(get_session_t("Pollutant concentration")))
   # ),
   #
   # conditionalPanel(
-  #   if (currentlanguage == "en") {
+  #   if (get_session_lang() == "en") {
   #     condition = "input.mde12 == 'None' & input.mdp=='O3'"
   #   } else {
   #     condition = "input.mde12 == 'Aucun' & input.mdp=='O3'"
   #   },
-  #   selectInput("mdc9", i18n$t("Metric"), c(i18n$t("Pollutant concentration")))
+  #   selectInput("mdc9", get_session_t("Metric"), c(get_session_t("Pollutant concentration")))
   # ),
 
   # conditionalPanel(
-  #   if (currentlanguage == "en") {
+  #   if (get_session_lang() == "en") {
   #     condition = "input.mde13 == 'None' & input.mdp=='O3 Summer'"
   #   } else {
   #     condition = "input.mde13 == 'Aucun' & input.mdp=='O3 en été'"
   #   },
-  #   selectInput("mdc10", i18n$t("Metric"), c(i18n$t("Pollutant concentration")))
+  #   selectInput("mdc10", get_session_t("Metric"), c(get_session_t("Pollutant concentration")))
   # ),
   #
   # conditionalPanel(
-  #   if (currentlanguage == "en") {
+  #   if (get_session_lang() == "en") {
   #     condition = "input.mde1 == 'Chronic Exposure Mortality' & input.mdp=='PM2.5'"
   #   } else {
   #     condition = "input.mde1 == 'Mortalité liée à une exposition chronique' & input.mdp=='PM2,5'"
   #   },
-  #   selectInput("mdm1", i18n$t("Metric"), c(i18n$t("Counts/100k"), i18n$t("Per capita valuation"), i18n$t("Change in life expectancy")))
+  #   selectInput("mdm1", get_session_t("Metric"), c(get_session_t("Counts/100k"), get_session_t("Per capita valuation"), get_session_t("Change in life expectancy")))
   # ),
   #
   # conditionalPanel(
-  #   if (currentlanguage == "en") {
+  #   if (get_session_lang() == "en") {
   #     condition = "input.mde2 == 'Acute Exposure Mortality' & input.mdp=='NO2'"
   #   } else {
   #     condition = "input.mde2 == 'Mortalité liée à une exposition aiguë' & input.mdp=='NO2'"
   #   },
-  #   selectInput("mdm2", i18n$t("Metric"), c(i18n$t("Counts/100k"), i18n$t("Per capita valuation")))
+  #   selectInput("mdm2", get_session_t("Metric"), c(get_session_t("Counts/100k"), get_session_t("Per capita valuation")))
   # ),
 
   # conditionalPanel(
-  #   if (currentlanguage == "en") {
+  #   if (get_session_lang() == "en") {
   #     condition = "input.mdp == 'All Toxics (cancer)'"
   #   } else {
   #     condition = "input.mdp == 'Toutes toxiques (cancer)'"
   #   },
-  #   selectInput("mde9", i18n$t("Endpoint"), c("Cancer"))
+  #   selectInput("mde9", get_session_t("Endpoint"), c("Cancer"))
   # ),
 
   # conditionalPanel(
-  #   if (currentlanguage == "en") {
+  #   if (get_session_lang() == "en") {
   #     condition = "input.mde5 == 'Hematological' & input.mdp=='Benzene'"
   #   } else {
   #     condition = "input.mde5 == 'Hématologique' & input.mdp=='Benzène'"
   #   },
-  #   selectInput("mdm6", i18n$t("Metric"), c(i18n$t("Hazard Quotient")))
+  #   selectInput("mdm6", get_session_t("Metric"), c(get_session_t("Hazard Quotient")))
   # ),
   #
   # conditionalPanel(
-  #   if (currentlanguage == "en") {
+  #   if (get_session_lang() == "en") {
   #     condition = "input.mde6 == 'Cancer' & input.mdp=='1,3-Butadiene'"
   #   } else {
   #     condition = "input.mde6 == 'Cancer' & input.mdp=='1,3-butadiène'"
   #   },
-  #   selectInput("mdm7", i18n$t("Metric"), c(i18n$t("Counts/100k"), i18n$t("DALYs/100k")))
+  #   selectInput("mdm7", get_session_t("Metric"), c(get_session_t("Counts/100k"), get_session_t("DALYs/100k")))
   # ),
   #
   # conditionalPanel(
-  #   if (currentlanguage == "en") {
+  #   if (get_session_lang() == "en") {
   #     condition = "input.mde8 == 'Respiratory (histological)' & input.mdp=='Acetaldehyde'"
   #   } else {
   #     condition = "input.mde8 == 'Respiratoire (histologique)' & input.mdp=='Acétaldéhyde'"
   #   },
-  #   selectInput("mdm8", i18n$t("Metric"), c(i18n$t("Hazard Quotient")))
+  #   selectInput("mdm8", get_session_t("Metric"), c(get_session_t("Hazard Quotient")))
   # ),
   #
   # conditionalPanel(
-  #   if (currentlanguage == "en") {
+  #   if (get_session_lang() == "en") {
   #     condition = "input.mde7 == 'Respiratory (asthma)' & input.mdp=='Formaldehyde'"
   #   } else {
   #     condition = "input.mde7 == 'Respiratoire (asthme)' & input.mdp=='Formaldéhyde'"
   #   },
-  #   selectInput("mdm9", i18n$t("Metric"), c(i18n$t("Hazard Quotient")))
+  #   selectInput("mdm9", get_session_t("Metric"), c(get_session_t("Hazard Quotient")))
   # ),
   #
   # conditionalPanel(
-  #   if (currentlanguage == "en") {
+  #   if (get_session_lang() == "en") {
   #     condition = "input.mde9 == 'Cancer' & input.mdp=='All Toxics (cancer)'"
   #   } else {
   #     condition = "input.mde9 == 'Cancer' & input.mdp=='Toutes toxiques (cancer)'"
   #   },
-  #   selectInput("mdm10", i18n$t("Metric"), c(i18n$t("Counts/100k"), i18n$t("DALYs/100k")))
+  #   selectInput("mdm10", get_session_t("Metric"), c(get_session_t("Counts/100k"), get_session_t("DALYs/100k")))
   # ),
   #
   # conditionalPanel(
-  #   if (currentlanguage == "en") {
+  #   if (get_session_lang() == "en") {
   #     condition = "input.mde10 == 'Non-cancer' & input.mdp=='All Toxics (non-cancer)'"
   #   } else {
   #     condition = "input.mde10 == 'Non-cancérigène' & input.mdp=='Toutes toxiques (non-cancérigène)'"
   #   },
-  #   selectInput("mdm11", i18n$t("Metric"), c(i18n$t("Hazard Quotient")))
+  #   selectInput("mdm11", get_session_t("Metric"), c(get_session_t("Hazard Quotient")))
   # ),
   #
   # conditionalPanel(
-  #   if (currentlanguage == "en") {
+  #   if (get_session_lang() == "en") {
   #     condition = "input.mde13 == 'Chronic Exposure Respiratory Mortality' & input.mdp=='O3 Summer'"
   #   } else {
   #     condition = "input.mde13 == 'Mortalité respiratoire liée à une exposition chronique' & input.mdp=='O3 en été'"
   #   },
-  #   selectInput("mdm12", i18n$t("Metric"), c(i18n$t("Counts/100k"), i18n$t("Per capita valuation"), i18n$t("Change in life expectancy")))
+  #   selectInput("mdm12", get_session_t("Metric"), c(get_session_t("Counts/100k"), get_session_t("Per capita valuation"), get_session_t("Change in life expectancy")))
   # ),
   #
   # conditionalPanel(
-  #   if (currentlanguage == "en") {
+  #   if (get_session_lang() == "en") {
   #     condition = "input.mde3 == 'Acute Exposure Mortality' & input.mdp=='CO 24h'"
   #   } else {
   #     condition = "input.mde3 == 'Mortalité liée à une exposition aiguë' & input.mdp=='CO 24h'"
   #   },
-  #   selectInput("mdm13", i18n$t("Metric"), c(i18n$t("Counts/100k"), i18n$t("Per capita valuation")))
+  #   selectInput("mdm13", get_session_t("Metric"), c(get_session_t("Counts/100k"), get_session_t("Per capita valuation")))
   # ),
   #
   #     conditionalPanel(
-  #       if (currentlanguage == "en") {
+  #       if (get_session_lang() == "en") {
   #         condition = "input.mde11 == 'Acute Exposure Mortality' & input.mdp=='SO2'"
   #       } else {
   #         condition = "input.mde11 == 'Mortalité liée à une exposition aiguë' & input.mdp=='SO2'"
   #       },
-  #       selectInput("mdm14", i18n$t("Metric"), c(i18n$t("Counts/100k"), i18n$t("Valuation/100k")))
+  #       selectInput("mdm14", get_session_t("Metric"), c(get_session_t("Counts/100k"), get_session_t("Valuation/100k")))
   #     ),
   #
   #     conditionalPanel(
-  #       if (currentlanguage == "en") {
+  #       if (get_session_lang() == "en") {
   #         condition = "input.mde12 == 'Acute Exposure Mortality' & input.mdp=='O3'"
   #       } else {
   #         condition = "input.mde12 == 'Mortalité liée à une exposition aiguë' & input.mdp=='O3'"
   #       },
-  #       selectInput("mdm15", i18n$t("Metric"), c(i18n$t("Counts/100k"), i18n$t("Per capita valuation")))
+  #       selectInput("mdm15", get_session_t("Metric"), c(get_session_t("Counts/100k"), get_session_t("Per capita valuation")))
   #     ),
   #
   #     conditionalPanel(
-  #       if (currentlanguage == "en") {
+  #       if (get_session_lang() == "en") {
   #         condition = "input.mde14 == 'Non-accidental mortality' & input.mdp=='None'"
   #       } else {
   #         condition = "input.mde14 == 'Mortalité non accidentel' & input.mdp=='Aucun'"
   #       },
-  #       selectInput("mdm16", i18n$t("Metric"), c(i18n$t("Baseline rate/100k")))
+  #       selectInput("mdm16", get_session_t("Metric"), c(get_session_t("Baseline rate/100k")))
   #     )
   #   )
   # ),
-  #       p(actionButton("genmap", i18n$t("Generate map"))),
+  #       p(actionButton("genmap", get_session_t("Generate map"))),
   #       div(tmapOutput("my_tmap", width = "100%", height = "auto")),
   #       # fluidRow(
   #       #   column(6,plotOutput("myplot"))),
   #
   #       h3("Image Downloads"),
-  #       div(strong(i18n$t("Download static national map"))),
+  #       div(strong(get_session_t("Download static national map"))),
   #         # column(2,strong("Download histogram"))
-  #       div(downloadButton("downm", i18n$t("Download map")),
+  #       div(downloadButton("downm", get_session_t("Download map")),
   #       ),
   #       br(),
-  #       div(radioButtons("mdg", i18n$t("Select province"), selected = character(0), inline = TRUE, c(i18n$t("NL"), i18n$t("PE"), i18n$t("NS"), i18n$t("NB"), i18n$t("QC"), i18n$t("ON"), i18n$t("MB"), i18n$t("SK"), i18n$t("AB"), i18n$t("BC"), i18n$t("YK"), i18n$t("NT"), i18n$t("NU")))),
-  #       div(strong(i18n$t("Download static provincial map"))),
-  #       div(downloadButton("downmp", i18n$t("Download map"))),
+  #       div(radioButtons("mdg", get_session_t("Select province"), selected = character(0), inline = TRUE, c(get_session_t("NL"), get_session_t("PE"), get_session_t("NS"), get_session_t("NB"), get_session_t("QC"), get_session_t("ON"), get_session_t("MB"), get_session_t("SK"), get_session_t("AB"), get_session_t("BC"), get_session_t("YK"), get_session_t("NT"), get_session_t("NU")))),
+  #       div(strong(get_session_t("Download static provincial map"))),
+  #       div(downloadButton("downmp", get_session_t("Download map"))),
   #     )
   #   }
   # })
@@ -3433,188 +3469,185 @@ server <- function(input, output, session) {
   # prepare all input parameters for user summary to download
 
   scenarioyr <- reactive({
-    cbind(i18n$t("Scenario year"), unique(foura_year()))
+    cbind(get_session_t("Scenario year"), unique(foura_year()))
   })
 
   currency <- reactive({
-    cbind(i18n$t("Currency"), paste(i18n$t("currency year ="), input$curr, i18n$t(", base year for discounting ="), input$baseyr, i18n$t(", discounting rate ="), input$discountrate, "%"))
+    cbind(get_session_t("Currency"), paste(get_session_t("currency year ="), input$curr, get_session_t(", base year for discounting ="), input$baseyr, get_session_t(", discounting rate ="), input$discountrate, "%"))
   })
   simulationitn <- reactive({
-    cbind(i18n$t("Simulation iterations"), paste(i18n$t("iterations ="), input$itn))
+    cbind(get_session_t("Simulation iterations"), paste(get_session_t("iterations ="), input$itn))
   })
   childasprev <- reactive({
-    cbind(i18n$t("Prevalence of asthma (age < 20 years)"), paste(i18n$t("asthma prevalence (%) ="), input$asprev))
+    cbind(get_session_t("Prevalence of asthma (age < 20 years)"), paste(get_session_t("asthma prevalence (%) ="), input$asprev))
   })
   pmcrf1 <- reactive({
-    cbind(i18n$t("Concentration response function"), paste(i18n$t("PM2.5 - Chronic exposure mortality:"), i18n$t("reg type ="), input$rtype, i18n$t(", RR/OR ="), input$crf, "[", input$l95, ",", input$u95, "],", i18n$t("Increment (ug/m3) = "), input$incr))
+    cbind(get_session_t("Concentration response function"), paste(get_session_t("PM2.5 - Chronic exposure mortality:"), get_session_t("reg type ="), input$rtype, get_session_t(", RR/OR ="), input$crf, "[", input$l95, ",", input$u95, "],", get_session_t("Increment (ug/m3) = "), input$incr))
   })
   pmcrf2 <- reactive({
-    cbind(i18n$t("Concentration response function"), paste(i18n$t("PM2.5 - Acute respiratory symptom days:"), i18n$t("reg type ="), input$pm25_rtype2, i18n$t(", RR/OR ="), input$pm25_crf2, "[", input$pm25_l95_2, ",", input$pm25_u95_2, "],", i18n$t("Increment (ug/m3) = "), input$pm25_incr2))
+    cbind(get_session_t("Concentration response function"), paste(get_session_t("PM2.5 - Acute respiratory symptom days:"), get_session_t("reg type ="), input$pm25_rtype2, get_session_t(", RR/OR ="), input$pm25_crf2, "[", input$pm25_l95_2, ",", input$pm25_u95_2, "],", get_session_t("Increment (ug/m3) = "), input$pm25_incr2))
   })
   pmcrf3 <- reactive({
-    cbind(i18n$t("Concentration response function"), paste(i18n$t("PM2.5 - Adult chronic bronchitis cases:"), i18n$t("reg type ="), input$pm25_rtype3, i18n$t(", RR/OR ="), input$pm25_crf3, "[", input$pm25_l95_3, ",", input$pm25_u95_3, "],", i18n$t("Increment (ug/m3) = "), input$pm25_incr3))
+    cbind(get_session_t("Concentration response function"), paste(get_session_t("PM2.5 - Adult chronic bronchitis cases:"), get_session_t("reg type ="), input$pm25_rtype3, get_session_t(", RR/OR ="), input$pm25_crf3, "[", input$pm25_l95_3, ",", input$pm25_u95_3, "],", get_session_t("Increment (ug/m3) = "), input$pm25_incr3))
   })
   pmcrf4 <- reactive({
-    cbind(i18n$t("Concentration response function"), paste(i18n$t("PM2.5 - Asthma symptom days:"), i18n$t("reg type ="), input$pm25_rtype4, i18n$t(", RR/OR ="), input$pm25_crf4, "[", input$pm25_l95_4, ",", input$pm25_u95_4, "],", i18n$t("Increment (ug/m3) = "), input$pm25_incr4))
+    cbind(get_session_t("Concentration response function"), paste(get_session_t("PM2.5 - Asthma symptom days:"), get_session_t("reg type ="), input$pm25_rtype4, get_session_t(", RR/OR ="), input$pm25_crf4, "[", input$pm25_l95_4, ",", input$pm25_u95_4, "],", get_session_t("Increment (ug/m3) = "), input$pm25_incr4))
   })
   pmcrf5 <- reactive({
-    cbind(i18n$t("Concentration response function"), paste(i18n$t("PM2.5 - Cardiac emergency room visits:"), i18n$t("reg type ="), input$pm25_rtype5, i18n$t(", RR/OR ="), input$pm25_crf5, "[", input$pm25_l95_5, ",", input$pm25_u95_5, "],", i18n$t("Increment (ug/m3) = "), input$pm25_incr5))
+    cbind(get_session_t("Concentration response function"), paste(get_session_t("PM2.5 - Cardiac emergency room visits:"), get_session_t("reg type ="), input$pm25_rtype5, get_session_t(", RR/OR ="), input$pm25_crf5, "[", input$pm25_l95_5, ",", input$pm25_u95_5, "],", get_session_t("Increment (ug/m3) = "), input$pm25_incr5))
   })
   pmcrf6 <- reactive({
-    cbind(i18n$t("Concentration response function"), paste(i18n$t("PM2.5 - Cardiac hospital admissions:"), i18n$t("reg type ="), input$pm25_rtype6, i18n$t(", RR/OR ="), input$pm25_crf6, "[", input$pm25_l95_6, ",", input$pm25_u95_6, "],", i18n$t("Increment (ug/m3) = "), input$pm25_incr6))
+    cbind(get_session_t("Concentration response function"), paste(get_session_t("PM2.5 - Cardiac hospital admissions:"), get_session_t("reg type ="), input$pm25_rtype6, get_session_t(", RR/OR ="), input$pm25_crf6, "[", input$pm25_l95_6, ",", input$pm25_u95_6, "],", get_session_t("Increment (ug/m3) = "), input$pm25_incr6))
   })
   pmcrf7 <- reactive({
-    cbind(i18n$t("Concentration response function"), paste(i18n$t("PM2.5 - Child acute bronchitis episodes:"), i18n$t("reg type ="), input$pm25_rtype7, i18n$t(", RR/OR ="), input$pm25_crf7, "[", input$pm25_l95_7, ",", input$pm25_u95_7, "],", i18n$t("Increment (ug/m3) = "), input$pm25_incr7))
+    cbind(get_session_t("Concentration response function"), paste(get_session_t("PM2.5 - Child acute bronchitis episodes:"), get_session_t("reg type ="), input$pm25_rtype7, get_session_t(", RR/OR ="), input$pm25_crf7, "[", input$pm25_l95_7, ",", input$pm25_u95_7, "],", get_session_t("Increment (ug/m3) = "), input$pm25_incr7))
   })
   pmcrf8 <- reactive({
-    cbind(i18n$t("Concentration response function"), paste(i18n$t("PM2.5 - Respiratory emergency room visits:"), i18n$t("reg type ="), input$pm25_rtype8, i18n$t(", RR/OR ="), input$pm25_crf8, "[", input$pm25_l95_8, ",", input$pm25_u95_8, "],", i18n$t("Increment (ug/m3) = "), input$pm25_incr8))
+    cbind(get_session_t("Concentration response function"), paste(get_session_t("PM2.5 - Respiratory emergency room visits:"), get_session_t("reg type ="), input$pm25_rtype8, get_session_t(", RR/OR ="), input$pm25_crf8, "[", input$pm25_l95_8, ",", input$pm25_u95_8, "],", get_session_t("Increment (ug/m3) = "), input$pm25_incr8))
   })
   pmcrf9 <- reactive({
-    cbind(i18n$t("Concentration response function"), paste(i18n$t("PM2.5 - Respiratory Hospital Admissions:"), i18n$t("reg type ="), input$pm25_rtype9, i18n$t(", RR/OR ="), input$pm25_crf9, "[", input$pm25_l95_9, ",", input$pm25_u95_9, "],", i18n$t("Increment (ug/m3) = "), input$pm25_incr9))
+    cbind(get_session_t("Concentration response function"), paste(get_session_t("PM2.5 - Respiratory Hospital Admissions:"), get_session_t("reg type ="), input$pm25_rtype9, get_session_t(", RR/OR ="), input$pm25_crf9, "[", input$pm25_l95_9, ",", input$pm25_u95_9, "],", get_session_t("Increment (ug/m3) = "), input$pm25_incr9))
   })
   pmcrf10 <- reactive({
-    cbind(i18n$t("Concentration response function"), paste(i18n$t("PM2.5 - Restricted Activity Days:"), i18n$t("reg type ="), input$pm25_rtype10, i18n$t(", RR/OR ="), input$pm25_crf10, "[", input$pm25_l95_10, ",", input$pm25_u95_10, "],", i18n$t("Increment (ug/m3) = "), input$pm25_incr10))
+    cbind(get_session_t("Concentration response function"), paste(get_session_t("PM2.5 - Restricted Activity Days:"), get_session_t("reg type ="), input$pm25_rtype10, get_session_t(", RR/OR ="), input$pm25_crf10, "[", input$pm25_l95_10, ",", input$pm25_u95_10, "],", get_session_t("Increment (ug/m3) = "), input$pm25_incr10))
   })
 
   pmcrf11 <- reactive({
-    cbind(i18n$t("Concentration response function"), paste(i18n$t("PM2.5 - Chronic Exposure Cerebrovascular Mortality:"), i18n$t("reg type ="), input$rtypecerebro, i18n$t(", shape ="), input$crfcerebro, i18n$t(", scale ="), input$scalecerebro, i18n$t(", Increment (ug/m3) = "), input$incrcerebro))
+    cbind(get_session_t("Concentration response function"), paste(get_session_t("PM2.5 - Chronic Exposure Cerebrovascular Mortality:"), get_session_t("reg type ="), input$rtypecerebro, get_session_t(", shape ="), input$crfcerebro, get_session_t(", scale ="), input$scalecerebro, get_session_t(", Increment (ug/m3) = "), input$incrcerebro))
   })
   pmcrf12 <- reactive({
-    cbind(i18n$t("Concentration response function"), paste(i18n$t("PM2.5 - Chronic Exposure COPD Mortality:"), i18n$t("reg type ="), input$rtypcopd, i18n$t(", shape ="), input$crfcopd, i18n$t(", scale ="), input$scalecopd, i18n$t(", Increment (ug/m3) = "), input$incrcopd))
+    cbind(get_session_t("Concentration response function"), paste(get_session_t("PM2.5 - Chronic Exposure COPD Mortality:"), get_session_t("reg type ="), input$rtypcopd, get_session_t(", shape ="), input$crfcopd, get_session_t(", scale ="), input$scalecopd, get_session_t(", Increment (ug/m3) = "), input$incrcopd))
   })
   pmcrf13 <- reactive({
-    cbind(i18n$t("Concentration response function"), paste(i18n$t("PM2.5 - Chronic Exposure Ischemic Heart Disease Mortality:"), i18n$t("reg type ="), input$rtypIschem, i18n$t(", shape ="), input$crfIschem, i18n$t(", scale ="), input$scaleIschem, i18n$t(", Increment (ug/m3) = "), input$incrIschem))
+    cbind(get_session_t("Concentration response function"), paste(get_session_t("PM2.5 - Chronic Exposure Ischemic Heart Disease Mortality:"), get_session_t("reg type ="), input$rtypIschem, get_session_t(", shape ="), input$crfIschem, get_session_t(", scale ="), input$scaleIschem, get_session_t(", Increment (ug/m3) = "), input$incrIschem))
   })
 
   pmcrf14 <- reactive({
-    cbind(i18n$t("Concentration response function"), paste(i18n$t("PM2.5 - Chronic Exposure Lung Cancer Mortality:"), i18n$t("reg type ="), input$rtypelung, i18n$t(", RR/OR ="), input$crflung, "[", input$l95lung, ",", input$u95lung, "],", i18n$t("Increment (ug/m3) = "), input$incrlung))
+    cbind(get_session_t("Concentration response function"), paste(get_session_t("PM2.5 - Chronic Exposure Lung Cancer Mortality:"), get_session_t("reg type ="), input$rtypelung, get_session_t(", RR/OR ="), input$crflung, "[", input$l95lung, ",", input$u95lung, "],", get_session_t("Increment (ug/m3) = "), input$incrlung))
   })
 
   pmcrf15 <- reactive({
-    cbind(i18n$t("Concentration response function"), paste(i18n$t("PM2.5 - Chronic exposure mortality:"), i18n$t("reg type = Non-linear SCHIF, thr conc = 2.4 ug/m3, Normal (mean = 0.0813, se = 0.01773, theta = 3.639, mu = 0.763, pi = 1.896)")))
+    cbind(get_session_t("Concentration response function"), paste(get_session_t("PM2.5 - Chronic exposure mortality:"), get_session_t("reg type = Non-linear SCHIF, thr conc = 2.4 ug/m3, Normal (mean = 0.0813, se = 0.01773, theta = 3.639, mu = 0.763, pi = 1.896)")))
   })
 
   o3crf1 <- reactive({
-    cbind(i18n$t("Concentration response function"), paste(i18n$t("O3 - Acute Exposure Mortality:"), i18n$t("reg type ="), input$o3_rtype1, i18n$t(", RR/OR ="), input$o3_crf1, "[", input$o3_l95_1, ",", input$o3_u95_1, "],", i18n$t("Increment (ppb) = "), input$o3_incr1))
+    cbind(get_session_t("Concentration response function"), paste(get_session_t("O3 - Acute Exposure Mortality:"), get_session_t("reg type ="), input$o3_rtype1, get_session_t(", RR/OR ="), input$o3_crf1, "[", input$o3_l95_1, ",", input$o3_u95_1, "],", get_session_t("Increment (ppb) = "), input$o3_incr1))
   })
   o3crf2 <- reactive({
-    cbind(i18n$t("Concentration response function"), paste(i18n$t("Summer O3 - Chronic Exposure Respiratory Mortality:"), i18n$t("reg type ="), input$o3_rtype2, i18n$t(", RR/OR ="), input$o3_crf2, "[", input$o3_l95_2, ",", input$o3_u95_2, "],", i18n$t("Increment (ppb) = "), input$o3_incr2))
+    cbind(get_session_t("Concentration response function"), paste(get_session_t("Summer O3 - Chronic Exposure Respiratory Mortality:"), get_session_t("reg type ="), input$o3_rtype2, get_session_t(", RR/OR ="), input$o3_crf2, "[", input$o3_l95_2, ",", input$o3_u95_2, "],", get_session_t("Increment (ppb) = "), input$o3_incr2))
   })
   o3crf3 <- reactive({
-    cbind(i18n$t("Concentration response function"), paste(i18n$t("Summer O3 - Acute respiratory symptom days:"), i18n$t("reg type ="), input$o3_rtype3, i18n$t(", RR/OR ="), input$o3_crf3, "[", input$o3_l95_3, ",", input$o3_u95_3, "],", i18n$t("Increment (ppb) = "), input$o3_incr3))
+    cbind(get_session_t("Concentration response function"), paste(get_session_t("Summer O3 - Acute respiratory symptom days:"), get_session_t("reg type ="), input$o3_rtype3, get_session_t(", RR/OR ="), input$o3_crf3, "[", input$o3_l95_3, ",", input$o3_u95_3, "],", get_session_t("Increment (ppb) = "), input$o3_incr3))
   })
   o3crf4 <- reactive({
-    cbind(i18n$t("Concentration response function"), paste(i18n$t("Summer O3 - Asthma symptom days:"), i18n$t("reg type ="), input$o3_rtype4, i18n$t(", RR/OR ="), input$o3_crf4, "[", input$o3_l95_4, ",", input$o3_u95_4, "],", i18n$t("Increment (ppb) = "), input$o3_incr4))
+    cbind(get_session_t("Concentration response function"), paste(get_session_t("Summer O3 - Asthma symptom days:"), get_session_t("reg type ="), input$o3_rtype4, get_session_t(", RR/OR ="), input$o3_crf4, "[", input$o3_l95_4, ",", input$o3_u95_4, "],", get_session_t("Increment (ppb) = "), input$o3_incr4))
   })
   o3crf5 <- reactive({
-    cbind(i18n$t("Concentration response function"), paste(i18n$t("Summer O3 - Minor Restricted Activity Days:"), i18n$t("reg type ="), input$o3_rtype5, i18n$t(", RR/OR ="), input$o3_crf5, "[", input$o3_l95_5, ",", input$o3_u95_5, "],", i18n$t("Increment (ppb) = "), input$o3_incr5))
+    cbind(get_session_t("Concentration response function"), paste(get_session_t("Summer O3 - Minor Restricted Activity Days:"), get_session_t("reg type ="), input$o3_rtype5, get_session_t(", RR/OR ="), input$o3_crf5, "[", input$o3_l95_5, ",", input$o3_u95_5, "],", get_session_t("Increment (ppb) = "), input$o3_incr5))
   })
   o3crf6 <- reactive({
-    cbind(i18n$t("Concentration response function"), paste(i18n$t("Summer O3 - Respiratory emergency room visits:"), i18n$t("reg type ="), input$o3_rtype6, i18n$t(", RR/OR ="), input$o3_crf6, "[", input$o3_l95_6, ",", input$o3_u95_6, "],", i18n$t("Increment (ppb) = "), input$o3_incr6))
+    cbind(get_session_t("Concentration response function"), paste(get_session_t("Summer O3 - Respiratory emergency room visits:"), get_session_t("reg type ="), input$o3_rtype6, get_session_t(", RR/OR ="), input$o3_crf6, "[", input$o3_l95_6, ",", input$o3_u95_6, "],", get_session_t("Increment (ppb) = "), input$o3_incr6))
   })
   o3crf7 <- reactive({
-    cbind(i18n$t("Concentration response function"), paste(i18n$t("Summer O3 - Respiratory Hospital Admissions:"), i18n$t("reg type ="), input$o3_rtype7, i18n$t(", RR/OR ="), input$o3_crf7, "[", input$o3_l95_7, ",", input$o3_u95_7, "],", i18n$t("Increment (ppb) = "), input$o3_incr7))
+    cbind(get_session_t("Concentration response function"), paste(get_session_t("Summer O3 - Respiratory Hospital Admissions:"), get_session_t("reg type ="), input$o3_rtype7, get_session_t(", RR/OR ="), input$o3_crf7, "[", input$o3_l95_7, ",", input$o3_u95_7, "],", get_session_t("Increment (ppb) = "), input$o3_incr7))
   })
 
   no2crf <- reactive({
-    cbind(i18n$t("Concentration response function"), paste(i18n$t("NO2 - Acute Exposure Mortality:"), i18n$t("reg type ="), input$no2_rtype, i18n$t(", RR/OR ="), input$no2_crf, "[", input$no2_l95, ",", input$no2_u95, "],", i18n$t("Increment (ppb) = "), input$no2_incr))
+    cbind(get_session_t("Concentration response function"), paste(get_session_t("NO2 - Acute Exposure Mortality:"), get_session_t("reg type ="), input$no2_rtype, get_session_t(", RR/OR ="), input$no2_crf, "[", input$no2_l95, ",", input$no2_u95, "],", get_session_t("Increment (ppb) = "), input$no2_incr))
   })
   so2crf <- reactive({
-    cbind(i18n$t("Concentration response function"), paste(i18n$t("SO2 - Acute Exposure Mortality:"), i18n$t("reg type ="), input$so2_rtype, i18n$t(", RR/OR ="), input$so2_crf, "[", input$so2_l95, ",", input$so2_u95, "],", i18n$t("Increment (ppb) = "), input$so2_incr))
+    cbind(get_session_t("Concentration response function"), paste(get_session_t("SO2 - Acute Exposure Mortality:"), get_session_t("reg type ="), input$so2_rtype, get_session_t(", RR/OR ="), input$so2_crf, "[", input$so2_l95, ",", input$so2_u95, "],", get_session_t("Increment (ppb) = "), input$so2_incr))
   })
   cocrf1 <- reactive({
-    cbind(i18n$t("Concentration response function"), paste(i18n$t("CO (24h) - Acute Exposure Mortality:"), i18n$t("reg type ="), input$co24_rtype, i18n$t(", RR/OR ="), input$co24_crf, "[", input$co24_l95, ",", input$co24_u95, "],", i18n$t("Increment (ppm) = "), input$co24_incr))
+    cbind(get_session_t("Concentration response function"), paste(get_session_t("CO (24h) - Acute Exposure Mortality:"), get_session_t("reg type ="), input$co24_rtype, get_session_t(", RR/OR ="), input$co24_crf, "[", input$co24_l95, ",", input$co24_u95, "],", get_session_t("Increment (ppm) = "), input$co24_incr))
   })
   cocrf2 <- reactive({
-    cbind(i18n$t("Concentration response function"), paste(i18n$t("CO (1h) - Elderly cardiac hospital admissions:"), i18n$t("reg type ="), input$co1_rtype, i18n$t(", RR/OR ="), input$co1_crf, "[", input$co1_l95, ",", input$co1_u95, "],", i18n$t("Increment (ppm) = "), input$co1_incr))
+    cbind(get_session_t("Concentration response function"), paste(get_session_t("CO (1h) - Elderly cardiac hospital admissions:"), get_session_t("reg type ="), input$co1_rtype, get_session_t(", RR/OR ="), input$co1_crf, "[", input$co1_l95, ",", input$co1_u95, "],", get_session_t("Increment (ppm) = "), input$co1_incr))
   })
-
 
 
   endpointval1 <- reactive({
-    cbind(i18n$t("endpoint valuations($)"), paste(
-      i18n$t("Mortality: source year ="), input$vslyr, i18n$t(", distribution form ="), input$vslfm, i18n$t("(low ="), input$lvsl, i18n$t("million, central ="), input$vsl,
-      i18n$t("million, high ="), input$uvsl, i18n$t("million, low value probability ="), input$plvsl, i18n$t(", central value probability ="), input$pcvsl, ")"
+    cbind(get_session_t("endpoint valuations($)"), paste(
+      get_session_t("Mortality: source year ="), input$vslyr, get_session_t(", distribution form ="), input$vslfm, get_session_t("(low ="), input$lvsl, get_session_t("million, central ="), input$vsl,
+      get_session_t("million, high ="), input$uvsl, get_session_t("million, low value probability ="), input$plvsl, get_session_t(", central value probability ="), input$pcvsl, ")"
     ))
   })
 
   endpointval2 <- reactive({
-    cbind(i18n$t("endpoint valuations($)"), paste(i18n$t("Acute respiratory symptom days: source year ="), input$vsl2yr, i18n$t(", distribution form ="), input$vsl2fm, i18n$t("( mean ="), input$vsl2, i18n$t(", se ="), input$lvsl2, ")"))
+    cbind(get_session_t("endpoint valuations($)"), paste(get_session_t("Acute respiratory symptom days: source year ="), input$vsl2yr, get_session_t(", distribution form ="), input$vsl2fm, get_session_t("( mean ="), input$vsl2, get_session_t(", se ="), input$lvsl2, ")"))
   })
 
   endpointval3 <- reactive({
-    cbind(i18n$t("endpoint valuations($)"), paste(
-      i18n$t("Adult Chronic Bronchitis Cases: source year ="), input$vsl3yr, i18n$t(", distribution form ="), input$vsl3fm, i18n$t("(low ="), input$lvsl3 * 1000, i18n$t(", central ="), input$vsl3 * 1000,
-      i18n$t(", high ="), input$uvsl3 * 1000, i18n$t(", low value probability ="), input$pcvsl3, i18n$t(", central value probability ="), input$plvsl3, ")"
+    cbind(get_session_t("endpoint valuations($)"), paste(
+      get_session_t("Adult Chronic Bronchitis Cases: source year ="), input$vsl3yr, get_session_t(", distribution form ="), input$vsl3fm, get_session_t("(low ="), input$lvsl3 * 1000, get_session_t(", central ="), input$vsl3 * 1000,
+      get_session_t(", high ="), input$uvsl3 * 1000, get_session_t(", low value probability ="), input$pcvsl3, get_session_t(", central value probability ="), input$plvsl3, ")"
     ))
   })
 
 
   endpointval4 <- reactive({
-    cbind(i18n$t("endpoint valuations($)"), paste(
-      i18n$t("Asthma symptom days: source year ="), input$sourcevsl4b, i18n$t(", distribution form ="), input$sourcevsl4c, "(min =", input$lvsl4, i18n$t(", central ="), input$vsl4,
+    cbind(get_session_t("endpoint valuations($)"), paste(
+      get_session_t("Asthma symptom days: source year ="), input$sourcevsl4b, get_session_t(", distribution form ="), input$sourcevsl4c, "(min =", input$lvsl4, get_session_t(", central ="), input$vsl4,
       ", max=", input$uvsl4, ")"
     ))
   })
 
   endpointval5 <- reactive({
-    cbind(i18n$t("endpoint valuations($)"), paste(i18n$t("Cardiac emergency room visits: source year ="), input$sourcevsl5b, i18n$t(", distribution form ="), input$sourcevsl5c, i18n$t("( mean ="), input$vsl5, i18n$t(", se ="), input$lvsl5, ")"))
+    cbind(get_session_t("endpoint valuations($)"), paste(get_session_t("Cardiac emergency room visits: source year ="), input$sourcevsl5b, get_session_t(", distribution form ="), input$sourcevsl5c, get_session_t("( mean ="), input$vsl5, get_session_t(", se ="), input$lvsl5, ")"))
   })
 
 
   endpointval6 <- reactive({
-    cbind(i18n$t("endpoint valuations($)"), paste(
-      i18n$t("Child acute bronchitis episodes: source year ="), input$sourcevsl6b, i18n$t(", distribution form ="), input$sourcevsl6c, i18n$t("(low ="), input$lvsl6, i18n$t(", central ="), input$vsl6,
-      i18n$t(", high ="), input$uvsl6, i18n$t(", low value probability ="), input$plvsl6, i18n$t(", central value probability ="), input$pcvsl6, ")"
+    cbind(get_session_t("endpoint valuations($)"), paste(
+      get_session_t("Child acute bronchitis episodes: source year ="), input$sourcevsl6b, get_session_t(", distribution form ="), input$sourcevsl6c, get_session_t("(low ="), input$lvsl6, get_session_t(", central ="), input$vsl6,
+      get_session_t(", high ="), input$uvsl6, get_session_t(", low value probability ="), input$plvsl6, get_session_t(", central value probability ="), input$pcvsl6, ")"
     ))
   })
 
   endpointval7 <- reactive({
-    cbind(i18n$t("endpoint valuations($)"), paste(i18n$t("Elderly cardiac hospital admissions: source year ="), input$sourcevsl7b, i18n$t(", distribution form ="), input$sourcevsl7c, i18n$t("( mean ="), input$vsl7, i18n$t(", se ="), input$lvsl7, ")"))
+    cbind(get_session_t("endpoint valuations($)"), paste(get_session_t("Elderly cardiac hospital admissions: source year ="), input$sourcevsl7b, get_session_t(", distribution form ="), input$sourcevsl7c, get_session_t("( mean ="), input$vsl7, get_session_t(", se ="), input$lvsl7, ")"))
   })
 
   endpointval8 <- reactive({
-    cbind(i18n$t("endpoint valuations($)"), paste(
-      i18n$t("Minor Restricted Activity Days: source year ="), input$sourcevsl8b, i18n$t(", distribution form ="), input$sourcevsl8c,
-      i18n$t("( mean ="), input$vsl8, i18n$t(", se ="), input$lvsl8, ")"
+    cbind(get_session_t("endpoint valuations($)"), paste(
+      get_session_t("Minor Restricted Activity Days: source year ="), input$sourcevsl8b, get_session_t(", distribution form ="), input$sourcevsl8c,
+      get_session_t("( mean ="), input$vsl8, get_session_t(", se ="), input$lvsl8, ")"
     ))
   })
 
 
   endpointval9 <- reactive({
-    cbind(i18n$t("endpoint valuations($)"), paste(
-      i18n$t("Respiratory emergency room visits: source year ="), input$sourcevsl9b, i18n$t(", distribution form ="), input$sourcevsl9c,
-      i18n$t("( mean ="), input$vsl9, i18n$t(", se ="), input$lvsl9, ")"
+    cbind(get_session_t("endpoint valuations($)"), paste(
+      get_session_t("Respiratory emergency room visits: source year ="), input$sourcevsl9b, get_session_t(", distribution form ="), input$sourcevsl9c,
+      get_session_t("( mean ="), input$vsl9, get_session_t(", se ="), input$lvsl9, ")"
     ))
   })
 
   endpointval10 <- reactive({
-    cbind(i18n$t("endpoint valuations($)"), paste(
-      i18n$t("Restricted Activity Days: source year ="), input$sourcevsl10b, i18n$t(", distribution form ="), input$sourcevsl10c,
-      i18n$t("( mean ="), input$vsl10, i18n$t(", se ="), input$lvsl10, ")"
+    cbind(get_session_t("endpoint valuations($)"), paste(
+      get_session_t("Restricted Activity Days: source year ="), input$sourcevsl10b, get_session_t(", distribution form ="), input$sourcevsl10c,
+      get_session_t("( mean ="), input$vsl10, get_session_t(", se ="), input$lvsl10, ")"
     ))
   })
 
   pmthreshold <- reactive({
-    cbind(i18n$t("PM2.5 threshold concentration (ug/m3)"), paste(i18n$t("threshold ="), input$pmthr))
+    cbind(get_session_t("PM2.5 threshold concentration (ug/m3)"), paste(get_session_t("threshold ="), input$pmthr))
   })
   o3threshold <- reactive({
-    cbind(i18n$t("O3 threshold concentration (ppb)"), paste(i18n$t("threshold ="), input$o3thr))
+    cbind(get_session_t("O3 threshold concentration (ppb)"), paste(get_session_t("threshold ="), input$o3thr))
   })
   summero3threshold <- reactive({
-    cbind(i18n$t("Summer O3 threshold concentration (ppb)"), paste(i18n$t("threshold ="), input$summero3thr))
+    cbind(get_session_t("Summer O3 threshold concentration (ppb)"), paste(get_session_t("threshold ="), input$summero3thr))
   })
   no2threshold <- reactive({
-    cbind(i18n$t("NO2 threshold concentration (ppb)"), paste(i18n$t("threshold ="), input$no2thr))
+    cbind(get_session_t("NO2 threshold concentration (ppb)"), paste(get_session_t("threshold ="), input$no2thr))
   })
   so2threshold <- reactive({
-    cbind(i18n$t("SO2 threshold concentration (ppb)"), paste(i18n$t("threshold ="), input$so2thr))
+    cbind(get_session_t("SO2 threshold concentration (ppb)"), paste(get_session_t("threshold ="), input$so2thr))
   })
   cothreshold <- reactive({
-    cbind(i18n$t("CO threshold concentration (ppm)"), paste(i18n$t("threshold ="), input$cothr))
+    cbind(get_session_t("CO threshold concentration (ppm)"), paste(get_session_t("threshold ="), input$cothr))
   })
-
-
 
 
   inputallparameters1 <- reactive({
@@ -3626,10 +3659,9 @@ server <- function(input, output, session) {
   })
 
 
-
   inputallparameters <- reactive({
     i <- inputallparameters1()
-    colnames(i) <- c(i18n$t("Item"), "Description")
+    colnames(i) <- c(get_session_t("Item"), "Description")
     i
   })
 
@@ -3645,7 +3677,7 @@ server <- function(input, output, session) {
 
   output$allinputb <- downloadHandler(
     filename = function() {
-      i18n$t("input_parameters.xlsx")
+      get_session_t("input_parameters.xlsx")
     },
     content = function(file) {
       write_xlsx(inputallparameters(), path = file)
@@ -3699,7 +3731,7 @@ server <- function(input, output, session) {
       shinyjs::removeClass(selector = "#sampleDataUploadedInfo", class = "hidden")
       # Use language from hidden input (set when this session's UI was built)
       return(if (get_session_lang() == "fr") xsample1_fr else xsample1_en)
-s     } else {
+    } else {
       return(pollutantdata0()) # Avoid circular dependency
     }
   })
@@ -3725,10 +3757,10 @@ s     } else {
 
   # merge file with population and mortality by CD with user input pollutant concentration data by CD
   foura0 <- reactive({
-    right_join(three, pollutantdata(), by = c(i18n$t("year"), i18n$t("CDUID")))
+    right_join(get_session_three(), pollutantdata(), by = c(get_session_t("year"), get_session_t("CDUID")))
   })
   xfoura <- reactive({
-    left_join(foura0(), one)
+    left_join(foura0(), get_session_one())
   })
   foura <- reactive({
     na_replace(xfoura(), 0)
@@ -3745,8 +3777,8 @@ s     } else {
   xxbaserates <- reactive({
     xk5 <- xbaserates()
     colnames(xk5) <- c(
-      i18n$t("Year"), i18n$t("CDUID"), "Province", i18n$t("Acute Exposure Mortality"), i18n$t("Chronic Exposure Mortality"), i18n$t("Respiratory Mortality"),
-      i18n$t("Cardiovascular Mortality"), i18n$t("Cerebrovascular Mortality"), i18n$t("COPD Mortality")
+      get_session_t("Year"), get_session_t("CDUID"), "Province", get_session_t("Acute Exposure Mortality"), get_session_t("Chronic Exposure Mortality"), get_session_t("Respiratory Mortality"),
+      get_session_t("Cardiovascular Mortality"), get_session_t("Cerebrovascular Mortality"), get_session_t("COPD Mortality")
     )
     xk5
   })
@@ -3765,7 +3797,7 @@ s     } else {
   }) # fourb:  used for population-weighted exposure and toxics calculation
 
   wexposure1 <- reactive({
-    if (currentlanguage == "en") {
+    if (get_session_lang() == "en") {
       aggregate(cbind(
         allages * chg(pm25_2, pm25_1, input$pmthr), allages * chg(summero3_2, summero3_1, input$summero3thr), allages * chg(o3_2, o3_1, input$o3thr), allages * chg(no2_2, no2_1, input$no2thr),
         allages * chg(so2_2, so2_1, input$so2thr), allages * chg(co1h_2, co1h_1, input$cothr), allages * chg(co24h_2, co24h_1, input$cothr),
@@ -3792,14 +3824,14 @@ s     } else {
   Canwexposure3 <- reactive({
     es1 <- Canwexposure2()
     colnames(es1) <- c(
-      i18n$t("year"), i18n$t("scenario"), "region", "pm25", "summer_O3", "O3", "NO2", "SO2", "CO_1h",
-      "CO_24h", i18n$t("Benzene"), "butadiene.1.3", i18n$t("Acetaldehyde"), i18n$t("Formaldehyde")
+      get_session_t("year"), get_session_t("scenario"), "region", "pm25", "summer_O3", "O3", "NO2", "SO2", "CO_1h",
+      "CO_24h", get_session_t("Benzene"), "butadiene.1.3", get_session_t("Acetaldehyde"), get_session_t("Formaldehyde")
     )
     es1
   })
 
   pwexposure1 <- reactive({
-    if (currentlanguage == "en") {
+    if (get_session_lang() == "en") {
       aggregate(cbind(
         allages * chg(pm25_2, pm25_1, input$pmthr), allages * chg(summero3_2, summero3_1, input$summero3thr), allages * chg(o3_2, o3_1, input$o3thr), allages * chg(no2_2, no2_1, input$no2thr), allages * chg(so2_2, so2_1, input$so2thr),
         allages * chg(co1h_2, co1h_1, input$cothr), allages * chg(co24h_2, co24h_1, input$cothr),
@@ -3824,7 +3856,7 @@ s     } else {
 
   pwexposure3 <- reactive({
     es2 <- pwexposure2()
-    colnames(es2) <- c(i18n$t("year"), i18n$t("scenario"), "region", "pm25", "summer_O3", "O3", "NO2", "SO2", "CO_1h", "CO_24h", i18n$t("Benzene"), "butadiene.1.3", i18n$t("Acetaldehyde"), i18n$t("Formaldehyde"))
+    colnames(es2) <- c(get_session_t("year"), get_session_t("scenario"), "region", "pm25", "summer_O3", "O3", "NO2", "SO2", "CO_1h", "CO_24h", get_session_t("Benzene"), "butadiene.1.3", get_session_t("Acetaldehyde"), get_session_t("Formaldehyde"))
     es2
   })
 
@@ -3834,7 +3866,7 @@ s     } else {
   })
 
   Canprowexposure1 <- reactive({
-    if (currentlanguage == "en") {
+    if (get_session_lang() == "en") {
       xCanprowexposure1()[with(xCanprowexposure1(), order(year, scenario)), ]
     } else {
       xCanprowexposure1()[with(xCanprowexposure1(), order(année, scénario)), ]
@@ -3844,14 +3876,14 @@ s     } else {
   xxCanprowexposure1 <- reactive({
     xes1 <- Canprowexposure1()
     colnames(xes1) <- c(
-      i18n$t("Year"), i18n$t("Scenario"), i18n$t("Region"), i18n$t("PM2.5"), i18n$t("Summer O3"), "O3", "NO2",
-      "SO2", "CO 1h", "CO 24h", i18n$t("Benzene"), i18n$t("1,3-Butadiene"), i18n$t("Acetaldehyde"), i18n$t("Formaldehyde")
+      get_session_t("Year"), get_session_t("Scenario"), get_session_t("Region"), get_session_t("PM2.5"), get_session_t("Summer O3"), "O3", "NO2",
+      "SO2", "CO 1h", "CO 24h", get_session_t("Benzene"), get_session_t("1,3-Butadiene"), get_session_t("Acetaldehyde"), get_session_t("Formaldehyde")
     )
     xes1
   })
 
   xxxCanprowexposure1 <- reactive({
-    if (currentlanguage == "en") {
+    if (get_session_lang() == "en") {
       cbind(xxCanprowexposure1()[c(1, 2, 3)], as.data.frame(sapply((xxCanprowexposure1()[c(4:14)]), format_numbers, simplify = FALSE)))
     } else {
       cbind(xxCanprowexposure1()[c(1, 2, 3)], as.data.frame(sapply((xxCanprowexposure1()[c(4:14)]), format_numbers2, simplify = FALSE)))
@@ -3869,7 +3901,7 @@ s     } else {
   })
 
   pnameexposure <- reactive({
-    merge_data(xxxCanprowexposure1(), xprov, by.x = i18n$t("Region"), by.y = "Province")
+    merge_data(xxxCanprowexposure1(), get_session_xprov(), by.x = get_session_t("Region"), by.y = "Province")
   })
   xpnameexposure <- reactive({
     pnameexposure()[c(1, 2, 4:6), c(2, 3, 16, 4:8, 11, 13, 14)]
@@ -3878,14 +3910,14 @@ s     } else {
   xxpnameexposure <- reactive({
     xxphh2 <- xpnameexposure()
     colnames(xxphh2) <- c(
-      i18n$t("Year"), i18n$t("Scenario"), "Province", i18n$t("PM2.5"), i18n$t("Summer O3"), "O3", "NO2", "SO2",
-      i18n$t("Benzene"), i18n$t("Acetaldehyde"), i18n$t("Formaldehyde")
+      get_session_t("Year"), get_session_t("Scenario"), "Province", get_session_t("PM2.5"), get_session_t("Summer O3"), "O3", "NO2", "SO2",
+      get_session_t("Benzene"), get_session_t("Acetaldehyde"), get_session_t("Formaldehyde")
     )
     xxphh2
   })
 
   x1Canprowexposure1 <- reactive({
-    merge_data(Canprowexposure1(), xprov, by.x = "region", by.y = "Province")
+    merge_data(Canprowexposure1(), get_session_xprov(), by.x = "region", by.y = "Province")
   })
   x2Canprowexposure1 <- reactive({
     x1Canprowexposure1()[, c(2, 3, 16, 4:14)]
@@ -3894,14 +3926,14 @@ s     } else {
   x3Canprowexposure1 <- reactive({
     x3expo <- x2Canprowexposure1()
     colnames(x3expo) <- c(
-      i18n$t("Year"), i18n$t("Scenario"), i18n$t("Region"), i18n$t("PM2.5"), i18n$t("Summer O3"), "O3", "NO2", "SO2", "CO 1h",
-      "CO 24h", i18n$t("Benzene"), i18n$t("1,3-Butadiene"), i18n$t("Acetaldehyde"), i18n$t("Formaldehyde")
+      get_session_t("Year"), get_session_t("Scenario"), get_session_t("Region"), get_session_t("PM2.5"), get_session_t("Summer O3"), "O3", "NO2", "SO2", "CO 1h",
+      "CO 24h", get_session_t("Benzene"), get_session_t("1,3-Butadiene"), get_session_t("Acetaldehyde"), get_session_t("Formaldehyde")
     )
     x3expo
   })
 
   x4Canprowexposure1 <- reactive({
-    if (currentlanguage == "en") {
+    if (get_session_lang() == "en") {
       x3Canprowexposure1()[with(x3Canprowexposure1(), order(Year, Scenario, Region)), ]
     } else {
       x3Canprowexposure1()[with(x3Canprowexposure1(), order(Année, Scénario, Région)), ]
@@ -3911,7 +3943,7 @@ s     } else {
 
   output$d5 <- downloadHandler(
     filename = function() {
-      i18n$t("Weighted_exposure.xlsx")
+      get_session_t("Weighted_exposure.xlsx")
     },
     content = function(file) {
       write_xlsx(x4Canprowexposure1(), path = file)
@@ -3922,19 +3954,19 @@ s     } else {
   # PM2.5 chronic exposure mortality
   set.seed(100)
   bm <- reactive({
-    rnorm(input$itn, beta(input$rtype, input$crf, input$incr), se(input$rtype, input$u95, input$l95, input$incr))
+    rnorm(input$itn, beta(input$rtype, input$crf, input$incr, get_session_t("log-linear")), se(input$rtype, input$u95, input$l95, input$incr, get_session_t("log-linear")))
   }) # n=10,000
 
   set.seed(100)
   vm <- reactive({
-    valdist(input$vslfm, input$itn, input$vsl, input$lvsl, input$uvsl, input$pcvsl, input$plvsl)
+    valdist(input$vslfm, input$itn, input$vsl, input$lvsl, input$uvsl, input$pcvsl, input$plvsl, get_session_t("normal"), get_session_t("discrete"), get_session_t("triangular"))
   })
   cpiy <- reactive({
-    cpi[which(cpi_year() == input$curr), ]
+    get_session_cpi()[which(cpi_year() == input$curr), ]
   }) # define currency year-CPI
 
   cpiy1 <- reactive({
-    cpi[which(cpi_year() == input$vslyr), ]
+    get_session_cpi()[which(cpi_year() == input$vslyr), ]
   }) # source year-CPI
 
   cpiadj <- reactive({
@@ -3948,13 +3980,13 @@ s     } else {
   })
 
   five <- reactive({
-    (four_age25plus() / 1000000) * four_Mort_chronic() * af(four()$rtype, beta(four()$rtype, input$crf, input$incr), chg(four()$pm25_2, four()$pm25_1, input$pmthr))
+    (four_age25plus() / 1000000) * four_Mort_chronic() * af(four()$rtype, beta(four()$rtype, input$crf, input$incr, get_session_t("log-linear")), chg(four()$pm25_2, four()$pm25_1, input$pmthr), get_session_t("log-linear"))
   })
   six <- reactive({
-    (four_age25plus() / 1000000) * four_Mort_chronic() * af(four()$rtype, quantile(bm(), 0.025), chg(four()$pm25_2, four()$pm25_1, input$pmthr))
+    (four_age25plus() / 1000000) * four_Mort_chronic() * af(four()$rtype, quantile(bm(), 0.025), chg(four()$pm25_2, four()$pm25_1, input$pmthr), get_session_t("log-linear"))
   })
   seven <- reactive({
-    (four_age25plus() / 1000000) * four_Mort_chronic() * af(four()$rtype, quantile(bm(), 0.975), chg(four()$pm25_2, four()$pm25_1, input$pmthr))
+    (four_age25plus() / 1000000) * four_Mort_chronic() * af(four()$rtype, quantile(bm(), 0.975), chg(four()$pm25_2, four()$pm25_1, input$pmthr), get_session_t("log-linear"))
   })
 
 
@@ -3991,13 +4023,13 @@ s     } else {
     100000 * five() / foura_allages()
   })
   pctxsmort <- reactive({
-    af(four()$rtype, beta(four()$rtype, input$crf, input$incr), chg(four()$pm25_2, four()$pm25_1, input$pmthr))
+    af(four()$rtype, beta(four()$rtype, input$crf, input$incr, get_session_t("log-linear")), chg(four()$pm25_2, four()$pm25_1, input$pmthr), get_session_t("log-linear"))
   }) # pctXS is a function of CRF*concentration change
   pctxsmortl95 <- reactive({
-    af(four()$rtype, quantile(bm(), 0.025), chg(four()$pm25_2, four()$pm25_1, input$pmthr))
+    af(four()$rtype, quantile(bm(), 0.025), chg(four()$pm25_2, four()$pm25_1, input$pmthr), get_session_t("log-linear"))
   })
   pctxsmortu95 <- reactive({
-    af(four()$rtype, quantile(bm(), 0.975), chg(four()$pm25_2, four()$pm25_1, input$pmthr))
+    af(four()$rtype, quantile(bm(), 0.975), chg(four()$pm25_2, four()$pm25_1, input$pmthr), get_session_t("log-linear"))
   })
 
   leyr <- reactive({
@@ -4086,9 +4118,9 @@ s     } else {
 
   eleven_mortschif <- reactive({
     cbind(
-      foura_year(), foura_scenario(), foura()[c(1, 2)], i18n$t("CD"), i18n$t("PM2.5"), i18n$t("Chronic Exposure Mortality"),
+      foura_year(), foura_scenario(), foura()[c(1, 2)], get_session_t("CD"), get_session_t("PM2.5"), get_session_t("Chronic Exposure Mortality"),
       fiveschif(), sixschif(), sevenschif(), eightschif(), nineschif(), tenschif(), tenaschif(), pctxsschif(), pctxsschifl95(),
-      pctxsschifu95(), leyrschif(), leyrschifl95(), leyrschifu95(), i18n$t("mortality"), four_age25plus()
+      pctxsschifu95(), leyrschif(), leyrschifl95(), leyrschifu95(), get_session_t("mortality"), four_age25plus()
     )
   })
 
@@ -4097,7 +4129,7 @@ s     } else {
   cdmortschif0 <- reactive({
     s1 <- eleven_mortschif()
     colnames(s1) <- c(
-      i18n$t("year"), i18n$t("scenario"), "geocode", "region", "geotype", i18n$t("pollutant"), i18n$t("endpoint"), "counts",
+      get_session_t("year"), get_session_t("scenario"), "geocode", "region", "geotype", get_session_t("pollutant"), get_session_t("endpoint"), "counts",
       "L95CI_counts", "U95CI_counts", "valuation", "L95CI_val", "U95CI_val", "counts_per_100K",
       "proportional_change", "L95CI_p", "U95CI_p", "life_year", "L95CI_le", "U95CI_le", "mort", "pop"
     )
@@ -4105,7 +4137,7 @@ s     } else {
   })
 
   cdmortschif1 <- reactive({
-    if (currentlanguage == "en") {
+    if (get_session_lang() == "en") {
       cdmortschif0()[with(cdmortschif0(), order(year, scenario, region, pollutant)), ]
     } else {
       cdmortschif0()[with(cdmortschif0(), order(année, scénario, region, polluant)), ]
@@ -4116,7 +4148,7 @@ s     } else {
   # aggregate non-linear SCHIF at nationally
 
   Canaggschif1 <- reactive({
-    if (currentlanguage == "en") {
+    if (get_session_lang() == "en") {
       aggregate(cbind(
         counts, L95CI_counts, U95CI_counts, valuation, L95CI_val, U95CI_val, chg7(counts, proportional_change),
         chg7(L95CI_counts, L95CI_p), chg7(U95CI_counts, U95CI_p), pop
@@ -4147,7 +4179,7 @@ s     } else {
   Canaggschif6 <- reactive({
     s2 <- Canaggschif5()
     colnames(s2) <- c(
-      i18n$t("year"), i18n$t("scenario"), "region", i18n$t("pollutant"), i18n$t("endpoint"), "counts",
+      get_session_t("year"), get_session_t("scenario"), "region", get_session_t("pollutant"), get_session_t("endpoint"), "counts",
       "L95CI_counts", "U95CI_counts", "valuation", "L95CI_val", "U95CI_val", "counts_per_100K",
       "proportional_change", "L95CI_p", "U95CI_p"
     )
@@ -4155,7 +4187,7 @@ s     } else {
   })
 
   Canaggschifle1 <- reactive({
-    if (currentlanguage == "en") {
+    if (get_session_lang() == "en") {
       aggregate(cbind(life_year * pop, L95CI_le * pop, U95CI_le * pop, pop) ~ year + scenario + pollutant + endpoint, cdmortschif1(), sum, na.action = NULL)
     } else {
       aggregate(cbind(life_year * pop, L95CI_le * pop, U95CI_le * pop, pop) ~ année + scénario + polluant + paramètre, cdmortschif1(), sum, na.action = NULL)
@@ -4163,7 +4195,7 @@ s     } else {
   })
 
   Canaggschifle2 <- reactive({
-    if (currentlanguage == "en") {
+    if (get_session_lang() == "en") {
       cbind.data.frame(
         Canaggschifle1()$year, Canaggschifle1()$scenario, "Canada", Canaggschifle1()$pollutant, Canaggschifle1()$endpoint,
         as.data.frame(chg7(Canaggschifle1()$V1, Canaggschifle1()$pop)), as.data.frame(chg7(Canaggschifle1()$V2, Canaggschifle1()$pop)), as.data.frame(chg7(Canaggschifle1()$V3, Canaggschifle1()$pop))
@@ -4184,14 +4216,14 @@ s     } else {
   Canaggschifle4 <- reactive({
     s3 <- Canaggschifle3()
     colnames(s3) <- c(
-      i18n$t("year"), i18n$t("scenario"), "region", i18n$t("pollutant"), i18n$t("endpoint"),
+      get_session_t("year"), get_session_t("scenario"), "region", get_session_t("pollutant"), get_session_t("endpoint"),
       "life_year", "L95CI_le", "U95CI_le"
     )
     s3
   })
 
   Canaggschifle5 <- reactive({
-    if (currentlanguage == "en") {
+    if (get_session_lang() == "en") {
       cbind(as.integer(Canaggschifle4()$year), as.integer(Canaggschifle4()$scenario), Canaggschifle4()[c(3:8)])
     } else {
       cbind(as.integer(Canaggschifle4()$année), as.integer(Canaggschifle4()$scénario), Canaggschifle4()[c(3:8)])
@@ -4201,20 +4233,20 @@ s     } else {
   Canaggschifle6 <- reactive({
     s4 <- Canaggschifle5()
     colnames(s4) <- c(
-      i18n$t("year"), i18n$t("scenario"), "region", i18n$t("pollutant"), i18n$t("endpoint"),
+      get_session_t("year"), get_session_t("scenario"), "region", get_session_t("pollutant"), get_session_t("endpoint"),
       "life_year", "L95CI_le", "U95CI_le"
     )
     s4
   })
 
   Canaggschiffinal1 <- reactive({
-    left_join(Canaggschif6(), Canaggschifle6(), by = c(i18n$t("year"), i18n$t("scenario"), "region", i18n$t("pollutant"), i18n$t("endpoint")))
+    left_join(Canaggschif6(), Canaggschifle6(), by = c(get_session_t("year"), get_session_t("scenario"), "region", get_session_t("pollutant"), get_session_t("endpoint")))
   })
 
 
   # aggregated SCHIF mortality by province
   paggschif1 <- reactive({
-    if (currentlanguage == "en") {
+    if (get_session_lang() == "en") {
       aggregate(cbind(
         counts, L95CI_counts, U95CI_counts, valuation, L95CI_val, U95CI_val, chg7(counts, proportional_change),
         chg7(L95CI_counts, L95CI_p), chg7(U95CI_counts, U95CI_p), pop
@@ -4238,7 +4270,7 @@ s     } else {
   paggschif4 <- reactive({
     ps1 <- paggschif3()
     colnames(ps1) <- c(
-      i18n$t("year"), i18n$t("scenario"), "region", i18n$t("pollutant"), i18n$t("endpoint"), "counts",
+      get_session_t("year"), get_session_t("scenario"), "region", get_session_t("pollutant"), get_session_t("endpoint"), "counts",
       "L95CI_counts", "U95CI_counts", "valuation", "L95CI_val", "U95CI_val",
       "counts_per_100K", "proportional_change", "L95CI_p", "U95CI_p"
     )
@@ -4246,7 +4278,7 @@ s     } else {
   })
 
   Proaggschifle1 <- reactive({
-    if (currentlanguage == "en") {
+    if (get_session_lang() == "en") {
       aggregate(cbind(life_year * pop, L95CI_le * pop, U95CI_le * pop, pop) ~ year + +scenario + region + pollutant + endpoint, cdmortschif1(), sum, na.action = NULL)
     } else {
       aggregate(cbind(life_year * pop, L95CI_le * pop, U95CI_le * pop, pop) ~ année + +scénario + region + polluant + paramètre, cdmortschif1(), sum, na.action = NULL)
@@ -4263,14 +4295,14 @@ s     } else {
   Proaggschifle3 <- reactive({
     ps2 <- Proaggschifle2()
     colnames(ps2) <- c(
-      i18n$t("year"), i18n$t("scenario"), "region", i18n$t("pollutant"), i18n$t("endpoint"),
+      get_session_t("year"), get_session_t("scenario"), "region", get_session_t("pollutant"), get_session_t("endpoint"),
       "life_year", "L95CI_le", "U95CI_le"
     )
     ps2
   })
 
   Proaggschiffinal1 <- reactive({
-    left_join(paggschif4(), Proaggschifle3(), by = c(i18n$t("year"), i18n$t("scenario"), "region", i18n$t("pollutant"), i18n$t("endpoint")))
+    left_join(paggschif4(), Proaggschifle3(), by = c(get_session_t("year"), get_session_t("scenario"), "region", get_session_t("pollutant"), get_session_t("endpoint")))
   })
 
 
@@ -4280,7 +4312,7 @@ s     } else {
   })
 
   CanProaggschiffinal2 <- reactive({
-    merge(CanProaggschiffinal1(), geocode, by.x = "region", by.y = "Name", all.x = TRUE)
+    merge(CanProaggschiffinal1(), get_session_geocode(), by.x = "region", by.y = "Name", all.x = TRUE)
   })
 
   CanProaggschiffinal3 <- reactive({
@@ -4288,7 +4320,7 @@ s     } else {
   })
 
   CanProaggschiffinal4 <- reactive({
-    if (currentlanguage == "en") {
+    if (get_session_lang() == "en") {
       CanProaggschiffinal3()[with(CanProaggschiffinal3(), order(CanProaggschiffinal3()$year, CanProaggschiffinal3()$scenario, CanProaggschiffinal3()$geocode)), ]
     } else {
       CanProaggschiffinal3()[with(CanProaggschiffinal3(), order(CanProaggschiffinal3()$année, CanProaggschiffinal3()$scénario, CanProaggschiffinal3()$geocode)), ]
@@ -4300,7 +4332,7 @@ s     } else {
   })
 
   cdmortschif3 <- reactive({
-    if (currentlanguage == "en") {
+    if (get_session_lang() == "en") {
       cdmortschif2()[with(cdmortschif2(), order(cdmortschif2()$year, cdmortschif2()$scenario, cdmortschif2()$geocode)), ]
     } else {
       cdmortschif2()[with(cdmortschif2(), order(cdmortschif2()$année, cdmortschif2()$scénario, cdmortschif2()$geocode)), ]
@@ -4315,7 +4347,7 @@ s     } else {
   allschiffinal3i <- reactive({
     fs1 <- allschiffinal1()
     colnames(fs1) <- c(
-      i18n$t("year"), i18n$t("scenario"), "geocode", "region", "geotype", i18n$t("pollutant"), i18n$t("endpoint"), "counts",
+      get_session_t("year"), get_session_t("scenario"), "geocode", "region", "geotype", get_session_t("pollutant"), get_session_t("endpoint"), "counts",
       "L95CI_counts", "U95CI_counts", "valuation", "L95CI_val", "U95CI_val", "counts_per_100K",
       "proportional_change", "L95CI_p", "U95CI_p", "life_expectancy_chg", "L95CI_le", "U95CI_le"
     )
@@ -4323,7 +4355,7 @@ s     } else {
   })
 
   allschiffinal3 <- reactive({
-    if (currentlanguage == "en") {
+    if (get_session_lang() == "en") {
       allschiffinal3i()[with(allschiffinal3i(), order(year, scenario, geocode, geotype, region, pollutant, endpoint)), ]
     } else {
       allschiffinal3i()[with(allschiffinal3i(), order(année, scénario, geocode, geotype, region, polluant, paramètre)), ]
@@ -4333,17 +4365,17 @@ s     } else {
   xallschiffinal3 <- reactive({
     xxhh5 <- allschiffinal3()
     colnames(xxhh5) <- c(
-      i18n$t("Year"), i18n$t("Scenario"), i18n$t("Geocode"), i18n$t("Region"), i18n$t("Type of Geography"), i18n$t("Pollutant"),
-      i18n$t("Endpoint"), i18n$t("Counts"), i18n$t("L95CI Counts"), i18n$t("U95CI Counts"), i18n$t("Valuation"),
-      i18n$t("L95CI Valuation"), i18n$t("U95CI Valuation"), i18n$t("Counts per 100,000"),
-      i18n$t("Proportional Change"), i18n$t("L95CI Proportional Change"), i18n$t("U95CI Proportional Change"),
-      i18n$t("Life Expectancy Change"), i18n$t("L95CI Life Expectancy Change"), i18n$t("U95CI Life Expectancy Change")
+      get_session_t("Year"), get_session_t("Scenario"), get_session_t("Geocode"), get_session_t("Region"), get_session_t("Type of Geography"), get_session_t("Pollutant"),
+      get_session_t("Endpoint"), get_session_t("Counts"), get_session_t("L95CI Counts"), get_session_t("U95CI Counts"), get_session_t("Valuation"),
+      get_session_t("L95CI Valuation"), get_session_t("U95CI Valuation"), get_session_t("Counts per 100,000"),
+      get_session_t("Proportional Change"), get_session_t("L95CI Proportional Change"), get_session_t("U95CI Proportional Change"),
+      get_session_t("Life Expectancy Change"), get_session_t("L95CI Life Expectancy Change"), get_session_t("U95CI Life Expectancy Change")
     )
     xxhh5
   })
 
   xxallschiffinal3 <- reactive({
-    if (currentlanguage == "en") {
+    if (get_session_lang() == "en") {
       cbind(xallschiffinal3()[c(1:7)], as.data.frame(sapply((xallschiffinal3()[c(8:14)]), format_numbers, simplify = FALSE)))
     } else {
       cbind(xallschiffinal3()[c(1:7)], as.data.frame(sapply((xallschiffinal3()[c(8:14)]), format_numbers2, simplify = FALSE)))
@@ -4361,7 +4393,7 @@ s     } else {
   })
 
   pnameschiff <- reactive({
-    merge_data(xxallschiffinal3(), xprov, by.x = i18n$t("Region"), by.y = "Province")
+    merge_data(xxallschiffinal3(), get_session_xprov(), by.x = get_session_t("Region"), by.y = "Province")
   })
   xpnameschiff <- reactive({
     cbind(pnameschiff()[c(2, 3)], as.integer(pnameschiff_Geocode()), pnameschiff()[c(16, 6:13)])
@@ -4370,15 +4402,15 @@ s     } else {
   xxpnameschiff <- reactive({
     xkphh2 <- xpnameschiff()
     colnames(xkphh2) <- c(
-      i18n$t("Year"), i18n$t("Scenario"), i18n$t("Geocode"), "Province", i18n$t("Pollutant"), i18n$t("Endpoint"),
-      i18n$t("Counts"), i18n$t("L95CI Counts"), i18n$t("U95CI Counts"), i18n$t("Valuation"), i18n$t("L95CI Valuation"),
-      i18n$t("U95CI Valuation")
+      get_session_t("Year"), get_session_t("Scenario"), get_session_t("Geocode"), "Province", get_session_t("Pollutant"), get_session_t("Endpoint"),
+      get_session_t("Counts"), get_session_t("L95CI Counts"), get_session_t("U95CI Counts"), get_session_t("Valuation"), get_session_t("L95CI Valuation"),
+      get_session_t("U95CI Valuation")
     )
     xkphh2
   })
 
   x1xallschiffinal3 <- reactive({
-    merge_data(xallschiffinal3(), xprov, by.x = i18n$t("Region"), by.y = "Province")
+    merge_data(xallschiffinal3(), get_session_xprov(), by.x = get_session_t("Region"), by.y = "Province")
   })
   x2xallschiffinal3 <- reactive({
     x1xallschiffinal3()[, c(2, 3, 4, 5, 22, 6:20)]
@@ -4387,17 +4419,17 @@ s     } else {
   x3xallschiffinal3 <- reactive({
     x3schif <- x2xallschiffinal3()
     colnames(x3schif) <- c(
-      i18n$t("Year"), i18n$t("Scenario"), i18n$t("Geocode"), i18n$t("Type of Geography"), i18n$t("Region"), i18n$t("Pollutant"),
-      i18n$t("Endpoint"), i18n$t("Counts"), i18n$t("L95CI Counts"), i18n$t("U95CI Counts"), i18n$t("Valuation"),
-      i18n$t("L95CI Valuation"), i18n$t("U95CI Valuation"), i18n$t("Counts per 100,000"), i18n$t("Proportional Change"),
-      i18n$t("L95CI Proportional Change"), i18n$t("U95CI Proportional Change"), i18n$t("Life Expectancy Change"),
-      i18n$t("L95CI Life Expectancy Change"), i18n$t("U95CI Life Expectancy Change")
+      get_session_t("Year"), get_session_t("Scenario"), get_session_t("Geocode"), get_session_t("Type of Geography"), get_session_t("Region"), get_session_t("Pollutant"),
+      get_session_t("Endpoint"), get_session_t("Counts"), get_session_t("L95CI Counts"), get_session_t("U95CI Counts"), get_session_t("Valuation"),
+      get_session_t("L95CI Valuation"), get_session_t("U95CI Valuation"), get_session_t("Counts per 100,000"), get_session_t("Proportional Change"),
+      get_session_t("L95CI Proportional Change"), get_session_t("U95CI Proportional Change"), get_session_t("Life Expectancy Change"),
+      get_session_t("L95CI Life Expectancy Change"), get_session_t("U95CI Life Expectancy Change")
     )
     x3schif
   })
 
   x4xallschiffinal3 <- reactive({
-    if (currentlanguage == "en") {
+    if (get_session_lang() == "en") {
       x3xallschiffinal3()[with(x3xallschiffinal3(), order(Year, Scenario, Geocode, Region)), ]
     } else {
       x3xallschiffinal3()[with(x3xallschiffinal3(), order(Année, Scénario, Géocode, Région)), ]
@@ -4406,7 +4438,7 @@ s     } else {
 
   output$d4 <- downloadHandler(
     filename = function() {
-      i18n$t("Mortality_SCHIF.xlsx")
+      get_session_t("Mortality_SCHIF.xlsx")
     },
     content = function(file) {
       write_xlsx(x4xallschiffinal3(), path = file)
@@ -4422,11 +4454,11 @@ s     } else {
 
   set.seed(100)
   vmcerebro <- reactive({
-    valdist(input$vslfm, input$itn, input$vsl, input$lvsl, input$uvsl, input$pcvsl, input$plvsl)
+    valdist(input$vslfm, input$itn, input$vsl, input$lvsl, input$uvsl, input$pcvsl, input$plvsl, get_session_t("normal"), get_session_t("discrete"), get_session_t("triangular"))
   })
 
   cpiy1cerebro <- reactive({
-    cpi[which(cpi_year() == input$vslyr), ]
+    get_session_cpi()[which(cpi_year() == input$vslyr), ]
   })
 
   cpiadjcerebro <- reactive({
@@ -4499,9 +4531,9 @@ s     } else {
 
   eleven_xmort1 <- reactive({
     cbind(
-      foura_year(), foura_scenario(), foura()[c(1, 2)], i18n$t("PM2.5"), i18n$t("Cerebrovascular"), fivecerebro(), sixcerebro(), sevencerebro(),
+      foura_year(), foura_scenario(), foura()[c(1, 2)], get_session_t("PM2.5"), get_session_t("Cerebrovascular"), fivecerebro(), sixcerebro(), sevencerebro(),
       eightcerebro(), ninecerebro(), tencerebro(), tenacerebro(), pctxsmortcerebro(), pctxsmortl95cerebro(), pctxsmortu95cerebro(),
-      leyrcerebro(), leyrl95cerebro(), leyru95cerebro(), i18n$t("mortality"), four_age25plus()
+      leyrcerebro(), leyrl95cerebro(), leyru95cerebro(), get_session_t("mortality"), four_age25plus()
     )
   })
 
@@ -4513,11 +4545,11 @@ s     } else {
 
   set.seed(100)
   vmcopd <- reactive({
-    valdist(input$vslfm, input$itn, input$vsl, input$lvsl, input$uvsl, input$pcvsl, input$plvsl)
+    valdist(input$vslfm, input$itn, input$vsl, input$lvsl, input$uvsl, input$pcvsl, input$plvsl, get_session_t("normal"), get_session_t("discrete"), get_session_t("triangular"))
   })
 
   cpiy1copd <- reactive({
-    cpi[which(cpi_year() == input$vslyr), ]
+    get_session_cpi()[which(cpi_year() == input$vslyr), ]
   })
 
   cpiadjcopd <- reactive({
@@ -4585,9 +4617,9 @@ s     } else {
 
   eleven_xmort2 <- reactive({
     cbind(
-      foura_year(), foura_scenario(), foura()[c(1, 2)], i18n$t("PM2.5"), i18n$t("COPD"), fivecopd(), sixcopd(), sevencopd(),
+      foura_year(), foura_scenario(), foura()[c(1, 2)], get_session_t("PM2.5"), get_session_t("COPD"), fivecopd(), sixcopd(), sevencopd(),
       eightcopd(), ninecopd(), tencopd(), tenacopd(), pctxsmortcopd(), pctxsmortl95copd(), pctxsmortu95copd(),
-      leyrcopd(), leyrl95copd(), leyru95copd(), i18n$t("mortality"), four_age25plus()
+      leyrcopd(), leyrl95copd(), leyru95copd(), get_session_t("mortality"), four_age25plus()
     )
   })
 
@@ -4599,11 +4631,11 @@ s     } else {
 
   set.seed(100)
   vmischemic <- reactive({
-    valdist(input$vslfm, input$itn, input$vsl, input$lvsl, input$uvsl, input$pcvsl, input$plvsl)
+    valdist(input$vslfm, input$itn, input$vsl, input$lvsl, input$uvsl, input$pcvsl, input$plvsl, get_session_t("normal"), get_session_t("discrete"), get_session_t("triangular"))
   })
 
   cpiy1ischemic <- reactive({
-    cpi[which(cpi_year() == input$vslyr), ]
+    get_session_cpi()[which(cpi_year() == input$vslyr), ]
   })
 
   cpiadjischemic <- reactive({
@@ -4671,25 +4703,25 @@ s     } else {
 
   eleven_xmort3 <- reactive({
     cbind(
-      foura_year(), foura_scenario(), foura()[c(1, 2)], i18n$t("PM2.5"), i18n$t("Ischemic Heart Disease"), fiveischemic(), sixischemic(), sevenischemic(),
+      foura_year(), foura_scenario(), foura()[c(1, 2)], get_session_t("PM2.5"), get_session_t("Ischemic Heart Disease"), fiveischemic(), sixischemic(), sevenischemic(),
       eightischemic(), nineischemic(), tenischemic(), tenaischemic(), pctxsmortischemic(), pctxsmortl95ischemic(), pctxsmortu95ischemic(),
-      leyrischemic(), leyrl95ischemic(), leyru95ischemic(), i18n$t("mortality"), four_age25plus()
+      leyrischemic(), leyrl95ischemic(), leyru95ischemic(), get_session_t("mortality"), four_age25plus()
     )
   })
 
   # PM2.5 Chronic Exposure Lung Cancer Mortality
   set.seed(100)
   bmlung <- reactive({
-    rnorm(input$itn, beta(input$rtypelung, input$crflung, input$incrlung), se(input$rtypelung, input$u95lung, input$l95lung, input$incrlung))
+    rnorm(input$itn, beta(input$rtypelung, input$crflung, input$incrlung, get_session_t("log-linear")), se(input$rtypelung, input$u95lung, input$l95lung, input$incrlung, get_session_t("log-linear")))
   }) # n=10,000
 
   set.seed(100)
   vmlung <- reactive({
-    valdist(input$vslfm, input$itn, input$vsl, input$lvsl, input$uvsl, input$pcvsl, input$plvsl)
+    valdist(input$vslfm, input$itn, input$vsl, input$lvsl, input$uvsl, input$pcvsl, input$plvsl, get_session_t("normal"), get_session_t("discrete"), get_session_t("triangular"))
   })
 
   cpiy1lung <- reactive({
-    cpi[which(cpi_year() == input$vslyr), ]
+    get_session_cpi()[which(cpi_year() == input$vslyr), ]
   })
 
   cpiadjlung <- reactive({
@@ -4697,7 +4729,7 @@ s     } else {
   })
 
   Mortlung <- reactive({
-    if (currentlanguage == "en") {
+    if (get_session_lang() == "en") {
       (four()$Mort_lung)
     } else {
       (four()$Mort_poumon)
@@ -4751,13 +4783,13 @@ s     } else {
     100000 * fivelung() / foura_age25plus()
   })
   pctxsmortlung <- reactive({
-    af(fourlung()$rtypelung, beta(fourlung()$rtypelung, input$crflung, input$incrlung), chg(four()$pm25_2, four()$pm25_1, input$pmthr))
+    af(fourlung()$rtypelung, beta(fourlung()$rtypelung, input$crflung, input$incrlung, get_session_t("log-linear")), chg(four()$pm25_2, four()$pm25_1, input$pmthr), get_session_t("log-linear"))
   })
   pctxsmortl95lung <- reactive({
-    af(fourlung()$rtypelung, quantile(bmlung(), 0.025), chg(four()$pm25_2, four()$pm25_1, input$pmthr))
+    af(fourlung()$rtypelung, quantile(bmlung(), 0.025), chg(four()$pm25_2, four()$pm25_1, input$pmthr), get_session_t("log-linear"))
   })
   pctxsmortu95lung <- reactive({
-    af(fourlung()$rtypelung, quantile(bmlung(), 0.975), chg(four()$pm25_2, four()$pm25_1, input$pmthr))
+    af(fourlung()$rtypelung, quantile(bmlung(), 0.975), chg(four()$pm25_2, four()$pm25_1, input$pmthr), get_session_t("log-linear"))
   })
 
   leyrlung <- reactive({
@@ -4772,9 +4804,9 @@ s     } else {
 
   eleven_xmort4 <- reactive({
     cbind(
-      foura_year(), foura_scenario(), foura()[c(1, 2)], i18n$t("PM2.5"), i18n$t("Lung Cancer"), fivelung(), sixlung(), sevenlung(),
+      foura_year(), foura_scenario(), foura()[c(1, 2)], get_session_t("PM2.5"), get_session_t("Lung Cancer"), fivelung(), sixlung(), sevenlung(),
       eightlung(), ninelung(), tenlung(), tenalung(), pctxsmortlung(), pctxsmortl95lung(), pctxsmortu95lung(),
-      leyrlung(), leyrl95lung(), leyru95lung(), i18n$t("mortality"), four_age25plus()
+      leyrlung(), leyrl95lung(), leyru95lung(), get_session_t("mortality"), four_age25plus()
     )
   })
 
@@ -4793,14 +4825,14 @@ s     } else {
     na_replace(allx4mort3()[c(1:21)], 0)
   })
   xmortreqvars <- reactive({
-    cbind(xmortreqvars0()[c(1, 2, 3)], i18n$t("CD"), xmortreqvars0()[c(4:21)])
+    cbind(xmortreqvars0()[c(1, 2, 3)], get_session_t("CD"), xmortreqvars0()[c(4:21)])
   })
 
 
   rxmort0 <- reactive({
     mm <- xmortreqvars()
     colnames(mm) <- c(
-      i18n$t("year"), i18n$t("scenario"), "geocode", "geotype", "region", i18n$t("pollutant"), i18n$t("endpoint"), "counts",
+      get_session_t("year"), get_session_t("scenario"), "geocode", "geotype", "region", get_session_t("pollutant"), get_session_t("endpoint"), "counts",
       "L95CI_counts", "U95CI_counts", "valuation", "L95CI_val", "U95CI_val", "counts_per_100K", "proportional_change", "L95CI_p",
       "U95CI_p", "life_year", "L95CI_le", "U95CI_le", "mort", "pop"
     )
@@ -4808,7 +4840,7 @@ s     } else {
   })
 
   rxmort1 <- reactive({
-    if (currentlanguage == "en") {
+    if (get_session_lang() == "en") {
       rxmort0()[with(rxmort0(), order(rxmort0()$year, rxmort0()$scenario, rxmort0()$geocode, rxmort0()$pollutant)), ]
     } else {
       rxmort0()[with(rxmort0(), order(rxmort0()$année, rxmort0()$scénario, rxmort0()$geocode, rxmort0()$polluant)), ]
@@ -4816,7 +4848,7 @@ s     } else {
   })
 
   Canaggxmort1 <- reactive({
-    if (currentlanguage == "en") {
+    if (get_session_lang() == "en") {
       aggregate(cbind(
         counts, L95CI_counts, U95CI_counts, valuation, L95CI_val, U95CI_val, chg7(counts, proportional_change),
         chg7(L95CI_counts, L95CI_p), chg7(U95CI_counts, U95CI_p), pop
@@ -4845,7 +4877,7 @@ s     } else {
   Canaggxmort6 <- reactive({
     k2 <- Canaggxmort5()
     colnames(k2) <- c(
-      i18n$t("year"), i18n$t("scenario"), "region", i18n$t("pollutant"), i18n$t("endpoint"), "counts",
+      get_session_t("year"), get_session_t("scenario"), "region", get_session_t("pollutant"), get_session_t("endpoint"), "counts",
       "L95CI_counts", "U95CI_counts", "valuation", "L95CI_val", "U95CI_val", "counts_per_100K",
       "proportional_change", "L95CI_p", "U95CI_p"
     )
@@ -4853,7 +4885,7 @@ s     } else {
   })
 
   Canaggxmortle1 <- reactive({
-    if (currentlanguage == "en") {
+    if (get_session_lang() == "en") {
       aggregate(cbind(life_year * pop, L95CI_le * pop, U95CI_le * pop, pop) ~ year + scenario + pollutant + endpoint, rxmort1(), sum, na.action = NULL)
     } else {
       aggregate(cbind(life_year * pop, L95CI_le * pop, U95CI_le * pop, pop) ~ année + scénario + polluant + paramètre, rxmort1(), sum, na.action = NULL)
@@ -4861,7 +4893,7 @@ s     } else {
   })
 
   Canaggxmortle2 <- reactive({
-    if (currentlanguage == "en") {
+    if (get_session_lang() == "en") {
       cbind.data.frame(
         Canaggxmortle1()$year, Canaggxmortle1()$scenario, "Canada", Canaggxmortle1()$pollutant, Canaggxmortle1()$endpoint,
         as.data.frame(chg7(Canaggxmortle1()$V1, Canaggxmortle1()$pop)), as.data.frame(chg7(Canaggxmortle1()$V2, Canaggxmortle1()$pop)), as.data.frame(chg7(Canaggxmortle1()$V3, Canaggxmortle1()$pop))
@@ -4877,7 +4909,7 @@ s     } else {
   Canaggxmortle3 <- reactive({
     le2 <- Canaggxmortle2()
     colnames(le2) <- c(
-      i18n$t("year"), i18n$t("scenario"), "region", i18n$t("pollutant"), i18n$t("endpoint"), "life_year",
+      get_session_t("year"), get_session_t("scenario"), "region", get_session_t("pollutant"), get_session_t("endpoint"), "life_year",
       "L95CI_le", "U95CI_le"
     )
     le2
@@ -4885,13 +4917,13 @@ s     } else {
 
 
   Canaggxmortfinal1 <- reactive({
-    left_join(Canaggxmort6(), Canaggxmortle3(), by = c(i18n$t("year"), i18n$t("scenario"), "region", i18n$t("pollutant"), i18n$t("endpoint")))
+    left_join(Canaggxmort6(), Canaggxmortle3(), by = c(get_session_t("year"), get_session_t("scenario"), "region", get_session_t("pollutant"), get_session_t("endpoint")))
   })
 
 
   # aggregated cause-specific mortality by province
   paggxmort1 <- reactive({
-    if (currentlanguage == "en") {
+    if (get_session_lang() == "en") {
       aggregate(cbind(
         counts, L95CI_counts, U95CI_counts, valuation, L95CI_val, U95CI_val, chg7(counts, proportional_change),
         chg7(L95CI_counts, L95CI_p), chg7(U95CI_counts, U95CI_p), pop
@@ -4916,7 +4948,7 @@ s     } else {
   paggxmort4 <- reactive({
     ac2 <- paggxmort3()
     colnames(ac2) <- c(
-      i18n$t("year"), i18n$t("scenario"), "region", i18n$t("pollutant"), i18n$t("endpoint"), "counts",
+      get_session_t("year"), get_session_t("scenario"), "region", get_session_t("pollutant"), get_session_t("endpoint"), "counts",
       "L95CI_counts", "U95CI_counts", "valuation", "L95CI_val", "U95CI_val", "counts_per_100K",
       "proportional_change", "L95CI_p", "U95CI_p"
     )
@@ -4926,7 +4958,7 @@ s     } else {
 
   # Proaggxmortle1<- reactive({subset(twelveb(),twelveb_endpoint()=='Mortality'|twelveb_endpoint()=='Chronic Exposure Respiratory Mortality', select=c(1:5,16:20)) })
   Proaggxmortle1 <- reactive({
-    if (currentlanguage == "en") {
+    if (get_session_lang() == "en") {
       aggregate(cbind(life_year * pop, L95CI_le * pop, U95CI_le * pop, pop) ~ year + scenario + region + pollutant + endpoint, rxmort1(), sum, na.action = NULL)
     } else {
       aggregate(cbind(life_year * pop, L95CI_le * pop, U95CI_le * pop, pop) ~ année + scénario + region + polluant + paramètre, rxmort1(), sum, na.action = NULL)
@@ -4939,7 +4971,7 @@ s     } else {
   Proaggxmortle3 <- reactive({
     le3 <- Proaggxmortle2()
     colnames(le3) <- c(
-      i18n$t("year"), i18n$t("scenario"), "region", i18n$t("pollutant"), i18n$t("endpoint"), "life_year",
+      get_session_t("year"), get_session_t("scenario"), "region", get_session_t("pollutant"), get_session_t("endpoint"), "life_year",
       "L95CI_le", "U95CI_le"
     )
     le3
@@ -4947,7 +4979,7 @@ s     } else {
 
 
   Proaggxmortfinal1 <- reactive({
-    left_join(paggxmort4(), Proaggxmortle3(), by = c(i18n$t("year"), i18n$t("scenario"), "region", i18n$t("pollutant"), i18n$t("endpoint")))
+    left_join(paggxmort4(), Proaggxmortle3(), by = c(get_session_t("year"), get_session_t("scenario"), "region", get_session_t("pollutant"), get_session_t("endpoint")))
   })
 
   CanProaggxmortfinal1 <- reactive({
@@ -4955,7 +4987,7 @@ s     } else {
   })
 
   CanProaggxmortfinal2 <- reactive({
-    merge(CanProaggxmortfinal1(), geocode, by.x = "region", by.y = "Name", all.x = TRUE)
+    merge(CanProaggxmortfinal1(), get_session_geocode(), by.x = "region", by.y = "Name", all.x = TRUE)
   })
 
   CanProaggxmortfinal3 <- reactive({
@@ -4963,7 +4995,7 @@ s     } else {
   })
 
   CanProaggxmortfinal4 <- reactive({
-    if (currentlanguage == "en") {
+    if (get_session_lang() == "en") {
       CanProaggxmortfinal3()[with(CanProaggxmortfinal3(), order(
         CanProaggxmortfinal3()$year, CanProaggxmortfinal3()$scenario,
         CanProaggxmortfinal3()$geocode, CanProaggxmortfinal3()$pollutant
@@ -4981,7 +5013,7 @@ s     } else {
   })
 
   cdxmortfinal1 <- reactive({
-    if (currentlanguage == "en") {
+    if (get_session_lang() == "en") {
       cdxmortfinal0()[with(cdxmortfinal0(), order(cdxmortfinal0()$year, cdxmortfinal0()$scenario, cdxmortfinal0()$geocode, cdxmortfinal0()$pollutant)), ]
     } else {
       cdxmortfinal0()[with(cdxmortfinal0(), order(cdxmortfinal0()$année, cdxmortfinal0()$scénario, cdxmortfinal0()$geocode, cdxmortfinal0()$polluant)), ]
@@ -4997,7 +5029,7 @@ s     } else {
   allxmortfinal3i <- reactive({
     hh5 <- allxmortfinal1()
     colnames(hh5) <- c(
-      i18n$t("year"), i18n$t("scenario"), "geocode", "geotype", "region", i18n$t("pollutant"), i18n$t("endpoint"), "counts",
+      get_session_t("year"), get_session_t("scenario"), "geocode", "geotype", "region", get_session_t("pollutant"), get_session_t("endpoint"), "counts",
       "L95CI_counts", "U95CI_counts", "valuation", "L95CI_val", "U95CI_val", "counts_per_100K", "proportional_change", "L95CI_p",
       "U95CI_p", "life_expectancy_chg", "L95CI_le", "U95CI_le"
     )
@@ -5005,7 +5037,7 @@ s     } else {
   })
 
   allxmortfinal3 <- reactive({
-    if (currentlanguage == "en") {
+    if (get_session_lang() == "en") {
       allxmortfinal3i()[with(allxmortfinal3i(), order(year, scenario, geocode, geotype, region, pollutant, endpoint)), ]
     } else {
       allxmortfinal3i()[with(allxmortfinal3i(), order(année, scénario, geocode, geotype, region, polluant, paramètre)), ]
@@ -5023,7 +5055,7 @@ s     } else {
   })
 
   xxallxmortfinal3 <- reactive({
-    if (currentlanguage == "en") {
+    if (get_session_lang() == "en") {
       cbind(xallxmortfinal3()[c(1:7)], as.data.frame(sapply((xallxmortfinal3()[c(8:13)]), format_numbers, simplify = FALSE)))
     } else {
       cbind(xallxmortfinal3()[c(1:7)], as.data.frame(sapply((xallxmortfinal3()[c(8:13)]), format_numbers2, simplify = FALSE)))
@@ -5031,7 +5063,7 @@ s     } else {
   })
 
   pnamemortfinal <- reactive({
-    merge_data(xxallxmortfinal3(), xprov, by.x = i18n$t("Region"), by.y = "Province")
+    merge_data(xxallxmortfinal3(), get_session_xprov(), by.x = get_session_t("Region"), by.y = "Province")
   })
   xpnamemortfinal <- reactive({
     cbind(pnamemortfinal()[c(2, 3)], as.integer(pnamemortfinal_Geocode()), pnamemortfinal()[c(15, 6, 7, 8:13)])
@@ -5040,8 +5072,8 @@ s     } else {
   xxpnamemortfinal <- reactive({
     pphh2 <- xpnamemortfinal()
     colnames(pphh2) <- c(
-      i18n$t("Year"), i18n$t("Scenario"), i18n$t("Geocode"), "Province", i18n$t("Pollutant"), i18n$t("Endpoint"), i18n$t("Counts"),
-      i18n$t("L95CI Counts"), i18n$t("U95CI Counts"), i18n$t("Valuation"), i18n$t("L95CI Valuation"), i18n$t("U95CI Valuation")
+      get_session_t("Year"), get_session_t("Scenario"), get_session_t("Geocode"), "Province", get_session_t("Pollutant"), get_session_t("Endpoint"), get_session_t("Counts"),
+      get_session_t("L95CI Counts"), get_session_t("U95CI Counts"), get_session_t("Valuation"), get_session_t("L95CI Valuation"), get_session_t("U95CI Valuation")
     )
     pphh2
   })
@@ -5049,17 +5081,17 @@ s     } else {
   xallxmortfinal3 <- reactive({
     xhh5 <- allxmortfinal3()
     colnames(xhh5) <- c(
-      i18n$t("Year"), i18n$t("Scenario"), i18n$t("Geocode"), i18n$t("Type of Geography"), i18n$t("Region"), i18n$t("Pollutant"),
-      i18n$t("Endpoint"), i18n$t("Counts"), i18n$t("L95CI Counts"), i18n$t("U95CI Counts"), i18n$t("Valuation"),
-      i18n$t("L95CI Valuation"), i18n$t("U95CI Valuation"), i18n$t("Counts per 100,000"), i18n$t("Proportional Change"),
-      i18n$t("L95CI Proportional Change"), i18n$t("U95CI Proportional Change"), i18n$t("Life Expectancy Change"),
-      i18n$t("L95CI Life Expectancy Change"), i18n$t("U95CI Life Expectancy Change")
+      get_session_t("Year"), get_session_t("Scenario"), get_session_t("Geocode"), get_session_t("Type of Geography"), get_session_t("Region"), get_session_t("Pollutant"),
+      get_session_t("Endpoint"), get_session_t("Counts"), get_session_t("L95CI Counts"), get_session_t("U95CI Counts"), get_session_t("Valuation"),
+      get_session_t("L95CI Valuation"), get_session_t("U95CI Valuation"), get_session_t("Counts per 100,000"), get_session_t("Proportional Change"),
+      get_session_t("L95CI Proportional Change"), get_session_t("U95CI Proportional Change"), get_session_t("Life Expectancy Change"),
+      get_session_t("L95CI Life Expectancy Change"), get_session_t("U95CI Life Expectancy Change")
     )
     xhh5
   })
 
   x1xallxmortfinal3 <- reactive({
-    merge_data(xallxmortfinal3(), xprov, by.x = i18n$t("Region"), by.y = "Province")
+    merge_data(xallxmortfinal3(), get_session_xprov(), by.x = get_session_t("Region"), by.y = "Province")
   })
   x2xallxmortfinal3 <- reactive({
     x1xallxmortfinal3()[, c(2, 3, 4, 5, 22, 6:20)]
@@ -5068,17 +5100,17 @@ s     } else {
   x3xallxmortfinal3 <- reactive({
     x3mort <- x2xallxmortfinal3()
     colnames(x3mort) <- c(
-      i18n$t("Year"), i18n$t("Scenario"), i18n$t("Geocode"), i18n$t("Type of Geography"), i18n$t("Region"), i18n$t("Pollutant"),
-      i18n$t("Endpoint"), i18n$t("Counts"), i18n$t("L95CI Counts"), i18n$t("U95CI Counts"), i18n$t("Valuation"),
-      i18n$t("L95CI Valuation"), i18n$t("U95CI Valuation"), i18n$t("Counts per 100,000"), i18n$t("Proportional Change"),
-      i18n$t("L95CI Proportional Change"), i18n$t("U95CI Proportional Change"), i18n$t("Life Expectancy Change"),
-      i18n$t("L95CI Life Expectancy Change"), i18n$t("U95CI Life Expectancy Change")
+      get_session_t("Year"), get_session_t("Scenario"), get_session_t("Geocode"), get_session_t("Type of Geography"), get_session_t("Region"), get_session_t("Pollutant"),
+      get_session_t("Endpoint"), get_session_t("Counts"), get_session_t("L95CI Counts"), get_session_t("U95CI Counts"), get_session_t("Valuation"),
+      get_session_t("L95CI Valuation"), get_session_t("U95CI Valuation"), get_session_t("Counts per 100,000"), get_session_t("Proportional Change"),
+      get_session_t("L95CI Proportional Change"), get_session_t("U95CI Proportional Change"), get_session_t("Life Expectancy Change"),
+      get_session_t("L95CI Life Expectancy Change"), get_session_t("U95CI Life Expectancy Change")
     )
     x3mort
   })
 
   x4xallxmortfinal3 <- reactive({
-    if (currentlanguage == "en") {
+    if (get_session_lang() == "en") {
       x3xallxmortfinal3()[with(x3xallxmortfinal3(), order(Year, Scenario, Geocode)), ]
     } else {
       x3xallxmortfinal3()[with(x3xallxmortfinal3(), order(Année, Scénario, Géocode)), ]
@@ -5088,7 +5120,7 @@ s     } else {
 
   output$d3 <- downloadHandler(
     filename = function() {
-      i18n$t("Mortality_Results.xlsx")
+      get_session_t("Mortality_Results.xlsx")
     },
     content = function(file) {
       write_xlsx(x4xallxmortfinal3(), path = file)
@@ -5098,16 +5130,16 @@ s     } else {
   # PM2.5 Adult Chronic Bronchitis Cases
   set.seed(100)
   bacbc <- reactive({
-    chg2(rnorm(input$itn, beta(input$pm25_rtype3, input$pm25_crf3, input$pm25_incr3), se(input$pm25_rtype3, input$pm25_u95_3, input$pm25_l95_3, input$pm25_incr3)))
+    chg2(rnorm(input$itn, beta(input$pm25_rtype3, input$pm25_crf3, input$pm25_incr3, get_session_t("log-linear")), se(input$pm25_rtype3, input$pm25_u95_3, input$pm25_l95_3, input$pm25_incr3, get_session_t("log-linear"))))
   }) # chg2 function not allowed distribution values below 0 to ensure lower 95%CI not below 0
 
 
   set.seed(100)
   vacbc <- reactive({
-    valdist(input$vsl3fm, input$itn, input$vsl3, input$lvsl3, input$uvsl3, input$pcvsl3, input$plvsl3)
+    valdist(input$vsl3fm, input$itn, input$vsl3, input$lvsl3, input$uvsl3, input$pcvsl3, input$plvsl3, get_session_t("normal"), get_session_t("discrete"), get_session_t("triangular"))
   })
   cpiy1acbc <- reactive({
-    cpi[which(cpi_year() == input$vsl3yr), ]
+    get_session_cpi()[which(cpi_year() == input$vsl3yr), ]
   })
   cpiadjacbc <- reactive({
     (cpiy()$cpi / cpiy1acbc()$cpi) / ((1 + 0.01 * input$discountrate)^(foura_year() - input$baseyr))
@@ -5119,13 +5151,13 @@ s     } else {
     cbind(foura(), rtypeacbc(), cpiadjacbc())
   })
   fiveacbc <- reactive({
-    (fouracbc_age25plus() / 1000000) * fouracbc_Adult_Chronic_Bronchitis_Cases() * af(fouracbc()$rtypeacbc, beta(input$pm25_rtype3, input$pm25_crf3, input$pm25_incr3), chg(fouracbc()$pm25_2, fouracbc()$pm25_1, input$pmthr))
+    (fouracbc_age25plus() / 1000000) * fouracbc_Adult_Chronic_Bronchitis_Cases() * af(fouracbc()$rtypeacbc, beta(input$pm25_rtype3, input$pm25_crf3, input$pm25_incr3, get_session_t("log-linear")), chg(fouracbc()$pm25_2, fouracbc()$pm25_1, input$pmthr), get_session_t("log-linear"))
   })
   sixacbc <- reactive({
-    (fouracbc_age25plus() / 1000000) * fouracbc_Adult_Chronic_Bronchitis_Cases() * af(fouracbc()$rtypeacbc, quantile(bacbc(), 0.025), chg(fouracbc()$pm25_2, fouracbc()$pm25_1, input$pmthr))
+    (fouracbc_age25plus() / 1000000) * fouracbc_Adult_Chronic_Bronchitis_Cases() * af(fouracbc()$rtypeacbc, quantile(bacbc(), 0.025), chg(fouracbc()$pm25_2, fouracbc()$pm25_1, input$pmthr), get_session_t("log-linear"))
   })
   sevenacbc <- reactive({
-    (fouracbc_age25plus() / 1000000) * fouracbc_Adult_Chronic_Bronchitis_Cases() * af(fouracbc()$rtypeacbc, quantile(bacbc(), 0.975), chg(fouracbc()$pm25_2, fouracbc()$pm25_1, input$pmthr))
+    (fouracbc_age25plus() / 1000000) * fouracbc_Adult_Chronic_Bronchitis_Cases() * af(fouracbc()$rtypeacbc, quantile(bacbc(), 0.975), chg(fouracbc()$pm25_2, fouracbc()$pm25_1, input$pmthr), get_session_t("log-linear"))
   })
   eightacbc <- reactive({
     fiveacbc() * mean(vacbc()) * fouracbc()$cpiadjacbc * 1000
@@ -5162,13 +5194,13 @@ s     } else {
     100000 * fiveacbc() / foura_age25plus()
   })
   pctxsacbc <- reactive({
-    af(fouracbc()$rtypeacbc, beta(input$pm25_rtype3, input$pm25_crf3, input$pm25_incr3), chg(fouracbc()$pm25_2, fouracbc()$pm25_1, input$pmthr))
+    af(fouracbc()$rtypeacbc, beta(input$pm25_rtype3, input$pm25_crf3, input$pm25_incr3, get_session_t("log-linear")), chg(fouracbc()$pm25_2, fouracbc()$pm25_1, input$pmthr), get_session_t("log-linear"))
   })
   pctxsacbcl95 <- reactive({
-    af(fouracbc()$rtypeacbc, quantile(bacbc(), 0.025), chg(fouracbc()$pm25_2, fouracbc()$pm25_1, input$pmthr))
+    af(fouracbc()$rtypeacbc, quantile(bacbc(), 0.025), chg(fouracbc()$pm25_2, fouracbc()$pm25_1, input$pmthr), get_session_t("log-linear"))
   })
   pctxsacbcu95 <- reactive({
-    af(fouracbc()$rtypeacbc, quantile(bacbc(), 0.975), chg(fouracbc()$pm25_2, fouracbc()$pm25_1, input$pmthr))
+    af(fouracbc()$rtypeacbc, quantile(bacbc(), 0.975), chg(fouracbc()$pm25_2, fouracbc()$pm25_1, input$pmthr), get_session_t("log-linear"))
   })
 
 
@@ -5280,15 +5312,15 @@ s     } else {
   # PM2.5 Cardiac Emergency Room Visits
   set.seed(100)
   bcerv <- reactive({
-    chg2(rnorm(input$itn, beta(input$pm25_rtype5, input$pm25_crf5, input$pm25_incr5), se(input$pm25_rtype5, input$pm25_u95_5, input$pm25_l95_5, input$pm25_incr5)))
+    chg2(rnorm(input$itn, beta(input$pm25_rtype5, input$pm25_crf5, input$pm25_incr5, get_session_t("log-linear")), se(input$pm25_rtype5, input$pm25_u95_5, input$pm25_l95_5, input$pm25_incr5, get_session_t("log-linear"))))
   })
 
   set.seed(100)
   vcerv <- reactive({
-    chg2(valdist(input$sourcevsl5c, input$itn, input$vsl5, input$lvsl5, input$uvsl5, input$pcvsl5, input$plvsl5))
+    chg2(valdist(input$sourcevsl5c, input$itn, input$vsl5, input$lvsl5, input$uvsl5, input$pcvsl5, input$plvsl5, get_session_t("normal"), get_session_t("discrete"), get_session_t("triangular")))
   })
   cpiy1cerv <- reactive({
-    cpi[which(cpi_year() == input$sourcevsl5b), ]
+    get_session_cpi()[which(cpi_year() == input$sourcevsl5b), ]
   })
 
   cpiadjcerv <- reactive({
@@ -5304,7 +5336,7 @@ s     } else {
 
   # for threshold>0 and linear crf
   xpctxscard1a <- reactive({
-    outer(pmthrchg(), beta(input$pm25_rtype5, input$pm25_crf5, input$pm25_incr5), afb)
+    outer(pmthrchg(), beta(input$pm25_rtype5, input$pm25_crf5, input$pm25_incr5, get_session_t("log-linear")), afb)
   })
   xpctxscard2a <- reactive({
     thr2(xpctxscard1a(), wtnum)
@@ -5335,7 +5367,7 @@ s     } else {
 
   # for threshold>0 and log-linear crf
   xpctxscard1d <- reactive({
-    outer(pmthrchg(), beta(input$pm25_rtype5, input$pm25_crf5, input$pm25_incr5), afa)
+    outer(pmthrchg(), beta(input$pm25_rtype5, input$pm25_crf5, input$pm25_incr5, get_session_t("log-linear")), afa)
   })
   xpctxscard2d <- reactive({
     thr2(xpctxscard1d(), wtnum)
@@ -5365,19 +5397,19 @@ s     } else {
   })
 
   pctxscard <- reactive({
-    if (input$pmthr == 0 & input$pm25_rtype5 == i18n$t("linear")) {
-      xpctxscard1 <- outer(pmregchg(), beta(input$pm25_rtype5, input$pm25_crf5, input$pm25_incr5), afb)
+    if (input$pmthr == 0 & input$pm25_rtype5 == get_session_t("linear")) {
+      xpctxscard1 <- outer(pmregchg(), beta(input$pm25_rtype5, input$pm25_crf5, input$pm25_incr5, get_session_t("log-linear")), afb)
       xpctxscard2 <- outer(pmregchg(), quantile(bcerv(), 0.025), afb)
       xpctxscard3 <- outer(pmregchg(), quantile(bcerv(), 0.975), afb)
-    } else if (input$pmthr == 0 & input$pm25_rtype5 == i18n$t("log-linear")) {
-      xpctxscard1 <- outer(pmregchg(), beta(input$pm25_rtype5, input$pm25_crf5, input$pm25_incr5), afa)
+    } else if (input$pmthr == 0 & input$pm25_rtype5 == get_session_t("log-linear")) {
+      xpctxscard1 <- outer(pmregchg(), beta(input$pm25_rtype5, input$pm25_crf5, input$pm25_incr5, get_session_t("log-linear")), afa)
       xpctxscard2 <- outer(pmregchg(), quantile(bcerv(), 0.025), afa)
       xpctxscard3 <- outer(pmregchg(), quantile(bcerv(), 0.975), afa)
-    } else if (input$pmthr > 0 & input$pm25_rtype5 == i18n$t("linear")) {
+    } else if (input$pmthr > 0 & input$pm25_rtype5 == get_session_t("linear")) {
       xpctxscard1 <- ypctxscard1()
       xpctxscard2 <- ypctxscard2()
       xpctxscard3 <- ypctxscard3()
-    } else if (input$pmthr > 0 & input$pm25_rtype5 == i18n$t("log-linear")) {
+    } else if (input$pmthr > 0 & input$pm25_rtype5 == get_session_t("log-linear")) {
       xpctxscard1 <- zpctxscard1()
       xpctxscard2 <- zpctxscard2()
       xpctxscard3 <- zpctxscard3()
@@ -5443,7 +5475,7 @@ s     } else {
   # PM2.5 Cardiac Hospital Admissions
   set.seed(100)
   bcha <- reactive({
-    chg2(rnorm(input$itn, beta(input$pm25_rtype6, input$pm25_crf6, input$pm25_incr6), se(input$pm25_rtype6, input$pm25_u95_6, input$pm25_l95_6, input$pm25_incr6)))
+    chg2(rnorm(input$itn, beta(input$pm25_rtype6, input$pm25_crf6, input$pm25_incr6, get_session_t("log-linear")), se(input$pm25_rtype6, input$pm25_u95_6, input$pm25_l95_6, input$pm25_incr6, get_session_t("log-linear"))))
   })
   rtypecha <- reactive({
     input$pm25_rtype6
@@ -5454,7 +5486,7 @@ s     } else {
 
   # for threshold>0 and linear crf
   xpctxscha1a <- reactive({
-    outer(pmthrchg(), beta(input$pm25_rtype6, input$pm25_crf6, input$pm25_incr6), afb)
+    outer(pmthrchg(), beta(input$pm25_rtype6, input$pm25_crf6, input$pm25_incr6, get_session_t("log-linear")), afb)
   })
   xpctxscha2a <- reactive({
     thr2(xpctxscha1a(), wtnum)
@@ -5486,7 +5518,7 @@ s     } else {
 
   # for threshold>0 and log-linear crf
   xpctxscha1d <- reactive({
-    outer(pmthrchg(), beta(input$pm25_rtype6, input$pm25_crf6, input$pm25_incr6), afa)
+    outer(pmthrchg(), beta(input$pm25_rtype6, input$pm25_crf6, input$pm25_incr6, get_session_t("log-linear")), afa)
   })
   xpctxscha2d <- reactive({
     thr2(xpctxscha1d(), wtnum)
@@ -5516,19 +5548,19 @@ s     } else {
   })
 
   xxpctxscha <- reactive({
-    if (input$pmthr == 0 & input$pm25_rtype6 == i18n$t("linear")) {
-      xpctxscha1 <- outer(pmregchg(), beta(input$pm25_rtype6, input$pm25_crf6, input$pm25_incr6), afb)
+    if (input$pmthr == 0 & input$pm25_rtype6 == get_session_t("linear")) {
+      xpctxscha1 <- outer(pmregchg(), beta(input$pm25_rtype6, input$pm25_crf6, input$pm25_incr6, get_session_t("log-linear")), afb)
       xpctxscha2 <- outer(pmregchg(), quantile(bcha(), 0.025), afb)
       xpctxscha3 <- outer(pmregchg(), quantile(bcha(), 0.975), afb)
-    } else if (input$pmthr == 0 & input$pm25_rtype6 == i18n$t("log-linear")) {
-      xpctxscha1 <- outer(pmregchg(), beta(input$pm25_rtype6, input$pm25_crf6, input$pm25_incr6), afa)
+    } else if (input$pmthr == 0 & input$pm25_rtype6 == get_session_t("log-linear")) {
+      xpctxscha1 <- outer(pmregchg(), beta(input$pm25_rtype6, input$pm25_crf6, input$pm25_incr6, get_session_t("log-linear")), afa)
       xpctxscha2 <- outer(pmregchg(), quantile(bcha(), 0.025), afa)
       xpctxscha3 <- outer(pmregchg(), quantile(bcha(), 0.975), afa)
-    } else if (input$pmthr > 0 & input$pm25_rtype6 == i18n$t("linear")) {
+    } else if (input$pmthr > 0 & input$pm25_rtype6 == get_session_t("linear")) {
       xpctxscha1 <- ypctxscha1()
       xpctxscha2 <- ypctxscha2()
       xpctxscha3 <- ypctxscha3()
-    } else if (input$pmthr > 0 & input$pm25_rtype6 == i18n$t("log-linear")) {
+    } else if (input$pmthr > 0 & input$pm25_rtype6 == get_session_t("log-linear")) {
       xpctxscha1 <- zpctxscha1()
       xpctxscha2 <- zpctxscha2()
       xpctxscha3 <- zpctxscha3()
@@ -5562,16 +5594,16 @@ s     } else {
   # PM2.5  Asthma Symptom Days
   set.seed(100)
   basd <- reactive({
-    chg2(rnorm(input$itn, beta(input$pm25_rtype4, input$pm25_crf4, input$pm25_incr4), se(input$pm25_rtype4, input$pm25_u95_4, input$pm25_l95_4, input$pm25_incr4)))
+    chg2(rnorm(input$itn, beta(input$pm25_rtype4, input$pm25_crf4, input$pm25_incr4, get_session_t("log-linear")), se(input$pm25_rtype4, input$pm25_u95_4, input$pm25_l95_4, input$pm25_incr4, get_session_t("log-linear"))))
   })
 
   set.seed(100)
   vasd <- reactive({
-    valdist(input$sourcevsl4c, input$itn, as.double(input$vsl4), as.double(input$lvsl4), as.double(input$uvsl4), input$pcvsl4, input$plvsl4)
+    valdist(input$sourcevsl4c, input$itn, as.double(input$vsl4), as.double(input$lvsl4), as.double(input$uvsl4), input$pcvsl4, input$plvsl4, get_session_t("normal"), get_session_t("discrete"), get_session_t("triangular"))
   })
 
   cpiy1asd <- reactive({
-    cpi[which(cpi_year() == input$sourcevsl4b), ]
+    get_session_cpi()[which(cpi_year() == input$sourcevsl4b), ]
   })
 
   cpiadjasd <- reactive({
@@ -5587,7 +5619,7 @@ s     } else {
 
   # for threshold>0 and linear crf
   xpctxsasd1a <- reactive({
-    outer(pmthrchg(), beta(input$pm25_rtype4, input$pm25_crf4, input$pm25_incr4), afb)
+    outer(pmthrchg(), beta(input$pm25_rtype4, input$pm25_crf4, input$pm25_incr4, get_session_t("log-linear")), afb)
   })
   xpctxsasd2a <- reactive({
     thr2(xpctxsasd1a(), wtnum)
@@ -5619,7 +5651,7 @@ s     } else {
 
   # for threshold>0 and log-linear crf
   xpctxsasd1d <- reactive({
-    outer(pmthrchg(), beta(input$pm25_rtype4, input$pm25_crf4, input$pm25_incr4), afa)
+    outer(pmthrchg(), beta(input$pm25_rtype4, input$pm25_crf4, input$pm25_incr4, get_session_t("log-linear")), afa)
   })
   xpctxsasd2d <- reactive({
     thr2(xpctxsasd1d(), wtnum)
@@ -5649,19 +5681,19 @@ s     } else {
   })
 
   xxpctxsasd <- reactive({
-    if (input$pmthr == 0 & input$pm25_rtype4 == i18n$t("linear")) {
-      xpctxsasd1 <- outer(pmregchg(), beta(input$pm25_rtype4, input$pm25_crf4, input$pm25_incr4), afb)
+    if (input$pmthr == 0 & input$pm25_rtype4 == get_session_t("linear")) {
+      xpctxsasd1 <- outer(pmregchg(), beta(input$pm25_rtype4, input$pm25_crf4, input$pm25_incr4, get_session_t("log-linear")), afb)
       xpctxsasd2 <- outer(pmregchg(), quantile(basd(), 0.025), afb)
       xpctxsasd3 <- outer(pmregchg(), quantile(basd(), 0.975), afb)
-    } else if (input$pmthr == 0 & input$pm25_rtype4 == i18n$t("log-linear")) {
-      xpctxsasd1 <- outer(pmregchg(), beta(input$pm25_rtype4, input$pm25_crf4, input$pm25_incr4), afa)
+    } else if (input$pmthr == 0 & input$pm25_rtype4 == get_session_t("log-linear")) {
+      xpctxsasd1 <- outer(pmregchg(), beta(input$pm25_rtype4, input$pm25_crf4, input$pm25_incr4, get_session_t("log-linear")), afa)
       xpctxsasd2 <- outer(pmregchg(), quantile(basd(), 0.025), afa)
       xpctxsasd3 <- outer(pmregchg(), quantile(basd(), 0.975), afa)
-    } else if (input$pmthr > 0 & input$pm25_rtype4 == i18n$t("linear")) {
+    } else if (input$pmthr > 0 & input$pm25_rtype4 == get_session_t("linear")) {
       xpctxsasd1 <- ypctxsasd1()
       xpctxsasd2 <- ypctxsasd2()
       xpctxsasd3 <- ypctxsasd3()
-    } else if (input$pmthr > 0 & input$pm25_rtype4 == i18n$t("log-linear")) {
+    } else if (input$pmthr > 0 & input$pm25_rtype4 == get_session_t("log-linear")) {
       xpctxsasd1 <- zpctxsasd1()
       xpctxsasd2 <- zpctxsasd2()
       xpctxsasd3 <- zpctxsasd3()
@@ -5706,15 +5738,15 @@ s     } else {
   # PM2.5  Child Acute Bronchitis Episodes
   set.seed(100)
   bcabe <- reactive({
-    chg2(rnorm(input$itn, beta(input$pm25_rtype7, input$pm25_crf7, input$pm25_incr7), se(input$pm25_rtype7, input$pm25_u95_7, input$pm25_l95_7, input$pm25_incr7)))
+    chg2(rnorm(input$itn, beta(input$pm25_rtype7, input$pm25_crf7, input$pm25_incr7, get_session_t("log-linear")), se(input$pm25_rtype7, input$pm25_u95_7, input$pm25_l95_7, input$pm25_incr7, get_session_t("log-linear"))))
   })
   # vcabe<-reactive({sample(c(input$vsl6,input$lvsl6,input$uvsl6), size = input$itn, replace = TRUE, prob = c(input$pcvsl6,input$plvsl6,(1-input$pcvsl6-input$plvsl6)))})
   set.seed(100)
   vcabe <- reactive({
-    valdist(input$sourcevsl6c, input$itn, input$vsl6, input$lvsl6, input$uvsl6, input$pcvsl6, input$plvsl6)
+    valdist(input$sourcevsl6c, input$itn, input$vsl6, input$lvsl6, input$uvsl6, input$pcvsl6, input$plvsl6, get_session_t("normal"), get_session_t("discrete"), get_session_t("triangular"))
   })
   cpiy1cabe <- reactive({
-    cpi[which(cpi_year() == input$sourcevsl6b), ]
+    get_session_cpi()[which(cpi_year() == input$sourcevsl6b), ]
   })
 
   cpiadjcabe <- reactive({
@@ -5730,7 +5762,7 @@ s     } else {
 
   # for threshold>0 and linear crf
   xpctxscabe1a <- reactive({
-    outer(pmthrchg(), beta(input$pm25_rtype7, input$pm25_crf7, input$pm25_incr7), afb)
+    outer(pmthrchg(), beta(input$pm25_rtype7, input$pm25_crf7, input$pm25_incr7, get_session_t("log-linear")), afb)
   })
   xpctxscabe2a <- reactive({
     thr2(xpctxscabe1a(), wtnum)
@@ -5762,7 +5794,7 @@ s     } else {
 
   # for threshold>0 and log-linear crf
   xpctxscabe1d <- reactive({
-    outer(pmthrchg(), beta(input$pm25_rtype7, input$pm25_crf7, input$pm25_incr7), afa)
+    outer(pmthrchg(), beta(input$pm25_rtype7, input$pm25_crf7, input$pm25_incr7, get_session_t("log-linear")), afa)
   })
   xpctxscabe2d <- reactive({
     thr2(xpctxscabe1d(), wtnum)
@@ -5792,19 +5824,19 @@ s     } else {
   })
 
   xxpctxscabe <- reactive({
-    if (input$pmthr == 0 & input$pm25_rtype7 == i18n$t("linear")) {
-      xpctxscabe1 <- outer(pmregchg(), beta(input$pm25_rtype7, input$pm25_crf7, input$pm25_incr7), afb)
+    if (input$pmthr == 0 & input$pm25_rtype7 == get_session_t("linear")) {
+      xpctxscabe1 <- outer(pmregchg(), beta(input$pm25_rtype7, input$pm25_crf7, input$pm25_incr7, get_session_t("log-linear")), afb)
       xpctxscabe2 <- outer(pmregchg(), quantile(bcabe(), 0.025), afb)
       xpctxscabe3 <- outer(pmregchg(), quantile(bcabe(), 0.975), afb)
-    } else if (input$pmthr == 0 & input$pm25_rtype7 == i18n$t("log-linear")) {
-      xpctxscabe1 <- outer(pmregchg(), beta(input$pm25_rtype7, input$pm25_crf7, input$pm25_incr7), afa)
+    } else if (input$pmthr == 0 & input$pm25_rtype7 == get_session_t("log-linear")) {
+      xpctxscabe1 <- outer(pmregchg(), beta(input$pm25_rtype7, input$pm25_crf7, input$pm25_incr7, get_session_t("log-linear")), afa)
       xpctxscabe2 <- outer(pmregchg(), quantile(bcabe(), 0.025), afa)
       xpctxscabe3 <- outer(pmregchg(), quantile(bcabe(), 0.975), afa)
-    } else if (input$pmthr > 0 & input$pm25_rtype7 == i18n$t("linear")) {
+    } else if (input$pmthr > 0 & input$pm25_rtype7 == get_session_t("linear")) {
       xpctxscabe1 <- ypctxscabe1()
       xpctxscabe2 <- ypctxscabe2()
       xpctxscabe3 <- ypctxscabe3()
-    } else if (input$pmthr > 0 & input$pm25_rtype7 == i18n$t("log-linear")) {
+    } else if (input$pmthr > 0 & input$pm25_rtype7 == get_session_t("log-linear")) {
       xpctxscabe1 <- zpctxscabe1()
       xpctxscabe2 <- zpctxscabe2()
       xpctxscabe3 <- zpctxscabe3()
@@ -5871,15 +5903,15 @@ s     } else {
   # PM2.5  Respiratory Emergency Room Visits
   set.seed(100)
   brerv <- reactive({
-    chg2(rnorm(input$itn, beta(input$pm25_rtype8, input$pm25_crf8, input$pm25_incr8), se(input$pm25_rtype8, input$pm25_u95_8, input$pm25_l95_8, input$pm25_incr8)))
+    chg2(rnorm(input$itn, beta(input$pm25_rtype8, input$pm25_crf8, input$pm25_incr8, get_session_t("log-linear")), se(input$pm25_rtype8, input$pm25_u95_8, input$pm25_l95_8, input$pm25_incr8, get_session_t("log-linear"))))
   })
 
   set.seed(100)
   vrerv <- reactive({
-    chg2(valdist(input$sourcevsl8c, input$itn, input$vsl9, input$lvsl9, input$uvsl9, input$pcvsl9, input$plvsl9))
+    chg2(valdist(input$sourcevsl8c, input$itn, input$vsl9, input$lvsl9, input$uvsl9, input$pcvsl9, input$plvsl9, get_session_t("normal"), get_session_t("discrete"), get_session_t("triangular")))
   })
   cpiy1rerv <- reactive({
-    cpi[which(cpi_year() == input$sourcevsl9b), ]
+    get_session_cpi()[which(cpi_year() == input$sourcevsl9b), ]
   })
 
   cpiadjrerv <- reactive({
@@ -5896,7 +5928,7 @@ s     } else {
 
   # for threshold>0 and linear crf
   xpctexcess1a <- reactive({
-    outer(pmthrchg(), beta(input$pm25_rtype8, input$pm25_crf8, input$pm25_incr8), afb)
+    outer(pmthrchg(), beta(input$pm25_rtype8, input$pm25_crf8, input$pm25_incr8, get_session_t("log-linear")), afb)
   })
   xpctexcess2a <- reactive({
     thr2(xpctexcess1a(), wtnum)
@@ -5927,7 +5959,7 @@ s     } else {
 
   # for threshold>0 and log-linear crf
   xpctexcess1d <- reactive({
-    outer(pmthrchg(), beta(input$pm25_rtype8, input$pm25_crf8, input$pm25_incr8), afa)
+    outer(pmthrchg(), beta(input$pm25_rtype8, input$pm25_crf8, input$pm25_incr8, get_session_t("log-linear")), afa)
   })
   xpctexcess2d <- reactive({
     thr2(xpctexcess1d(), wtnum)
@@ -5957,19 +5989,19 @@ s     } else {
   })
 
   pctexcessrerv <- reactive({
-    if (input$pmthr == 0 & input$pm25_rtype8 == i18n$t("linear")) {
-      xpctexcess1 <- outer(pmregchg(), beta(input$pm25_rtype8, input$pm25_crf8, input$pm25_incr8), afb)
+    if (input$pmthr == 0 & input$pm25_rtype8 == get_session_t("linear")) {
+      xpctexcess1 <- outer(pmregchg(), beta(input$pm25_rtype8, input$pm25_crf8, input$pm25_incr8, get_session_t("log-linear")), afb)
       xpctexcess2 <- outer(pmregchg(), quantile(brerv(), 0.025), afb)
       xpctexcess3 <- outer(pmregchg(), quantile(brerv(), 0.975), afb)
-    } else if (input$pmthr == 0 & input$pm25_rtype8 == i18n$t("log-linear")) {
-      xpctexcess1 <- outer(pmregchg(), beta(input$pm25_rtype8, input$pm25_crf8, input$pm25_incr8), afa)
+    } else if (input$pmthr == 0 & input$pm25_rtype8 == get_session_t("log-linear")) {
+      xpctexcess1 <- outer(pmregchg(), beta(input$pm25_rtype8, input$pm25_crf8, input$pm25_incr8, get_session_t("log-linear")), afa)
       xpctexcess2 <- outer(pmregchg(), quantile(brerv(), 0.025), afa)
       xpctexcess3 <- outer(pmregchg(), quantile(brerv(), 0.975), afa)
-    } else if (input$pmthr > 0 & input$pm25_rtype8 == i18n$t("linear")) {
+    } else if (input$pmthr > 0 & input$pm25_rtype8 == get_session_t("linear")) {
       xpctexcess1 <- ypctexcess1()
       xpctexcess2 <- ypctexcess2()
       xpctexcess3 <- ypctexcess3()
-    } else if (input$pmthr > 0 & input$pm25_rtype8 == i18n$t("log-linear")) {
+    } else if (input$pmthr > 0 & input$pm25_rtype8 == get_session_t("log-linear")) {
       xpctexcess1 <- zpctexcess1()
       xpctexcess2 <- zpctexcess2()
       xpctexcess3 <- zpctexcess3()
@@ -6038,7 +6070,7 @@ s     } else {
   # PM2.5  Respiratory Hospital Admissions
   set.seed(100)
   brha <- reactive({
-    chg2(rnorm(input$itn, beta(input$pm25_rtype9, input$pm25_crf9, input$pm25_incr9), se(input$pm25_rtype9, input$pm25_u95_9, input$pm25_l95_9, input$pm25_incr9)))
+    chg2(rnorm(input$itn, beta(input$pm25_rtype9, input$pm25_crf9, input$pm25_incr9, get_session_t("log-linear")), se(input$pm25_rtype9, input$pm25_u95_9, input$pm25_l95_9, input$pm25_incr9, get_session_t("log-linear"))))
   })
 
   rtyperha <- reactive({
@@ -6049,7 +6081,7 @@ s     } else {
   })
 
   xpctxsrha1a <- reactive({
-    outer(pmthrchg(), beta(input$pm25_rtype9, input$pm25_crf9, input$pm25_incr9), afb)
+    outer(pmthrchg(), beta(input$pm25_rtype9, input$pm25_crf9, input$pm25_incr9, get_session_t("log-linear")), afb)
   })
   xpctxsrha2a <- reactive({
     thr2(xpctxsrha1a(), wtnum)
@@ -6081,7 +6113,7 @@ s     } else {
 
   # for threshold>0 and log-linear crf
   xpctxsrha1d <- reactive({
-    outer(pmthrchg(), beta(input$pm25_rtype9, input$pm25_crf9, input$pm25_incr9), afa)
+    outer(pmthrchg(), beta(input$pm25_rtype9, input$pm25_crf9, input$pm25_incr9, get_session_t("log-linear")), afa)
   })
   xpctxsrha2d <- reactive({
     thr2(xpctxsrha1d(), wtnum)
@@ -6111,19 +6143,19 @@ s     } else {
   })
 
   xxpctxsrha <- reactive({
-    if (input$pmthr == 0 & input$pm25_rtype9 == i18n$t("linear")) {
-      xpctxsrha1 <- outer(pmregchg(), beta(input$pm25_rtype9, input$pm25_crf9, input$pm25_incr9), afb)
+    if (input$pmthr == 0 & input$pm25_rtype9 == get_session_t("linear")) {
+      xpctxsrha1 <- outer(pmregchg(), beta(input$pm25_rtype9, input$pm25_crf9, input$pm25_incr9, get_session_t("log-linear")), afb)
       xpctxsrha2 <- outer(pmregchg(), quantile(brha(), 0.025), afb)
       xpctxsrha3 <- outer(pmregchg(), quantile(brha(), 0.975), afb)
-    } else if (input$pmthr == 0 & input$pm25_rtype9 == i18n$t("log-linear")) {
-      xpctxsrha1 <- outer(pmregchg(), beta(input$pm25_rtype9, input$pm25_crf9, input$pm25_incr9), afa)
+    } else if (input$pmthr == 0 & input$pm25_rtype9 == get_session_t("log-linear")) {
+      xpctxsrha1 <- outer(pmregchg(), beta(input$pm25_rtype9, input$pm25_crf9, input$pm25_incr9, get_session_t("log-linear")), afa)
       xpctxsrha2 <- outer(pmregchg(), quantile(brha(), 0.025), afa)
       xpctxsrha3 <- outer(pmregchg(), quantile(brha(), 0.975), afa)
-    } else if (input$pmthr > 0 & input$pm25_rtype9 == i18n$t("linear")) {
+    } else if (input$pmthr > 0 & input$pm25_rtype9 == get_session_t("linear")) {
       xpctxsrha1 <- ypctxsrha1()
       xpctxsrha2 <- ypctxsrha2()
       xpctxsrha3 <- ypctxsrha3()
-    } else if (input$pmthr > 0 & input$pm25_rtype9 == i18n$t("log-linear")) {
+    } else if (input$pmthr > 0 & input$pm25_rtype9 == get_session_t("log-linear")) {
       xpctxsrha1 <- zpctxsrha1()
       xpctxsrha2 <- zpctxsrha2()
       xpctxsrha3 <- zpctxsrha3()
@@ -6159,15 +6191,15 @@ s     } else {
   # PM2.5 Restricted Activity Days
   set.seed(100)
   brad <- reactive({
-    chg2(rnorm(input$itn, beta(input$pm25_rtype10, input$pm25_crf10, input$pm25_incr10), se(input$pm25_rtype10, input$pm25_u95_10, input$pm25_l95_10, input$pm25_incr10)))
+    chg2(rnorm(input$itn, beta(input$pm25_rtype10, input$pm25_crf10, input$pm25_incr10, get_session_t("log-linear")), se(input$pm25_rtype10, input$pm25_u95_10, input$pm25_l95_10, input$pm25_incr10, get_session_t("log-linear"))))
   })
 
   set.seed(100)
   vrad <- reactive({
-    chg2(valdist(input$sourcevsl10c, input$itn, input$vsl10, input$lvsl10, input$uvsl10, input$pcvsl10, input$plvsl10))
+    chg2(valdist(input$sourcevsl10c, input$itn, input$vsl10, input$lvsl10, input$uvsl10, input$pcvsl10, input$plvsl10, get_session_t("normal"), get_session_t("discrete"), get_session_t("triangular")))
   })
   cpiy1rad <- reactive({
-    cpi[which(cpi_year() == input$sourcevsl10b), ]
+    get_session_cpi()[which(cpi_year() == input$sourcevsl10b), ]
   })
 
   cpiadjrad <- reactive({
@@ -6182,7 +6214,7 @@ s     } else {
 
   # for threshold>0 and linear crf
   xpctxsrad1a <- reactive({
-    outer(pmthrchg(), beta(input$pm25_rtype10, input$pm25_crf10, input$pm25_incr10), afb)
+    outer(pmthrchg(), beta(input$pm25_rtype10, input$pm25_crf10, input$pm25_incr10, get_session_t("log-linear")), afb)
   })
   xpctxsrad2a <- reactive({
     thr2(xpctxsrad1a(), wtnum)
@@ -6214,7 +6246,7 @@ s     } else {
 
   # for threshold>0 and log-linear crf
   xpctxsrad1d <- reactive({
-    outer(pmthrchg(), beta(input$pm25_rtype10, input$pm25_crf10, input$pm25_incr10), afa)
+    outer(pmthrchg(), beta(input$pm25_rtype10, input$pm25_crf10, input$pm25_incr10, get_session_t("log-linear")), afa)
   })
   xpctxsrad2d <- reactive({
     thr2(xpctxsrad1d(), wtnum)
@@ -6244,19 +6276,19 @@ s     } else {
   })
 
   xxpctxsrad <- reactive({
-    if (input$pmthr == 0 & input$pm25_rtype10 == i18n$t("linear")) {
-      xpctxsrad1 <- outer(pmregchg(), beta(input$pm25_rtype10, input$pm25_crf10, input$pm25_incr10), afb)
+    if (input$pmthr == 0 & input$pm25_rtype10 == get_session_t("linear")) {
+      xpctxsrad1 <- outer(pmregchg(), beta(input$pm25_rtype10, input$pm25_crf10, input$pm25_incr10, get_session_t("log-linear")), afb)
       xpctxsrad2 <- outer(pmregchg(), quantile(brad(), 0.025), afb)
       xpctxsrad3 <- outer(pmregchg(), quantile(brad(), 0.975), afb)
-    } else if (input$pmthr == 0 & input$pm25_rtype10 == i18n$t("log-linear")) {
-      xpctxsrad1 <- outer(pmregchg(), beta(input$pm25_rtype10, input$pm25_crf10, input$pm25_incr10), afa)
+    } else if (input$pmthr == 0 & input$pm25_rtype10 == get_session_t("log-linear")) {
+      xpctxsrad1 <- outer(pmregchg(), beta(input$pm25_rtype10, input$pm25_crf10, input$pm25_incr10, get_session_t("log-linear")), afa)
       xpctxsrad2 <- outer(pmregchg(), quantile(brad(), 0.025), afa)
       xpctxsrad3 <- outer(pmregchg(), quantile(brad(), 0.975), afa)
-    } else if (input$pmthr > 0 & input$pm25_rtype10 == i18n$t("linear")) {
+    } else if (input$pmthr > 0 & input$pm25_rtype10 == get_session_t("linear")) {
       xpctxsrad1 <- ypctxsrad1()
       xpctxsrad2 <- ypctxsrad2()
       xpctxsrad3 <- ypctxsrad3()
-    } else if (input$pmthr > 0 & input$pm25_rtype10 == i18n$t("log-linear")) {
+    } else if (input$pmthr > 0 & input$pm25_rtype10 == get_session_t("log-linear")) {
       xpctxsrad1 <- zpctxsrad1()
       xpctxsrad2 <- zpctxsrad2()
       xpctxsrad3 <- zpctxsrad3()
@@ -6266,7 +6298,7 @@ s     } else {
 
 
   fiverad <- reactive({
-    if (currentlanguage == "en") {
+    if (get_session_lang() == "en") {
       (popnonasthma(input$asprev, fourrad()$age5_19, fourrad_age20plus()) / 1000000) * fourrad_Restricted_Activity_Days() * xxpctxsrad()$radaa
     } else {
       (popnonasthma(input$asprev, fourrad()$ans5_19, fourrad_age20plus()) / 1000000) * fourrad_Restricted_Activity_Days() * xxpctxsrad()$radaa
@@ -6274,7 +6306,7 @@ s     } else {
   })
 
   sixrad <- reactive({
-    if (currentlanguage == "en") {
+    if (get_session_lang() == "en") {
       (popnonasthma(input$asprev, fourrad()$age5_19, fourrad_age20plus()) / 1000000) * fourrad_Restricted_Activity_Days() * xxpctxsrad()$radbb
     } else {
       (popnonasthma(input$asprev, fourrad()$ans5_19, fourrad_age20plus()) / 1000000) * fourrad_Restricted_Activity_Days() * xxpctxsrad()$radbb
@@ -6282,7 +6314,7 @@ s     } else {
   })
 
   sevenrad <- reactive({
-    if (currentlanguage == "en") {
+    if (get_session_lang() == "en") {
       (popnonasthma(input$asprev, fourrad()$age5_19, fourrad_age20plus()) / 1000000) * fourrad_Restricted_Activity_Days() * xxpctxsrad()$radcc
     } else {
       (popnonasthma(input$asprev, fourrad()$ans5_19, fourrad_age20plus()) / 1000000) * fourrad_Restricted_Activity_Days() * xxpctxsrad()$radcc
@@ -6317,7 +6349,7 @@ s     } else {
   })
 
   tenarad <- reactive({
-    if (currentlanguage == "en") {
+    if (get_session_lang() == "en") {
       100000 * fiverad() / popnonasthma(input$asprev, fourrad()$age5_19, fourrad_age20plus())
     } else {
       100000 * fiverad() / popnonasthma(input$asprev, fourrad()$ans5_19, fourrad_age20plus())
@@ -6338,15 +6370,15 @@ s     } else {
   # PM2.5 Acute Respiratory Symptom Days
   set.seed(100)
   barsd <- reactive({
-    chg2(rnorm(input$itn, beta(input$pm25_rtype2, input$pm25_crf2, input$pm25_incr2), se(input$pm25_rtype2, input$pm25_u95_2, input$pm25_l95_2, input$pm25_incr2)))
+    chg2(rnorm(input$itn, beta(input$pm25_rtype2, input$pm25_crf2, input$pm25_incr2, get_session_t("log-linear")), se(input$pm25_rtype2, input$pm25_u95_2, input$pm25_l95_2, input$pm25_incr2, get_session_t("log-linear"))))
   })
 
   set.seed(100)
   varsd <- reactive({
-    chg2(valdist(input$vsl2fm, input$itn, input$vsl2, input$lvsl2, input$uvsl2, input$pcvsl2, input$plvsl2))
+    chg2(valdist(input$vsl2fm, input$itn, input$vsl2, input$lvsl2, input$uvsl2, input$pcvsl2, input$plvsl2, get_session_t("normal"), get_session_t("discrete"), get_session_t("triangular")))
   })
   cpiy1arsd <- reactive({
-    cpi[which(cpi_year() == input$vsl2yr), ]
+    get_session_cpi()[which(cpi_year() == input$vsl2yr), ]
   })
 
   cpiadjarsd <- reactive({
@@ -6362,7 +6394,7 @@ s     } else {
 
   # for threshold>0 and linear crf
   xpctxsarsd1a <- reactive({
-    outer(pmthrchg(), beta(input$pm25_rtype2, input$pm25_crf2, input$pm25_incr2), afb)
+    outer(pmthrchg(), beta(input$pm25_rtype2, input$pm25_crf2, input$pm25_incr2, get_session_t("log-linear")), afb)
   })
   xpctxsarsd2a <- reactive({
     thr2(xpctxsarsd1a(), wtnum)
@@ -6394,7 +6426,7 @@ s     } else {
 
   # for threshold>0 and log-linear crf
   xpctxsarsd1d <- reactive({
-    outer(pmthrchg(), beta(input$pm25_rtype2, input$pm25_crf2, input$pm25_incr2), afa)
+    outer(pmthrchg(), beta(input$pm25_rtype2, input$pm25_crf2, input$pm25_incr2, get_session_t("log-linear")), afa)
   })
   xpctxsarsd2d <- reactive({
     thr2(xpctxsarsd1d(), wtnum)
@@ -6424,19 +6456,19 @@ s     } else {
   })
 
   xxpctxsarsd <- reactive({
-    if (input$pmthr == 0 & input$pm25_rtype2 == i18n$t("linear")) {
-      xpctxsarsd1 <- outer(pmregchg(), beta(input$pm25_rtype2, input$pm25_crf2, input$pm25_incr2), afb)
+    if (input$pmthr == 0 & input$pm25_rtype2 == get_session_t("linear")) {
+      xpctxsarsd1 <- outer(pmregchg(), beta(input$pm25_rtype2, input$pm25_crf2, input$pm25_incr2, get_session_t("log-linear")), afb)
       xpctxsarsd2 <- outer(pmregchg(), quantile(barsd(), 0.025), afb)
       xpctxsarsd3 <- outer(pmregchg(), quantile(barsd(), 0.975), afb)
-    } else if (input$pmthr == 0 & input$pm25_rtype2 == i18n$t("log-linear")) {
-      xpctxsarsd1 <- outer(pmregchg(), beta(input$pm25_rtype2, input$pm25_crf2, input$pm25_incr2), afa)
+    } else if (input$pmthr == 0 & input$pm25_rtype2 == get_session_t("log-linear")) {
+      xpctxsarsd1 <- outer(pmregchg(), beta(input$pm25_rtype2, input$pm25_crf2, input$pm25_incr2, get_session_t("log-linear")), afa)
       xpctxsarsd2 <- outer(pmregchg(), quantile(barsd(), 0.025), afa)
       xpctxsarsd3 <- outer(pmregchg(), quantile(barsd(), 0.975), afa)
-    } else if (input$pmthr > 0 & input$pm25_rtype2 == i18n$t("linear")) {
+    } else if (input$pmthr > 0 & input$pm25_rtype2 == get_session_t("linear")) {
       xpctxsarsd1 <- ypctxsarsd1()
       xpctxsarsd2 <- ypctxsarsd2()
       xpctxsarsd3 <- ypctxsarsd3()
-    } else if (input$pmthr > 0 & input$pm25_rtype2 == i18n$t("log-linear")) {
+    } else if (input$pmthr > 0 & input$pm25_rtype2 == get_session_t("log-linear")) {
       xpctxsarsd1 <- zpctxsarsd1()
       xpctxsarsd2 <- zpctxsarsd2()
       xpctxsarsd3 <- zpctxsarsd3()
@@ -6515,18 +6547,18 @@ s     } else {
   # NO2 Acute Exposure Mortality
   set.seed(100)
   baem <- reactive({
-    rnorm(input$itn, beta(input$no2_rtype, input$no2_crf, input$no2_incr), se(input$no2_rtype, input$no2_u95, input$no2_l95, input$no2_incr))
+    rnorm(input$itn, beta(input$no2_rtype, input$no2_crf, input$no2_incr, get_session_t("log-linear")), se(input$no2_rtype, input$no2_u95, input$no2_l95, input$no2_incr, get_session_t("log-linear")))
   })
 
   set.seed(100)
   vaem <- reactive({
-    valdist(input$vslfm, input$itn, input$vsl, input$lvsl, input$uvsl, input$pcvsl, input$plvsl)
+    valdist(input$vslfm, input$itn, input$vsl, input$lvsl, input$uvsl, input$pcvsl, input$plvsl, get_session_t("normal"), get_session_t("discrete"), get_session_t("triangular"))
   })
   cpiyaem <- reactive({
-    cpi[which(cpi_year() == input$curr), ]
+    get_session_cpi()[which(cpi_year() == input$curr), ]
   })
   cpiyaem1 <- reactive({
-    cpi[which(cpi_year() == input$vslyr), ]
+    get_session_cpi()[which(cpi_year() == input$vslyr), ]
   })
 
   cpiadjaem <- reactive({
@@ -6542,7 +6574,7 @@ s     } else {
 
   # for threshold>0 and linear crf
   xpctxsno2aem1a <- reactive({
-    outer(no2thrchg(), beta(input$no2_rtype, input$no2_crf, input$no2_incr), afb)
+    outer(no2thrchg(), beta(input$no2_rtype, input$no2_crf, input$no2_incr, get_session_t("log-linear")), afb)
   })
   xpctxsno2aem2a <- reactive({
     thr2(xpctxsno2aem1a(), wtnum)
@@ -6574,7 +6606,7 @@ s     } else {
 
   # for threshold>0 and log-linear crf
   xpctxsno2aem1d <- reactive({
-    outer(no2thrchg(), beta(input$no2_rtype, input$no2_crf, input$no2_incr), afa)
+    outer(no2thrchg(), beta(input$no2_rtype, input$no2_crf, input$no2_incr, get_session_t("log-linear")), afa)
   })
   xpctxsno2aem2d <- reactive({
     thr2(xpctxsno2aem1d(), wtnum)
@@ -6604,19 +6636,19 @@ s     } else {
   })
 
   xxpctxsno2aem <- reactive({
-    if (input$no2thr == 0 & input$no2_rtype == i18n$t("linear")) {
-      xpctxsno2aem1 <- outer(no2regchg(), beta(input$no2_rtype, input$no2_crf, input$no2_incr), afb)
+    if (input$no2thr == 0 & input$no2_rtype == get_session_t("linear")) {
+      xpctxsno2aem1 <- outer(no2regchg(), beta(input$no2_rtype, input$no2_crf, input$no2_incr, get_session_t("log-linear")), afb)
       xpctxsno2aem2 <- outer(no2regchg(), quantile(baem(), 0.025), afb)
       xpctxsno2aem3 <- outer(no2regchg(), quantile(baem(), 0.975), afb)
-    } else if (input$no2thr == 0 & input$no2_rtype == i18n$t("log-linear")) {
-      xpctxsno2aem1 <- outer(no2regchg(), beta(input$no2_rtype, input$no2_crf, input$no2_incr), afa)
+    } else if (input$no2thr == 0 & input$no2_rtype == get_session_t("log-linear")) {
+      xpctxsno2aem1 <- outer(no2regchg(), beta(input$no2_rtype, input$no2_crf, input$no2_incr, get_session_t("log-linear")), afa)
       xpctxsno2aem2 <- outer(no2regchg(), quantile(baem(), 0.025), afa)
       xpctxsno2aem3 <- outer(no2regchg(), quantile(baem(), 0.975), afa)
-    } else if (input$no2thr > 0 & input$no2_rtype == i18n$t("linear")) {
+    } else if (input$no2thr > 0 & input$no2_rtype == get_session_t("linear")) {
       xpctxsno2aem1 <- ypctxsno2aem1()
       xpctxsno2aem2 <- ypctxsno2aem2()
       xpctxsno2aem3 <- ypctxsno2aem3()
-    } else if (input$no2thr > 0 & input$no2_rtype == i18n$t("log-linear")) {
+    } else if (input$no2thr > 0 & input$no2_rtype == get_session_t("log-linear")) {
       xpctxsno2aem1 <- zpctxsno2aem1()
       xpctxsno2aem2 <- zpctxsno2aem2()
       xpctxsno2aem3 <- zpctxsno2aem3()
@@ -6680,19 +6712,19 @@ s     } else {
   # O3 Acute Exposure Mortality
   set.seed(100)
   bo3aem <- reactive({
-    rnorm(input$itn, beta(input$o3_rtype1, input$o3_crf1, input$o3_incr1), se(input$o3_rtype1, input$o3_u95_1, input$o3_l95_1, input$o3_incr1))
+    rnorm(input$itn, beta(input$o3_rtype1, input$o3_crf1, input$o3_incr1, get_session_t("log-linear")), se(input$o3_rtype1, input$o3_u95_1, input$o3_l95_1, input$o3_incr1, get_session_t("log-linear")))
   })
 
   set.seed(100)
   vo3aem <- reactive({
-    valdist(input$vslfm, input$itn, input$vsl, input$lvsl, input$uvsl, input$pcvsl, input$plvsl)
+    valdist(input$vslfm, input$itn, input$vsl, input$lvsl, input$uvsl, input$pcvsl, input$plvsl, get_session_t("normal"), get_session_t("discrete"), get_session_t("triangular"))
   })
 
   cpiyo3aem <- reactive({
-    cpi[which(cpi_year() == input$curr), ]
+    get_session_cpi()[which(cpi_year() == input$curr), ]
   })
   cpiyo3aem1 <- reactive({
-    cpi[which(cpi_year() == input$vslyr), ]
+    get_session_cpi()[which(cpi_year() == input$vslyr), ]
   })
 
   cpiadjo3aem <- reactive({
@@ -6708,7 +6740,7 @@ s     } else {
 
   # for threshold>0 and linear crf
   xpctxso3aem1a <- reactive({
-    outer(o3thrchg(), beta(input$o3_rtype1, input$o3_crf1, input$o3_incr1), afb)
+    outer(o3thrchg(), beta(input$o3_rtype1, input$o3_crf1, input$o3_incr1, get_session_t("log-linear")), afb)
   })
   xpctxso3aem2a <- reactive({
     thr2(xpctxso3aem1a(), wtnum)
@@ -6740,7 +6772,7 @@ s     } else {
 
   # for threshold>0 and log-linear crf
   xpctxso3aem1d <- reactive({
-    outer(o3thrchg(), beta(input$o3_rtype1, input$o3_crf1, input$o3_incr1), afa)
+    outer(o3thrchg(), beta(input$o3_rtype1, input$o3_crf1, input$o3_incr1, get_session_t("log-linear")), afa)
   })
   xpctxso3aem2d <- reactive({
     thr2(xpctxso3aem1d(), wtnum)
@@ -6770,19 +6802,19 @@ s     } else {
   })
 
   xxpctxso3aem <- reactive({
-    if (input$o3thr == 0 & input$o3_rtype1 == i18n$t("linear")) {
-      xpctxso3aem1 <- outer(o3regchg(), beta(input$o3_rtype1, input$o3_crf1, input$o3_incr1), afb)
+    if (input$o3thr == 0 & input$o3_rtype1 == get_session_t("linear")) {
+      xpctxso3aem1 <- outer(o3regchg(), beta(input$o3_rtype1, input$o3_crf1, input$o3_incr1, get_session_t("log-linear")), afb)
       xpctxso3aem2 <- outer(o3regchg(), quantile(bo3aem(), 0.025), afb)
       xpctxso3aem3 <- outer(o3regchg(), quantile(bo3aem(), 0.975), afb)
-    } else if (input$o3thr == 0 & input$o3_rtype1 == i18n$t("log-linear")) {
-      xpctxso3aem1 <- outer(o3regchg(), beta(input$o3_rtype1, input$o3_crf1, input$o3_incr1), afa)
+    } else if (input$o3thr == 0 & input$o3_rtype1 == get_session_t("log-linear")) {
+      xpctxso3aem1 <- outer(o3regchg(), beta(input$o3_rtype1, input$o3_crf1, input$o3_incr1, get_session_t("log-linear")), afa)
       xpctxso3aem2 <- outer(o3regchg(), quantile(bo3aem(), 0.025), afa)
       xpctxso3aem3 <- outer(o3regchg(), quantile(bo3aem(), 0.975), afa)
-    } else if (input$o3thr > 0 & input$o3_rtype1 == i18n$t("linear")) {
+    } else if (input$o3thr > 0 & input$o3_rtype1 == get_session_t("linear")) {
       xpctxso3aem1 <- ypctxso3aem1()
       xpctxso3aem2 <- ypctxso3aem2()
       xpctxso3aem3 <- ypctxso3aem3()
-    } else if (input$o3thr > 0 & input$o3_rtype1 == i18n$t("log-linear")) {
+    } else if (input$o3thr > 0 & input$o3_rtype1 == get_session_t("log-linear")) {
       xpctxso3aem1 <- zpctxso3aem1()
       xpctxso3aem2 <- zpctxso3aem2()
       xpctxso3aem3 <- zpctxso3aem3()
@@ -6843,18 +6875,18 @@ s     } else {
   # Summer O3 Chronic Exposure Respiratory Mortality
   set.seed(100)
   bo3cerm <- reactive({
-    rnorm(input$itn, beta(input$o3_rtype2, input$o3_crf2, input$o3_incr2), se(input$o3_rtype2, input$o3_u95_2, input$o3_l95_2, input$o3_incr2))
+    rnorm(input$itn, beta(input$o3_rtype2, input$o3_crf2, input$o3_incr2, get_session_t("log-linear")), se(input$o3_rtype2, input$o3_u95_2, input$o3_l95_2, input$o3_incr2, get_session_t("log-linear")))
   })
 
   set.seed(100)
   vo3cerm <- reactive({
-    valdist(input$vslfm, input$itn, input$vsl, input$lvsl, input$uvsl, input$pcvsl, input$plvsl)
+    valdist(input$vslfm, input$itn, input$vsl, input$lvsl, input$uvsl, input$pcvsl, input$plvsl, get_session_t("normal"), get_session_t("discrete"), get_session_t("triangular"))
   })
   cpiyo3cerm <- reactive({
-    cpi[which(cpi_year() == input$curr), ]
+    get_session_cpi()[which(cpi_year() == input$curr), ]
   })
   cpiyo3cerm1 <- reactive({
-    cpi[which(cpi_year() == input$vslyr), ]
+    get_session_cpi()[which(cpi_year() == input$vslyr), ]
   })
 
   cpiadjo3cerm <- reactive({
@@ -6869,14 +6901,14 @@ s     } else {
   })
 
   fiveo3cerm <- reactive({
-    (fouro3cerm_age30plus() / 1000000) * fouro3cerm_Mort_respiratory() * af(fouro3cerm()$rtypeo3cerm, beta(fouro3cerm()$rtypeo3cerm, input$o3_crf2, input$o3_incr2), chg(fouro3cerm_summero3_2(), fouro3cerm_summero3_1(), input$summero3thr))
+    (fouro3cerm_age30plus() / 1000000) * fouro3cerm_Mort_respiratory() * af(fouro3cerm()$rtypeo3cerm, beta(fouro3cerm()$rtypeo3cerm, input$o3_crf2, input$o3_incr2, get_session_t("log-linear")), chg(fouro3cerm_summero3_2(), fouro3cerm_summero3_1(), input$summero3thr), get_session_t("log-linear"))
   })
 
   sixo3cerm <- reactive({
-    (fouro3cerm_age30plus() / 1000000) * fouro3cerm_Mort_respiratory() * af(fouro3cerm()$rtypeo3cerm, quantile(bo3cerm(), 0.025), chg(fouro3cerm_summero3_2(), fouro3cerm_summero3_1(), input$summero3thr))
+    (fouro3cerm_age30plus() / 1000000) * fouro3cerm_Mort_respiratory() * af(fouro3cerm()$rtypeo3cerm, quantile(bo3cerm(), 0.025), chg(fouro3cerm_summero3_2(), fouro3cerm_summero3_1(), input$summero3thr), get_session_t("log-linear"))
   })
   seveno3cerm <- reactive({
-    (fouro3cerm_age30plus() / 1000000) * fouro3cerm_Mort_respiratory() * af(fouro3cerm()$rtypeo3cerm, quantile(bo3cerm(), 0.975), chg(fouro3cerm_summero3_2(), fouro3cerm_summero3_1(), input$summero3thr))
+    (fouro3cerm_age30plus() / 1000000) * fouro3cerm_Mort_respiratory() * af(fouro3cerm()$rtypeo3cerm, quantile(bo3cerm(), 0.975), chg(fouro3cerm_summero3_2(), fouro3cerm_summero3_1(), input$summero3thr), get_session_t("log-linear"))
   })
 
   eighto3cerm <- reactive({
@@ -6908,13 +6940,13 @@ s     } else {
     100000 * fiveo3cerm() / fouro3cerm_allages()
   })
   pctxso3cerm <- reactive({
-    af(fouro3cerm()$rtypeo3cerm, beta(fouro3cerm()$rtypeo3cerm, input$o3_crf2, input$o3_incr2), chg(fouro3cerm_summero3_2(), fouro3cerm_summero3_1(), input$summero3thr))
+    af(fouro3cerm()$rtypeo3cerm, beta(fouro3cerm()$rtypeo3cerm, input$o3_crf2, input$o3_incr2, get_session_t("log-linear")), chg(fouro3cerm_summero3_2(), fouro3cerm_summero3_1(), input$summero3thr), get_session_t("log-linear"))
   })
   pctxso3cerml95 <- reactive({
-    af(fouro3cerm()$rtypeo3cerm, quantile(bo3cerm(), 0.025), chg(fouro3cerm_summero3_2(), fouro3cerm_summero3_1(), input$summero3thr))
+    af(fouro3cerm()$rtypeo3cerm, quantile(bo3cerm(), 0.025), chg(fouro3cerm_summero3_2(), fouro3cerm_summero3_1(), input$summero3thr), get_session_t("log-linear"))
   })
   pctxso3cermu95 <- reactive({
-    af(fouro3cerm()$rtypeo3cerm, quantile(bo3cerm(), 0.975), chg(fouro3cerm_summero3_2(), fouro3cerm_summero3_1(), input$summero3thr))
+    af(fouro3cerm()$rtypeo3cerm, quantile(bo3cerm(), 0.975), chg(fouro3cerm_summero3_2(), fouro3cerm_summero3_1(), input$summero3thr), get_session_t("log-linear"))
   })
 
   leyrrep <- reactive({
@@ -6930,15 +6962,15 @@ s     } else {
   # Summer O3 Minor Restricted Activity Days
   set.seed(100)
   bmrad <- reactive({
-    chg2(rnorm(input$itn, beta(input$o3_rtype5, input$o3_crf5, input$o3_incr5), se(input$o3_rtype5, input$o3_u95_5, input$o3_l95_5, input$o3_incr5)))
+    chg2(rnorm(input$itn, beta(input$o3_rtype5, input$o3_crf5, input$o3_incr5, get_session_t("log-linear")), se(input$o3_rtype5, input$o3_u95_5, input$o3_l95_5, input$o3_incr5, get_session_t("log-linear"))))
   })
 
   set.seed(100)
   vmrad <- reactive({
-    chg2(valdist(input$sourcevsl8c, input$itn, input$vsl8, input$lvsl8, input$uvsl8, input$pcvsl8, input$plvsl8))
+    chg2(valdist(input$sourcevsl8c, input$itn, input$vsl8, input$lvsl8, input$uvsl8, input$pcvsl8, input$plvsl8, get_session_t("normal"), get_session_t("discrete"), get_session_t("triangular")))
   })
   cpiy1mrad <- reactive({
-    cpi[which(cpi_year() == input$sourcevsl8b), ]
+    get_session_cpi()[which(cpi_year() == input$sourcevsl8b), ]
   })
 
   cpiadjmrad <- reactive({
@@ -6954,7 +6986,7 @@ s     } else {
 
   # for threshold>0 and linear crf
   xpctxsmrad1a <- reactive({
-    outer(summo3thrchg(), beta(input$o3_rtype5, input$o3_crf5, input$o3_incr5), afb)
+    outer(summo3thrchg(), beta(input$o3_rtype5, input$o3_crf5, input$o3_incr5, get_session_t("log-linear")), afb)
   })
   xpctxsmrad2a <- reactive({
     thr2(xpctxsmrad1a(), wtnum)
@@ -6986,7 +7018,7 @@ s     } else {
 
   # for threshold>0 and log-linear crf
   xpctxsmrad1d <- reactive({
-    outer(summo3thrchg(), beta(input$o3_rtype5, input$o3_crf5, input$o3_incr5), afa)
+    outer(summo3thrchg(), beta(input$o3_rtype5, input$o3_crf5, input$o3_incr5, get_session_t("log-linear")), afa)
   })
   xpctxsmrad2d <- reactive({
     thr2(xpctxsmrad1d(), wtnum)
@@ -7016,19 +7048,19 @@ s     } else {
   })
 
   xxpctxsmrad <- reactive({
-    if (input$summero3thr == 0 & input$o3_rtype5 == i18n$t("linear")) {
-      xpctxsmrad1 <- outer(summo3regchg(), beta(input$o3_rtype5, input$o3_crf5, input$o3_incr5), afb)
+    if (input$summero3thr == 0 & input$o3_rtype5 == get_session_t("linear")) {
+      xpctxsmrad1 <- outer(summo3regchg(), beta(input$o3_rtype5, input$o3_crf5, input$o3_incr5, get_session_t("log-linear")), afb)
       xpctxsmrad2 <- outer(summo3regchg(), quantile(bmrad(), 0.025), afb)
       xpctxsmrad3 <- outer(summo3regchg(), quantile(bmrad(), 0.975), afb)
-    } else if (input$summero3thr == 0 & input$o3_rtype5 == i18n$t("log-linear")) {
-      xpctxsmrad1 <- outer(summo3regchg(), beta(input$o3_rtype5, input$o3_crf5, input$o3_incr5), afa)
+    } else if (input$summero3thr == 0 & input$o3_rtype5 == get_session_t("log-linear")) {
+      xpctxsmrad1 <- outer(summo3regchg(), beta(input$o3_rtype5, input$o3_crf5, input$o3_incr5, get_session_t("log-linear")), afa)
       xpctxsmrad2 <- outer(summo3regchg(), quantile(bmrad(), 0.025), afa)
       xpctxsmrad3 <- outer(summo3regchg(), quantile(bmrad(), 0.975), afa)
-    } else if (input$summero3thr > 0 & input$o3_rtype5 == i18n$t("linear")) {
+    } else if (input$summero3thr > 0 & input$o3_rtype5 == get_session_t("linear")) {
       xpctxsmrad1 <- ypctxsmrad1()
       xpctxsmrad2 <- ypctxsmrad2()
       xpctxsmrad3 <- ypctxsmrad3()
-    } else if (input$summero3thr > 0 & input$o3_rtype5 == i18n$t("log-linear")) {
+    } else if (input$summero3thr > 0 & input$o3_rtype5 == get_session_t("log-linear")) {
       xpctxsmrad1 <- zpctxsmrad1()
       xpctxsmrad2 <- zpctxsmrad2()
       xpctxsmrad3 <- zpctxsmrad3()
@@ -7089,15 +7121,15 @@ s     } else {
   # O3 Summer o3arsd - Acute Respiratory Symptom Days
   set.seed(100)
   bo3arsd <- reactive({
-    chg2(rnorm(input$itn, beta(input$o3_rtype3, input$o3_crf3, input$o3_incr3), se(input$o3_rtype3, input$o3_u95_3, input$o3_l95_3, input$o3_incr3)))
+    chg2(rnorm(input$itn, beta(input$o3_rtype3, input$o3_crf3, input$o3_incr3, get_session_t("log-linear")), se(input$o3_rtype3, input$o3_u95_3, input$o3_l95_3, input$o3_incr3, get_session_t("log-linear"))))
   })
 
   set.seed(100)
   vo3arsd <- reactive({
-    chg2(valdist(input$vsl2fm, input$itn, input$vsl2, input$lvsl2, input$uvsl2, input$pcvsl2, input$plvsl2))
+    chg2(valdist(input$vsl2fm, input$itn, input$vsl2, input$lvsl2, input$uvsl2, input$pcvsl2, input$plvsl2, get_session_t("normal"), get_session_t("discrete"), get_session_t("triangular")))
   })
   cpiy1o3arsd <- reactive({
-    cpi[which(cpi_year() == input$vsl2yr), ]
+    get_session_cpi()[which(cpi_year() == input$vsl2yr), ]
   })
 
   cpiadjo3arsd <- reactive({
@@ -7114,7 +7146,7 @@ s     } else {
 
   # for threshold>0 and linear crf
   xpctxso3arsd1a <- reactive({
-    outer(summo3thrchg(), beta(input$o3_rtype3, input$o3_crf3, input$o3_incr3), afb)
+    outer(summo3thrchg(), beta(input$o3_rtype3, input$o3_crf3, input$o3_incr3, get_session_t("log-linear")), afb)
   })
   xpctxso3arsd2a <- reactive({
     thr2(xpctxso3arsd1a(), wtnum)
@@ -7146,7 +7178,7 @@ s     } else {
 
   # for threshold>0 and log-linear crf
   xpctxso3arsd1d <- reactive({
-    outer(summo3thrchg(), beta(input$o3_rtype3, input$o3_crf3, input$o3_incr3), afa)
+    outer(summo3thrchg(), beta(input$o3_rtype3, input$o3_crf3, input$o3_incr3, get_session_t("log-linear")), afa)
   })
   xpctxso3arsd2d <- reactive({
     thr2(xpctxso3arsd1d(), wtnum)
@@ -7176,19 +7208,19 @@ s     } else {
   })
 
   xxpctxso3arsd <- reactive({
-    if (input$summero3thr == 0 & input$o3_rtype3 == i18n$t("linear")) {
-      xpctxso3arsd1 <- outer(summo3regchg(), beta(input$o3_rtype3, input$o3_crf3, input$o3_incr3), afb)
+    if (input$summero3thr == 0 & input$o3_rtype3 == get_session_t("linear")) {
+      xpctxso3arsd1 <- outer(summo3regchg(), beta(input$o3_rtype3, input$o3_crf3, input$o3_incr3, get_session_t("log-linear")), afb)
       xpctxso3arsd2 <- outer(summo3regchg(), quantile(bo3arsd(), 0.025), afb)
       xpctxso3arsd3 <- outer(summo3regchg(), quantile(bo3arsd(), 0.975), afb)
-    } else if (input$summero3thr == 0 & input$o3_rtype3 == i18n$t("log-linear")) {
-      xpctxso3arsd1 <- outer(summo3regchg(), beta(input$o3_rtype3, input$o3_crf3, input$o3_incr3), afa)
+    } else if (input$summero3thr == 0 & input$o3_rtype3 == get_session_t("log-linear")) {
+      xpctxso3arsd1 <- outer(summo3regchg(), beta(input$o3_rtype3, input$o3_crf3, input$o3_incr3, get_session_t("log-linear")), afa)
       xpctxso3arsd2 <- outer(summo3regchg(), quantile(bo3arsd(), 0.025), afa)
       xpctxso3arsd3 <- outer(summo3regchg(), quantile(bo3arsd(), 0.975), afa)
-    } else if (input$summero3thr > 0 & input$o3_rtype3 == i18n$t("linear")) {
+    } else if (input$summero3thr > 0 & input$o3_rtype3 == get_session_t("linear")) {
       xpctxso3arsd1 <- ypctxso3arsd1()
       xpctxso3arsd2 <- ypctxso3arsd2()
       xpctxso3arsd3 <- ypctxso3arsd3()
-    } else if (input$summero3thr > 0 & input$o3_rtype3 == i18n$t("log-linear")) {
+    } else if (input$summero3thr > 0 & input$o3_rtype3 == get_session_t("log-linear")) {
       xpctxso3arsd1 <- zpctxso3arsd1()
       xpctxso3arsd2 <- zpctxso3arsd2()
       xpctxso3arsd3 <- zpctxso3arsd3()
@@ -7272,16 +7304,16 @@ s     } else {
   # O3 Summer - Asthma Symptom Days
   set.seed(100)
   bo3asd <- reactive({
-    chg2(rnorm(input$itn, beta(input$o3_rtype4, input$o3_crf4, input$o3_incr4), se(input$o3_rtype4, input$o3_u95_4, input$o3_l95_4, input$o3_incr4)))
+    chg2(rnorm(input$itn, beta(input$o3_rtype4, input$o3_crf4, input$o3_incr4, get_session_t("log-linear")), se(input$o3_rtype4, input$o3_u95_4, input$o3_l95_4, input$o3_incr4, get_session_t("log-linear"))))
   })
 
   set.seed(100)
   vo3asd <- reactive({
-    valdist(input$sourcevsl4c, input$itn, as.double(input$vsl4), as.double(input$lvsl4), as.double(input$uvsl4), input$pcvsl4, input$plvsl4)
+    valdist(input$sourcevsl4c, input$itn, as.double(input$vsl4), as.double(input$lvsl4), as.double(input$uvsl4), input$pcvsl4, input$plvsl4, get_session_t("normal"), get_session_t("discrete"), get_session_t("triangular"))
   })
 
   cpiy1o3asd <- reactive({
-    cpi[which(cpi_year() == input$sourcevsl4b), ]
+    get_session_cpi()[which(cpi_year() == input$sourcevsl4b), ]
   })
 
   cpiadjo3asd <- reactive({
@@ -7297,7 +7329,7 @@ s     } else {
 
   # for threshold>0 and linear crf
   xpctxso3asd1a <- reactive({
-    outer(summo3thrchg(), beta(input$o3_rtype4, input$o3_crf4, input$o3_incr4), afb)
+    outer(summo3thrchg(), beta(input$o3_rtype4, input$o3_crf4, input$o3_incr4, get_session_t("log-linear")), afb)
   })
   xpctxso3asd2a <- reactive({
     thr2(xpctxso3asd1a(), wtnum)
@@ -7328,7 +7360,7 @@ s     } else {
 
   # for threshold>0 and log-linear crf
   xpctxso3asd1d <- reactive({
-    outer(summo3thrchg(), beta(input$o3_rtype4, input$o3_crf4, input$o3_incr4), afa)
+    outer(summo3thrchg(), beta(input$o3_rtype4, input$o3_crf4, input$o3_incr4, get_session_t("log-linear")), afa)
   })
   xpctxso3asd2d <- reactive({
     thr2(xpctxso3asd1d(), wtnum)
@@ -7358,19 +7390,19 @@ s     } else {
   })
 
   xxpctxso3asd <- reactive({
-    if (input$summero3thr == 0 & input$o3_rtype4 == i18n$t("linear")) {
-      xpctxso3asd1 <- outer(summo3regchg(), beta(input$o3_rtype4, input$o3_crf4, input$o3_incr4), afb)
+    if (input$summero3thr == 0 & input$o3_rtype4 == get_session_t("linear")) {
+      xpctxso3asd1 <- outer(summo3regchg(), beta(input$o3_rtype4, input$o3_crf4, input$o3_incr4, get_session_t("log-linear")), afb)
       xpctxso3asd2 <- outer(summo3regchg(), quantile(bo3asd(), 0.025), afb)
       xpctxso3asd3 <- outer(summo3regchg(), quantile(bo3asd(), 0.975), afb)
-    } else if (input$summero3thr == 0 & input$o3_rtype4 == i18n$t("log-linear")) {
-      xpctxso3asd1 <- outer(summo3regchg(), beta(input$o3_rtype4, input$o3_crf4, input$o3_incr4), afa)
+    } else if (input$summero3thr == 0 & input$o3_rtype4 == get_session_t("log-linear")) {
+      xpctxso3asd1 <- outer(summo3regchg(), beta(input$o3_rtype4, input$o3_crf4, input$o3_incr4, get_session_t("log-linear")), afa)
       xpctxso3asd2 <- outer(summo3regchg(), quantile(bo3asd(), 0.025), afa)
       xpctxso3asd3 <- outer(summo3regchg(), quantile(bo3asd(), 0.975), afa)
-    } else if (input$summero3thr > 0 & input$o3_rtype4 == i18n$t("linear")) {
+    } else if (input$summero3thr > 0 & input$o3_rtype4 == get_session_t("linear")) {
       xpctxso3asd1 <- ypctxso3asd1()
       xpctxso3asd2 <- ypctxso3asd2()
       xpctxso3asd3 <- ypctxso3asd3()
-    } else if (input$summero3thr > 0 & input$o3_rtype4 == i18n$t("log-linear")) {
+    } else if (input$summero3thr > 0 & input$o3_rtype4 == get_session_t("log-linear")) {
       xpctxso3asd1 <- zpctxso3asd1()
       xpctxso3asd2 <- zpctxso3asd2()
       xpctxso3asd3 <- zpctxso3asd3()
@@ -7416,15 +7448,15 @@ s     } else {
   # O3 Summer  Respiratory Emergency Room Visits
   set.seed(100)
   bo3rerv <- reactive({
-    chg2(rnorm(input$itn, beta(input$o3_rtype6, input$o3_crf6, input$o3_incr6), se(input$o3_rtype6, input$o3_u95_6, input$o3_l95_6, input$o3_incr6)))
+    chg2(rnorm(input$itn, beta(input$o3_rtype6, input$o3_crf6, input$o3_incr6, get_session_t("log-linear")), se(input$o3_rtype6, input$o3_u95_6, input$o3_l95_6, input$o3_incr6, get_session_t("log-linear"))))
   })
   set.seed(100)
   vo3rerv <- reactive({
-    chg2(valdist(input$sourcevsl9c, input$itn, input$vsl9, input$lvsl9, input$uvsl9, input$pcvsl9, input$plvsl9))
+    chg2(valdist(input$sourcevsl9c, input$itn, input$vsl9, input$lvsl9, input$uvsl9, input$pcvsl9, input$plvsl9, get_session_t("normal"), get_session_t("discrete"), get_session_t("triangular")))
   })
 
   cpiy1o3rerv <- reactive({
-    cpi[which(cpi_year() == input$sourcevsl9b), ]
+    get_session_cpi()[which(cpi_year() == input$sourcevsl9b), ]
   })
 
   cpiadjo3rerv <- reactive({
@@ -7440,7 +7472,7 @@ s     } else {
 
   # for threshold>0 and linear crf
   xpctxso3rerv1a <- reactive({
-    outer(summo3thrchg(), beta(input$o3_rtype6, input$o3_crf6, input$o3_incr6), afb)
+    outer(summo3thrchg(), beta(input$o3_rtype6, input$o3_crf6, input$o3_incr6, get_session_t("log-linear")), afb)
   })
   xpctxso3rerv2a <- reactive({
     thr2(xpctxso3rerv1a(), wtnum)
@@ -7471,7 +7503,7 @@ s     } else {
 
   # for threshold>0 and log-linear crf
   xpctxso3rerv1d <- reactive({
-    outer(summo3thrchg(), beta(input$o3_rtype6, input$o3_crf6, input$o3_incr6), afa)
+    outer(summo3thrchg(), beta(input$o3_rtype6, input$o3_crf6, input$o3_incr6, get_session_t("log-linear")), afa)
   })
   xpctxso3rerv2d <- reactive({
     thr2(xpctxso3rerv1d(), wtnum)
@@ -7501,19 +7533,19 @@ s     } else {
   })
 
   xxpctxso3rerv <- reactive({
-    if (input$summero3thr == 0 & input$o3_rtype6 == i18n$t("linear")) {
-      xpctxso3rerv1 <- outer(summo3regchg(), beta(input$o3_rtype6, input$o3_crf6, input$o3_incr6), afb)
+    if (input$summero3thr == 0 & input$o3_rtype6 == get_session_t("linear")) {
+      xpctxso3rerv1 <- outer(summo3regchg(), beta(input$o3_rtype6, input$o3_crf6, input$o3_incr6, get_session_t("log-linear")), afb)
       xpctxso3rerv2 <- outer(summo3regchg(), quantile(bo3rerv(), 0.025), afb)
       xpctxso3rerv3 <- outer(summo3regchg(), quantile(bo3rerv(), 0.975), afb)
-    } else if (input$summero3thr == 0 & input$o3_rtype6 == i18n$t("log-linear")) {
-      xpctxso3rerv1 <- outer(summo3regchg(), beta(input$o3_rtype6, input$o3_crf6, input$o3_incr6), afa)
+    } else if (input$summero3thr == 0 & input$o3_rtype6 == get_session_t("log-linear")) {
+      xpctxso3rerv1 <- outer(summo3regchg(), beta(input$o3_rtype6, input$o3_crf6, input$o3_incr6, get_session_t("log-linear")), afa)
       xpctxso3rerv2 <- outer(summo3regchg(), quantile(bo3rerv(), 0.025), afa)
       xpctxso3rerv3 <- outer(summo3regchg(), quantile(bo3rerv(), 0.975), afa)
-    } else if (input$summero3thr > 0 & input$o3_rtype6 == i18n$t("linear")) {
+    } else if (input$summero3thr > 0 & input$o3_rtype6 == get_session_t("linear")) {
       xpctxso3rerv1 <- ypctxso3rerv1()
       xpctxso3rerv2 <- ypctxso3rerv2()
       xpctxso3rerv3 <- ypctxso3rerv3()
-    } else if (input$summero3thr > 0 & input$o3_rtype6 == i18n$t("log-linear")) {
+    } else if (input$summero3thr > 0 & input$o3_rtype6 == get_session_t("log-linear")) {
       xpctxso3rerv1 <- zpctxso3rerv1()
       xpctxso3rerv2 <- zpctxso3rerv2()
       xpctxso3rerv3 <- zpctxso3rerv3()
@@ -7571,7 +7603,7 @@ s     } else {
   # O3 Summer Respiratory Hospital Admissions
   set.seed(100)
   bo3rha <- reactive({
-    chg2(rnorm(input$itn, beta(input$o3_rtype7, input$o3_crf7, input$o3_incr7), se(input$o3_rtype7, input$o3_u95_7, input$o3_l95_7, input$o3_incr7)))
+    chg2(rnorm(input$itn, beta(input$o3_rtype7, input$o3_crf7, input$o3_incr7, get_session_t("log-linear")), se(input$o3_rtype7, input$o3_u95_7, input$o3_l95_7, input$o3_incr7, get_session_t("log-linear"))))
   })
 
   rtypeo3rha <- reactive({
@@ -7583,7 +7615,7 @@ s     } else {
 
   # for threshold>0 and linear crf
   xpctxso3rha1a <- reactive({
-    outer(summo3thrchg(), beta(input$o3_rtype7, input$o3_crf7, input$o3_incr7), afb)
+    outer(summo3thrchg(), beta(input$o3_rtype7, input$o3_crf7, input$o3_incr7, get_session_t("log-linear")), afb)
   })
   xpctxso3rha2a <- reactive({
     thr2(xpctxso3rha1a(), wtnum)
@@ -7614,7 +7646,7 @@ s     } else {
 
   # for threshold>0 and log-linear crf
   xpctxso3rha1d <- reactive({
-    outer(summo3thrchg(), beta(input$o3_rtype7, input$o3_crf7, input$o3_incr7), afa)
+    outer(summo3thrchg(), beta(input$o3_rtype7, input$o3_crf7, input$o3_incr7, get_session_t("log-linear")), afa)
   })
   xpctxso3rha2d <- reactive({
     thr2(xpctxso3rha1d(), wtnum)
@@ -7644,19 +7676,19 @@ s     } else {
   })
 
   xxpctxso3rha <- reactive({
-    if (input$summero3thr == 0 & input$o3_rtype7 == i18n$t("linear")) {
-      xpctxso3rha1 <- outer(summo3regchg(), beta(input$o3_rtype7, input$o3_crf7, input$o3_incr7), afb)
+    if (input$summero3thr == 0 & input$o3_rtype7 == get_session_t("linear")) {
+      xpctxso3rha1 <- outer(summo3regchg(), beta(input$o3_rtype7, input$o3_crf7, input$o3_incr7, get_session_t("log-linear")), afb)
       xpctxso3rha2 <- outer(summo3regchg(), quantile(bo3rha(), 0.025), afb)
       xpctxso3rha3 <- outer(summo3regchg(), quantile(bo3rha(), 0.975), afb)
-    } else if (input$summero3thr == 0 & input$o3_rtype7 == i18n$t("log-linear")) {
-      xpctxso3rha1 <- outer(summo3regchg(), beta(input$o3_rtype7, input$o3_crf7, input$o3_incr7), afa)
+    } else if (input$summero3thr == 0 & input$o3_rtype7 == get_session_t("log-linear")) {
+      xpctxso3rha1 <- outer(summo3regchg(), beta(input$o3_rtype7, input$o3_crf7, input$o3_incr7, get_session_t("log-linear")), afa)
       xpctxso3rha2 <- outer(summo3regchg(), quantile(bo3rha(), 0.025), afa)
       xpctxso3rha3 <- outer(summo3regchg(), quantile(bo3rha(), 0.975), afa)
-    } else if (input$summero3thr > 0 & input$o3_rtype7 == i18n$t("linear")) {
+    } else if (input$summero3thr > 0 & input$o3_rtype7 == get_session_t("linear")) {
       xpctxso3rha1 <- ypctxso3rha1()
       xpctxso3rha2 <- ypctxso3rha2()
       xpctxso3rha3 <- ypctxso3rha3()
-    } else if (input$summero3thr > 0 & input$o3_rtype7 == i18n$t("log-linear")) {
+    } else if (input$summero3thr > 0 & input$o3_rtype7 == get_session_t("log-linear")) {
       xpctxso3rha1 <- zpctxso3rha1()
       xpctxso3rha2 <- zpctxso3rha2()
       xpctxso3rha3 <- zpctxso3rha3()
@@ -7694,18 +7726,18 @@ s     } else {
   # SO2  Acute Exposure Mortality
   set.seed(100)
   bso2aem <- reactive({
-    chg2(rnorm(input$itn, beta(input$so2_rtype, input$so2_crf, input$so2_incr), se(input$so2_rtype, input$so2_u95, input$so2_l95, input$so2_incr)))
+    chg2(rnorm(input$itn, beta(input$so2_rtype, input$so2_crf, input$so2_incr, get_session_t("log-linear")), se(input$so2_rtype, input$so2_u95, input$so2_l95, input$so2_incr, get_session_t("log-linear"))))
   })
 
   set.seed(100)
   vso2aem <- reactive({
-    valdist(input$vslfm, input$itn, input$vsl, input$lvsl, input$uvsl, input$pcvsl, input$plvsl)
+    valdist(input$vslfm, input$itn, input$vsl, input$lvsl, input$uvsl, input$pcvsl, input$plvsl, get_session_t("normal"), get_session_t("discrete"), get_session_t("triangular"))
   })
   cpiyso2aem <- reactive({
-    cpi[which(cpi_year() == input$curr), ]
+    get_session_cpi()[which(cpi_year() == input$curr), ]
   })
   cpiyso2aem1 <- reactive({
-    cpi[which(cpi_year() == input$vslyr), ]
+    get_session_cpi()[which(cpi_year() == input$vslyr), ]
   })
 
   cpiadjso2aem <- reactive({
@@ -7721,7 +7753,7 @@ s     } else {
 
   # for threshold>0 and linear crf
   xpctxsso2aem1a <- reactive({
-    outer(so2thrchg(), beta(input$so2_rtype, input$so2_crf, input$so2_incr), afb)
+    outer(so2thrchg(), beta(input$so2_rtype, input$so2_crf, input$so2_incr, get_session_t("log-linear")), afb)
   })
   xpctxsso2aem2a <- reactive({
     thr2(xpctxsso2aem1a(), wtnum)
@@ -7752,7 +7784,7 @@ s     } else {
 
   # for threshold>0 and log-linear crf
   xpctxsso2aem1d <- reactive({
-    outer(so2thrchg(), beta(input$so2_rtype, input$so2_crf, input$so2_incr), afa)
+    outer(so2thrchg(), beta(input$so2_rtype, input$so2_crf, input$so2_incr, get_session_t("log-linear")), afa)
   })
   xpctxsso2aem2d <- reactive({
     thr2(xpctxsso2aem1d(), wtnum)
@@ -7782,19 +7814,19 @@ s     } else {
   })
 
   xxpctxsso2aem <- reactive({
-    if (input$so2thr == 0 & input$so2_rtype == i18n$t("linear")) {
-      xpctxsso2aem1 <- outer(so2regchg(), beta(input$so2_rtype, input$so2_crf, input$so2_incr), afb)
+    if (input$so2thr == 0 & input$so2_rtype == get_session_t("linear")) {
+      xpctxsso2aem1 <- outer(so2regchg(), beta(input$so2_rtype, input$so2_crf, input$so2_incr, get_session_t("log-linear")), afb)
       xpctxsso2aem2 <- outer(so2regchg(), quantile(bso2aem(), 0.025), afb)
       xpctxsso2aem3 <- outer(so2regchg(), quantile(bso2aem(), 0.975), afb)
-    } else if (input$so2thr == 0 & input$so2_rtype == i18n$t("log-linear")) {
-      xpctxsso2aem1 <- outer(so2regchg(), beta(input$so2_rtype, input$so2_crf, input$so2_incr), afa)
+    } else if (input$so2thr == 0 & input$so2_rtype == get_session_t("log-linear")) {
+      xpctxsso2aem1 <- outer(so2regchg(), beta(input$so2_rtype, input$so2_crf, input$so2_incr, get_session_t("log-linear")), afa)
       xpctxsso2aem2 <- outer(so2regchg(), quantile(bso2aem(), 0.025), afa)
       xpctxsso2aem3 <- outer(so2regchg(), quantile(bso2aem(), 0.975), afa)
-    } else if (input$so2thr > 0 & input$so2_rtype == i18n$t("linear")) {
+    } else if (input$so2thr > 0 & input$so2_rtype == get_session_t("linear")) {
       xpctxsso2aem1 <- ypctxsso2aem1()
       xpctxsso2aem2 <- ypctxsso2aem2()
       xpctxsso2aem3 <- ypctxsso2aem3()
-    } else if (input$so2thr > 0 & input$so2_rtype == i18n$t("log-linear")) {
+    } else if (input$so2thr > 0 & input$so2_rtype == get_session_t("log-linear")) {
       xpctxsso2aem1 <- zpctxsso2aem1()
       xpctxsso2aem2 <- zpctxsso2aem2()
       xpctxsso2aem3 <- zpctxsso2aem3()
@@ -7853,18 +7885,18 @@ s     } else {
   # CO (24 hour)  Acute Exposure Mortality
   set.seed(100)
   bco24aem <- reactive({
-    chg2(rnorm(input$itn, beta(input$co24_rtype, input$co24_crf, input$co24_incr), se(input$co24_rtype, input$co24_u95, input$co24_l95, input$co24_incr)))
+    chg2(rnorm(input$itn, beta(input$co24_rtype, input$co24_crf, input$co24_incr, get_session_t("log-linear")), se(input$co24_rtype, input$co24_u95, input$co24_l95, input$co24_incr, get_session_t("log-linear"))))
   })
   set.seed(100)
 
   vco24aem <- reactive({
-    valdist(input$vslfm, input$itn, input$vsl, input$lvsl, input$uvsl, input$pcvsl, input$plvsl)
+    valdist(input$vslfm, input$itn, input$vsl, input$lvsl, input$uvsl, input$pcvsl, input$plvsl, get_session_t("normal"), get_session_t("discrete"), get_session_t("triangular"))
   })
   cpiyco24aem <- reactive({
-    cpi[which(cpi_year() == input$curr), ]
+    get_session_cpi()[which(cpi_year() == input$curr), ]
   })
   cpiyco24aem1 <- reactive({
-    cpi[which(cpi_year() == input$vslyr), ]
+    get_session_cpi()[which(cpi_year() == input$vslyr), ]
   })
 
   cpiadjco24aem <- reactive({
@@ -7880,7 +7912,7 @@ s     } else {
 
   # for threshold>0 and linear crf
   xpctxsco24aem1a <- reactive({
-    outer(co24thrchg(), beta(input$co24_rtype, input$co24_crf, input$co24_incr), afb)
+    outer(co24thrchg(), beta(input$co24_rtype, input$co24_crf, input$co24_incr, get_session_t("log-linear")), afb)
   })
   xpctxsco24aem2a <- reactive({
     thr2(xpctxsco24aem1a(), wtnum)
@@ -7911,7 +7943,7 @@ s     } else {
 
   # for threshold>0 and log-linear crf
   xpctxsco24aem1d <- reactive({
-    outer(co24thrchg(), beta(input$co24_rtype, input$co24_crf, input$co24_incr), afa)
+    outer(co24thrchg(), beta(input$co24_rtype, input$co24_crf, input$co24_incr, get_session_t("log-linear")), afa)
   })
   xpctxsco24aem2d <- reactive({
     thr2(xpctxsco24aem1d(), wtnum)
@@ -7941,19 +7973,19 @@ s     } else {
   })
 
   xxpctxsco24aem <- reactive({
-    if (input$cothr == 0 & input$co24_rtype == i18n$t("linear")) {
-      xpctxsco24aem1 <- outer(co24regchg(), beta(input$co24_rtype, input$co24_crf, input$co24_incr), afb)
+    if (input$cothr == 0 & input$co24_rtype == get_session_t("linear")) {
+      xpctxsco24aem1 <- outer(co24regchg(), beta(input$co24_rtype, input$co24_crf, input$co24_incr, get_session_t("log-linear")), afb)
       xpctxsco24aem2 <- outer(co24regchg(), quantile(bco24aem(), 0.025), afb)
       xpctxsco24aem3 <- outer(co24regchg(), quantile(bco24aem(), 0.975), afb)
-    } else if (input$cothr == 0 & input$co24_rtype == i18n$t("log-linear")) {
-      xpctxsco24aem1 <- outer(co24regchg(), beta(input$co24_rtype, input$co24_crf, input$co24_incr), afa)
+    } else if (input$cothr == 0 & input$co24_rtype == get_session_t("log-linear")) {
+      xpctxsco24aem1 <- outer(co24regchg(), beta(input$co24_rtype, input$co24_crf, input$co24_incr, get_session_t("log-linear")), afa)
       xpctxsco24aem2 <- outer(co24regchg(), quantile(bco24aem(), 0.025), afa)
       xpctxsco24aem3 <- outer(co24regchg(), quantile(bco24aem(), 0.975), afa)
-    } else if (input$cothr > 0 & input$co24_rtype == i18n$t("linear")) {
+    } else if (input$cothr > 0 & input$co24_rtype == get_session_t("linear")) {
       xpctxsco24aem1 <- ypctxsco24aem1()
       xpctxsco24aem2 <- ypctxsco24aem2()
       xpctxsco24aem3 <- ypctxsco24aem3()
-    } else if (input$cothr > 0 & input$co24_rtype == i18n$t("log-linear")) {
+    } else if (input$cothr > 0 & input$co24_rtype == get_session_t("log-linear")) {
       xpctxsco24aem1 <- zpctxsco24aem1()
       xpctxsco24aem2 <- zpctxsco24aem2()
       xpctxsco24aem3 <- zpctxsco24aem3()
@@ -8017,15 +8049,15 @@ s     } else {
   # CO (1 hour) Elderly Cardiac Hospital Admissions
   set.seed(100)
   becha <- reactive({
-    chg2(rnorm(input$itn, beta(input$co1_rtype, input$co1_crf, input$co1_incr), se(input$co1_rtype, input$co1_u95, input$co1_l95, input$co1_incr)))
+    chg2(rnorm(input$itn, beta(input$co1_rtype, input$co1_crf, input$co1_incr, get_session_t("log-linear")), se(input$co1_rtype, input$co1_u95, input$co1_l95, input$co1_incr, get_session_t("log-linear"))))
   })
 
   set.seed(100)
   vecha <- reactive({
-    chg2(valdist(input$sourcevsl7c, input$itn, input$vsl7, input$lvsl7, input$uvsl7, input$pcvsl7, input$plvsl7))
+    chg2(valdist(input$sourcevsl7c, input$itn, input$vsl7, input$lvsl7, input$uvsl7, input$pcvsl7, input$plvsl7, get_session_t("normal"), get_session_t("discrete"), get_session_t("triangular")))
   })
   cpiy1echa <- reactive({
-    cpi[which(cpi_year() == input$sourcevsl7b), ]
+    get_session_cpi()[which(cpi_year() == input$sourcevsl7b), ]
   })
 
   cpiadjecha <- reactive({
@@ -8041,7 +8073,7 @@ s     } else {
 
   # for threshold>0 and linear crf
   xpctxsco1aem1a <- reactive({
-    outer(co1thrchg(), beta(input$co1_rtype, input$co1_crf, input$co1_incr), afb)
+    outer(co1thrchg(), beta(input$co1_rtype, input$co1_crf, input$co1_incr, get_session_t("log-linear")), afb)
   })
   xpctxsco1aem2a <- reactive({
     thr2(xpctxsco1aem1a(), wtnum)
@@ -8072,7 +8104,7 @@ s     } else {
 
   # for threshold>0 and log-linear crf
   xpctxsco1aem1d <- reactive({
-    outer(co1thrchg(), beta(input$co1_rtype, input$co1_crf, input$co1_incr), afa)
+    outer(co1thrchg(), beta(input$co1_rtype, input$co1_crf, input$co1_incr, get_session_t("log-linear")), afa)
   })
   xpctxsco1aem2d <- reactive({
     thr2(xpctxsco1aem1d(), wtnum)
@@ -8102,19 +8134,19 @@ s     } else {
   })
 
   xxpctxsco1aem <- reactive({
-    if (input$cothr == 0 & input$co1_rtype == i18n$t("linear")) {
-      xpctxsco1aem1 <- outer(co1regchg(), beta(input$co1_rtype, input$co1_crf, input$co1_incr), afb)
+    if (input$cothr == 0 & input$co1_rtype == get_session_t("linear")) {
+      xpctxsco1aem1 <- outer(co1regchg(), beta(input$co1_rtype, input$co1_crf, input$co1_incr, get_session_t("log-linear")), afb)
       xpctxsco1aem2 <- outer(co1regchg(), quantile(becha(), 0.025), afb)
       xpctxsco1aem3 <- outer(co1regchg(), quantile(becha(), 0.975), afb)
-    } else if (input$cothr == 0 & input$co1_rtype == i18n$t("log-linear")) {
-      xpctxsco1aem1 <- outer(co1regchg(), beta(input$co1_rtype, input$co1_crf, input$co1_incr), afa)
+    } else if (input$cothr == 0 & input$co1_rtype == get_session_t("log-linear")) {
+      xpctxsco1aem1 <- outer(co1regchg(), beta(input$co1_rtype, input$co1_crf, input$co1_incr, get_session_t("log-linear")), afa)
       xpctxsco1aem2 <- outer(co1regchg(), quantile(becha(), 0.025), afa)
       xpctxsco1aem3 <- outer(co1regchg(), quantile(becha(), 0.975), afa)
-    } else if (input$cothr > 0 & input$co1_rtype == i18n$t("linear")) {
+    } else if (input$cothr > 0 & input$co1_rtype == get_session_t("linear")) {
       xpctxsco1aem1 <- ypctxsco1aem1()
       xpctxsco1aem2 <- ypctxsco1aem2()
       xpctxsco1aem3 <- ypctxsco1aem3()
-    } else if (input$cothr > 0 & input$co1_rtype == i18n$t("log-linear")) {
+    } else if (input$cothr > 0 & input$co1_rtype == get_session_t("log-linear")) {
       xpctxsco1aem1 <- zpctxsco1aem1()
       xpctxsco1aem2 <- zpctxsco1aem2()
       xpctxsco1aem3 <- zpctxsco1aem3()
@@ -8209,15 +8241,15 @@ s     } else {
   eleventx_r2 <- reactive({
     txc1 <- eleventx_r1()
     colnames(txc1) <- c(
-      i18n$t("year"), i18n$t("scenario"), i18n$t("CDUID"), "province", i18n$t("pollutant"),
-      i18n$t("endpoint"), "counts", "counts_per_100k", "DALYs", "pop"
+      get_session_t("year"), get_session_t("scenario"), get_session_t("CDUID"), "province", get_session_t("pollutant"),
+      get_session_t("endpoint"), "counts", "counts_per_100k", "DALYs", "pop"
     )
     txc1
   })
 
   # aggregate toxic on cancer nationally
   caneleventx_r1 <- reactive({
-    if (currentlanguage == "en") {
+    if (get_session_lang() == "en") {
       aggregate(cbind(counts, DALYs, pop) ~ year + scenario + pollutant + endpoint, eleventx_r2(), sum, na.action = NULL)
     } else {
       aggregate(cbind(counts, DALYs, pop) ~ année + scénario + polluant + paramètre, eleventx_r2(), sum, na.action = NULL)
@@ -8234,7 +8266,7 @@ s     } else {
   caneleventx_r4 <- reactive({
     txc2 <- caneleventx_r3()
     colnames(txc2) <- c(
-      i18n$t("year"), i18n$t("scenario"), "region", i18n$t("pollutant"), i18n$t("endpoint"), "counts",
+      get_session_t("year"), get_session_t("scenario"), "region", get_session_t("pollutant"), get_session_t("endpoint"), "counts",
       "counts_per_100k", "DALYs"
     )
     txc2
@@ -8242,7 +8274,7 @@ s     } else {
 
   # aggregate toxic on cancer at provincial level
   proeleventx_r1 <- reactive({
-    if (currentlanguage == "en") {
+    if (get_session_lang() == "en") {
       aggregate(cbind(counts, DALYs, pop) ~ year + scenario + province + pollutant + endpoint, eleventx_r2(), sum, na.action = NULL)
     } else {
       aggregate(cbind(counts, DALYs, pop) ~ année + scénario + province + polluant + paramètre, eleventx_r2(), sum, na.action = NULL)
@@ -8256,7 +8288,7 @@ s     } else {
   proeleventx_r3 <- reactive({
     txc3 <- proeleventx_r2()
     colnames(txc3) <- c(
-      i18n$t("year"), i18n$t("scenario"), "region", i18n$t("pollutant"), i18n$t("endpoint"),
+      get_session_t("year"), get_session_t("scenario"), "region", get_session_t("pollutant"), get_session_t("endpoint"),
       "counts", "counts_per_100k", "DALYs"
     )
     txc3
@@ -8267,7 +8299,7 @@ s     } else {
     rbind(proeleventx_r3(), caneleventx_r4())
   })
   canproeleventx_r2 <- reactive({
-    merge(canproeleventx_r1(), geocode, by.x = "region", by.y = "Name", all.x = TRUE)
+    merge(canproeleventx_r1(), get_session_geocode(), by.x = "region", by.y = "Name", all.x = TRUE)
   })
 
   canproeleventx_r3 <- reactive({
@@ -8275,13 +8307,13 @@ s     } else {
   })
 
   cdeleventx_r1 <- reactive({
-    cbind(eleventx_r2()[c(1, 2, 3, 4)], i18n$t("CD"), eleventx_r2()[c(5, 6, 7, 8, 9)])
+    cbind(eleventx_r2()[c(1, 2, 3, 4)], get_session_t("CD"), eleventx_r2()[c(5, 6, 7, 8, 9)])
   })
   cdeleventx_r2 <- reactive({
     txc4 <- cdeleventx_r1()
     colnames(txc4) <- c(
-      i18n$t("year"), i18n$t("scenario"), "geocode", "region", "geotype",
-      i18n$t("pollutant"), i18n$t("endpoint"), "counts", "counts_per_100k", "DALYs"
+      get_session_t("year"), get_session_t("scenario"), "geocode", "region", "geotype",
+      get_session_t("pollutant"), get_session_t("endpoint"), "counts", "counts_per_100k", "DALYs"
     )
     txc4
   })
@@ -8291,7 +8323,7 @@ s     } else {
   })
 
   finaleleventx_r2 <- reactive({
-    if (currentlanguage == "en") {
+    if (get_session_lang() == "en") {
       finaleleventx_r1()[with(finaleleventx_r1(), order(year, scenario, pollutant)), ]
     } else {
       finaleleventx_r1()[with(finaleleventx_r1(), order(année, scénario, polluant)), ]
@@ -8301,15 +8333,15 @@ s     } else {
   xfinaleleventx_r2 <- reactive({
     xtxc4 <- finaleleventx_r2()
     colnames(xtxc4) <- c(
-      i18n$t("Year"), i18n$t("Scenario"), i18n$t("Geocode"), i18n$t("Region"), i18n$t("Type of Geography"),
-      i18n$t("Pollutant"), i18n$t("Endpoint"), i18n$t("Counts"), i18n$t("Counts per 100,000"),
-      i18n$t("Disability-Adjusted Life Years")
+      get_session_t("Year"), get_session_t("Scenario"), get_session_t("Geocode"), get_session_t("Region"), get_session_t("Type of Geography"),
+      get_session_t("Pollutant"), get_session_t("Endpoint"), get_session_t("Counts"), get_session_t("Counts per 100,000"),
+      get_session_t("Disability-Adjusted Life Years")
     )
     xtxc4
   })
 
   x1finaleleventx_r2 <- reactive({
-    merge_data(finaleleventx_r2(), xprov, by.x = "region", by.y = "Province")
+    merge_data(finaleleventx_r2(), get_session_xprov(), by.x = "region", by.y = "Province")
   })
   x2finaleleventx_r2 <- reactive({
     x1finaleleventx_r2()[, c(2, 3, 4, 5, 12, 6:10)]
@@ -8318,14 +8350,14 @@ s     } else {
   x3finaleleventx_r2 <- reactive({
     x3tox1 <- x2finaleleventx_r2()
     colnames(x3tox1) <- c(
-      i18n$t("Year"), i18n$t("Scenario"), i18n$t("Geocode"), i18n$t("Type of Geography"), i18n$t("Region"), i18n$t("Pollutant"),
-      i18n$t("Endpoint"), i18n$t("Counts"), i18n$t("Counts per 100,000"), i18n$t("Disability-Adjusted Life Years")
+      get_session_t("Year"), get_session_t("Scenario"), get_session_t("Geocode"), get_session_t("Type of Geography"), get_session_t("Region"), get_session_t("Pollutant"),
+      get_session_t("Endpoint"), get_session_t("Counts"), get_session_t("Counts per 100,000"), get_session_t("Disability-Adjusted Life Years")
     )
     x3tox1
   })
 
   x4finaleleventx_r2 <- reactive({
-    if (currentlanguage == "en") {
+    if (get_session_lang() == "en") {
       x3finaleleventx_r2()[with(x3finaleleventx_r2(), order(Year, Scenario, Geocode)), ]
     } else {
       x3finaleleventx_r2()[with(x3finaleleventx_r2(), order(Année, Scénario, Géocode)), ]
@@ -8367,21 +8399,21 @@ s     } else {
   eleventxa_r3 <- reactive({
     txa1 <- eleventxa_r2()
     colnames(txa1) <- c(
-      i18n$t("year"), i18n$t("scenario"), i18n$t("CDUID"), "province", i18n$t("pollutant"),
-      i18n$t("endpoint"), "Hazard_Quotient"
+      get_session_t("year"), get_session_t("scenario"), get_session_t("CDUID"), "province", get_session_t("pollutant"),
+      get_session_t("endpoint"), "Hazard_Quotient"
     )
     txa1
   })
 
   eleventxa_r4 <- reactive({
-    cbind(eleventxa_r3()[c(1, 2, 3, 4)], i18n$t("CD"), eleventxa_r3()[c(5, 6, 7)])
+    cbind(eleventxa_r3()[c(1, 2, 3, 4)], get_session_t("CD"), eleventxa_r3()[c(5, 6, 7)])
   })
 
   eleventxa_r5 <- reactive({
     txaa2 <- eleventxa_r4()
     colnames(txaa2) <- c(
-      i18n$t("year"), i18n$t("scenario"), "geocode", "region", "geotype", i18n$t("pollutant"),
-      i18n$t("endpoint"), "Hazard_Quotient"
+      get_session_t("year"), get_session_t("scenario"), "geocode", "region", "geotype", get_session_t("pollutant"),
+      get_session_t("endpoint"), "Hazard_Quotient"
     )
     txaa2
   })
@@ -8393,30 +8425,30 @@ s     } else {
   })
 
   canpro_Benzene1 <- reactive({
-    cbind(Canprowexposure1()[c(1, 2, 3)], i18n$t("Benzene"), i18n$t("Hematological"), Canprowexposure1_Benzene() / input$bzanrfc)
+    cbind(Canprowexposure1()[c(1, 2, 3)], get_session_t("Benzene"), get_session_t("Hematological"), Canprowexposure1_Benzene() / input$bzanrfc)
   })
   canpro_Benzene2 <- reactive({
     ben1 <- canpro_Benzene1()
-    colnames(ben1) <- c(i18n$t("year"), i18n$t("scenario"), "region", i18n$t("pollutant"), i18n$t("endpoint"), "Hazard_Quotient")
+    colnames(ben1) <- c(get_session_t("year"), get_session_t("scenario"), "region", get_session_t("pollutant"), get_session_t("endpoint"), "Hazard_Quotient")
     ben1
   })
 
   canpro_Acetaldehyde1 <- reactive({
-    cbind(Canprowexposure1()[c(1, 2, 3)], i18n$t("Acetaldehyde"), i18n$t("Respiratory (histological)"), Canprowexposure1_Acetaldehyde() / input$acanrfc)
+    cbind(Canprowexposure1()[c(1, 2, 3)], get_session_t("Acetaldehyde"), get_session_t("Respiratory (histological)"), Canprowexposure1_Acetaldehyde() / input$acanrfc)
   })
   canpro_Acetaldehyde2 <- reactive({
     acet1 <- canpro_Acetaldehyde1()
-    colnames(acet1) <- c(i18n$t("year"), i18n$t("scenario"), "region", i18n$t("pollutant"), i18n$t("endpoint"), "Hazard_Quotient")
+    colnames(acet1) <- c(get_session_t("year"), get_session_t("scenario"), "region", get_session_t("pollutant"), get_session_t("endpoint"), "Hazard_Quotient")
     acet1
   })
 
   canpro_Formaldehyde1 <- reactive({
-    cbind(Canprowexposure1()[c(1, 2, 3)], i18n$t("Formaldehyde"), i18n$t("Respiratory (asthma)"), Canprowexposure1_Formaldehyde() / input$fmanrfc)
+    cbind(Canprowexposure1()[c(1, 2, 3)], get_session_t("Formaldehyde"), get_session_t("Respiratory (asthma)"), Canprowexposure1_Formaldehyde() / input$fmanrfc)
   })
 
   canpro_Formaldehyde2 <- reactive({
     forma1 <- canpro_Formaldehyde1()
-    colnames(forma1) <- c(i18n$t("year"), i18n$t("scenario"), "region", i18n$t("pollutant"), i18n$t("endpoint"), "Hazard_Quotient")
+    colnames(forma1) <- c(get_session_t("year"), get_session_t("scenario"), "region", get_session_t("pollutant"), get_session_t("endpoint"), "Hazard_Quotient")
     forma1
   })
 
@@ -8425,7 +8457,7 @@ s     } else {
   })
 
   canpro_allthreenc2 <- reactive({
-    merge(canpro_allthreenc1(), geocode, by.x = "region", by.y = "Name", all.x = TRUE)
+    merge(canpro_allthreenc1(), get_session_geocode(), by.x = "region", by.y = "Name", all.x = TRUE)
   })
 
   canpro_allthreenc3 <- reactive({
@@ -8437,7 +8469,7 @@ s     } else {
   })
 
   toxicnoncancerfinal2 <- reactive({
-    if (currentlanguage == "en") {
+    if (get_session_lang() == "en") {
       toxicnoncancerfinal1()[with(toxicnoncancerfinal1(), order(year, scenario, pollutant)), ]
     } else {
       toxicnoncancerfinal1()[with(toxicnoncancerfinal1(), order(année, scénario, polluant)), ]
@@ -8445,7 +8477,7 @@ s     } else {
   })
 
   x1toxicnoncancerfinal2 <- reactive({
-    merge_data(toxicnoncancerfinal2(), xprov, by.x = "region", by.y = "Province")
+    merge_data(toxicnoncancerfinal2(), get_session_xprov(), by.x = "region", by.y = "Province")
   })
   x2toxicnoncancerfinal2 <- reactive({
     x1toxicnoncancerfinal2()[, c(2, 3, 4, 5, 10, 6:8)]
@@ -8454,14 +8486,14 @@ s     } else {
   x3toxicnoncancerfinal2 <- reactive({
     x3btox <- x2toxicnoncancerfinal2()
     colnames(x3btox) <- c(
-      i18n$t("Year"), i18n$t("Scenario"), i18n$t("Geocode"), i18n$t("Type of Geography"), i18n$t("Region"), i18n$t("Pollutant"),
-      i18n$t("Endpoint"), i18n$t("Hazard Quotient")
+      get_session_t("Year"), get_session_t("Scenario"), get_session_t("Geocode"), get_session_t("Type of Geography"), get_session_t("Region"), get_session_t("Pollutant"),
+      get_session_t("Endpoint"), get_session_t("Hazard Quotient")
     )
     x3btox
   })
 
   x4toxicnoncancerfinal2 <- reactive({
-    if (currentlanguage == "en") {
+    if (get_session_lang() == "en") {
       x3toxicnoncancerfinal2()[with(x3toxicnoncancerfinal2(), order(Year, Scenario, Geocode)), ]
     } else {
       x3toxicnoncancerfinal2()[with(x3toxicnoncancerfinal2(), order(Année, Scénario, Géocode)), ]
@@ -8469,67 +8501,67 @@ s     } else {
   })
 
   eleven1 <- reactive({
-    cbind(foura_year(), foura_scenario(), foura()[c(1, 2)], i18n$t("PM2.5"), i18n$t("Chronic Exposure Mortality"), five(), six(), seven(), eight(), nine(), ten(), tena(), pctxsmort(), pctxsmortl95(), pctxsmortu95(), leyr(), leyrl95(), leyru95(), i18n$t("mortality"), four_age25plus())
+    cbind(foura_year(), foura_scenario(), foura()[c(1, 2)], get_session_t("PM2.5"), get_session_t("Chronic Exposure Mortality"), five(), six(), seven(), eight(), nine(), ten(), tena(), pctxsmort(), pctxsmortl95(), pctxsmortu95(), leyr(), leyrl95(), leyru95(), get_session_t("mortality"), four_age25plus())
   })
   eleven2 <- reactive({
-    cbind(foura_year(), foura_scenario(), foura()[c(1, 2)], i18n$t("PM2.5"), i18n$t("Acute Respiratory Symptom Days"), fivearsd(), sixarsd(), sevenarsd(), eightarsd(), ninearsd(), tenarsd(), tenaarsd(), pctxsarsd(), pctxsarsdl95(), pctxsarsdu95(), NA, NA, NA, i18n$t("morbidity"), NA)
+    cbind(foura_year(), foura_scenario(), foura()[c(1, 2)], get_session_t("PM2.5"), get_session_t("Acute Respiratory Symptom Days"), fivearsd(), sixarsd(), sevenarsd(), eightarsd(), ninearsd(), tenarsd(), tenaarsd(), pctxsarsd(), pctxsarsdl95(), pctxsarsdu95(), NA, NA, NA, get_session_t("morbidity"), NA)
   })
   eleven3 <- reactive({
-    cbind(foura_year(), foura_scenario(), foura()[c(1, 2)], i18n$t("PM2.5"), i18n$t("Adult Chronic Bronchitis Cases"), fiveacbc(), sixacbc(), sevenacbc(), eightacbc(), nineacbc(), tenacbc(), tenaacbc(), pctxsacbc(), pctxsacbcl95(), pctxsacbcu95(), NA, NA, NA, i18n$t("morbidity"), NA)
+    cbind(foura_year(), foura_scenario(), foura()[c(1, 2)], get_session_t("PM2.5"), get_session_t("Adult Chronic Bronchitis Cases"), fiveacbc(), sixacbc(), sevenacbc(), eightacbc(), nineacbc(), tenacbc(), tenaacbc(), pctxsacbc(), pctxsacbcl95(), pctxsacbcu95(), NA, NA, NA, get_session_t("morbidity"), NA)
   })
   eleven4 <- reactive({
-    cbind(foura_year(), foura_scenario(), foura()[c(1, 2)], i18n$t("PM2.5"), i18n$t("Cardiac Emergency Room Visits"), fivecerv(), sixcerv(), sevencerv(), eightcerv(), ninecerv(), tencerv(), tenacerv(), pctxscerv(), pctxscervl95(), pctxscervu95(), NA, NA, NA, i18n$t("morbidity"), NA)
+    cbind(foura_year(), foura_scenario(), foura()[c(1, 2)], get_session_t("PM2.5"), get_session_t("Cardiac Emergency Room Visits"), fivecerv(), sixcerv(), sevencerv(), eightcerv(), ninecerv(), tencerv(), tenacerv(), pctxscerv(), pctxscervl95(), pctxscervu95(), NA, NA, NA, get_session_t("morbidity"), NA)
   })
   eleven5 <- reactive({
-    cbind(foura_year(), foura_scenario(), foura()[c(1, 2)], i18n$t("PM2.5"), i18n$t("Cardiac Hospital Admissions"), fivecha(), sixcha(), sevencha(), NA, NA, NA, tenacha(), pctxscha(), pctxschal95(), pctxschau95(), NA, NA, NA, i18n$t("morbidity"), NA)
+    cbind(foura_year(), foura_scenario(), foura()[c(1, 2)], get_session_t("PM2.5"), get_session_t("Cardiac Hospital Admissions"), fivecha(), sixcha(), sevencha(), NA, NA, NA, tenacha(), pctxscha(), pctxschal95(), pctxschau95(), NA, NA, NA, get_session_t("morbidity"), NA)
   })
   eleven6 <- reactive({
-    cbind(foura_year(), foura_scenario(), foura()[c(1, 2)], i18n$t("PM2.5"), i18n$t("Asthma Symptom Days"), fiveasd(), sixasd(), sevenasd(), eightasd(), nineasd(), tenasd(), tenaasd(), pctxsasd(), pctxsasdl95(), pctxsasdu95(), NA, NA, NA, i18n$t("morbidity"), NA)
+    cbind(foura_year(), foura_scenario(), foura()[c(1, 2)], get_session_t("PM2.5"), get_session_t("Asthma Symptom Days"), fiveasd(), sixasd(), sevenasd(), eightasd(), nineasd(), tenasd(), tenaasd(), pctxsasd(), pctxsasdl95(), pctxsasdu95(), NA, NA, NA, get_session_t("morbidity"), NA)
   })
   eleven7 <- reactive({
-    cbind(foura_year(), foura_scenario(), foura()[c(1, 2)], i18n$t("PM2.5"), i18n$t("Child Acute Bronchitis Episodes"), fivecabe(), sixcabe(), sevencabe(), eightcabe(), ninecabe(), tencabe(), tenacabe(), pctxscabe(), pctxscabel95(), pctxscabeu95(), NA, NA, NA, i18n$t("morbidity"), NA)
+    cbind(foura_year(), foura_scenario(), foura()[c(1, 2)], get_session_t("PM2.5"), get_session_t("Child Acute Bronchitis Episodes"), fivecabe(), sixcabe(), sevencabe(), eightcabe(), ninecabe(), tencabe(), tenacabe(), pctxscabe(), pctxscabel95(), pctxscabeu95(), NA, NA, NA, get_session_t("morbidity"), NA)
   })
   eleven8 <- reactive({
-    cbind(foura_year(), foura_scenario(), foura()[c(1, 2)], i18n$t("PM2.5"), i18n$t("Respiratory Emergency Room Visits"), fivererv(), sixrerv(), sevenrerv(), eightrerv(), ninererv(), tenrerv(), tenarerv(), pctxsrerv(), pctxsrervl95(), pctxsrervu95(), NA, NA, NA, i18n$t("morbidity"), NA)
+    cbind(foura_year(), foura_scenario(), foura()[c(1, 2)], get_session_t("PM2.5"), get_session_t("Respiratory Emergency Room Visits"), fivererv(), sixrerv(), sevenrerv(), eightrerv(), ninererv(), tenrerv(), tenarerv(), pctxsrerv(), pctxsrervl95(), pctxsrervu95(), NA, NA, NA, get_session_t("morbidity"), NA)
   })
   eleven9 <- reactive({
-    cbind(foura_year(), foura_scenario(), foura()[c(1, 2)], i18n$t("PM2.5"), i18n$t("Respiratory Hospital Admissions"), fiverha(), sixrha(), sevenrha(), NA, NA, NA, tenarha(), pctxsrha(), pctxsrhal95(), pctxsrhau95(), NA, NA, NA, i18n$t("morbidity"), NA)
+    cbind(foura_year(), foura_scenario(), foura()[c(1, 2)], get_session_t("PM2.5"), get_session_t("Respiratory Hospital Admissions"), fiverha(), sixrha(), sevenrha(), NA, NA, NA, tenarha(), pctxsrha(), pctxsrhal95(), pctxsrhau95(), NA, NA, NA, get_session_t("morbidity"), NA)
   })
   eleven10 <- reactive({
-    cbind(foura_year(), foura_scenario(), foura()[c(1, 2)], i18n$t("PM2.5"), i18n$t("Restricted Activity Days"), fiverad(), sixrad(), sevenrad(), eightrad(), ninerad(), tenrad(), tenarad(), pctxsrad(), pctxsradl95(), pctxsradu95(), NA, NA, NA, i18n$t("morbidity"), NA)
+    cbind(foura_year(), foura_scenario(), foura()[c(1, 2)], get_session_t("PM2.5"), get_session_t("Restricted Activity Days"), fiverad(), sixrad(), sevenrad(), eightrad(), ninerad(), tenrad(), tenarad(), pctxsrad(), pctxsradl95(), pctxsradu95(), NA, NA, NA, get_session_t("morbidity"), NA)
   })
   eleven11 <- reactive({
-    cbind(foura_year(), foura_scenario(), foura()[c(1, 2)], "NO2", i18n$t("Acute Exposure Mortality"), fiveaem(), sixaem(), sevenaem(), eightaem(), nineaem(), tenaem(), tenaaem(), pctxsno2aem(), pctxsno2aeml95(), pctxsno2aemu95(), NA, NA, NA, i18n$t("mortality"), NA)
+    cbind(foura_year(), foura_scenario(), foura()[c(1, 2)], "NO2", get_session_t("Acute Exposure Mortality"), fiveaem(), sixaem(), sevenaem(), eightaem(), nineaem(), tenaem(), tenaaem(), pctxsno2aem(), pctxsno2aeml95(), pctxsno2aemu95(), NA, NA, NA, get_session_t("mortality"), NA)
   })
   eleven12 <- reactive({
-    cbind(foura_year(), foura_scenario(), foura()[c(1, 2)], "O3", i18n$t("Acute Exposure Mortality"), fiveo3aem(), sixo3aem(), seveno3aem(), eighto3aem(), nineo3aem(), teno3aem(), tenao3aem(), pctxso3aem(), pctxso3aeml95(), pctxso3aemu95(), NA, NA, NA, i18n$t("mortality"), NA)
+    cbind(foura_year(), foura_scenario(), foura()[c(1, 2)], "O3", get_session_t("Acute Exposure Mortality"), fiveo3aem(), sixo3aem(), seveno3aem(), eighto3aem(), nineo3aem(), teno3aem(), tenao3aem(), pctxso3aem(), pctxso3aeml95(), pctxso3aemu95(), NA, NA, NA, get_session_t("mortality"), NA)
   })
   eleven13 <- reactive({
-    cbind(foura_year(), foura_scenario(), foura()[c(1, 2)], i18n$t("O3 Summer"), i18n$t("Chronic Exposure Respiratory Mortality"), fiveo3cerm(), sixo3cerm(), seveno3cerm(), eighto3cerm(), nineo3cerm(), teno3cerm(), tenao3cerm(), pctxso3cerm(), pctxso3cerml95(), pctxso3cermu95(), leyrrep(), leyrrepl95(), leyrrepu95(), i18n$t("mortality"), four_age30plus())
+    cbind(foura_year(), foura_scenario(), foura()[c(1, 2)], get_session_t("O3 Summer"), get_session_t("Chronic Exposure Respiratory Mortality"), fiveo3cerm(), sixo3cerm(), seveno3cerm(), eighto3cerm(), nineo3cerm(), teno3cerm(), tenao3cerm(), pctxso3cerm(), pctxso3cerml95(), pctxso3cermu95(), leyrrep(), leyrrepl95(), leyrrepu95(), get_session_t("mortality"), four_age30plus())
   })
   eleven14 <- reactive({
-    cbind(foura_year(), foura_scenario(), foura()[c(1, 2)], i18n$t("O3 Summer"), i18n$t("Minor Restricted Activity Days"), fivemrad(), sixmrad(), sevenmrad(), eightmrad(), ninemrad(), tenmrad(), tenamrad(), pctxsmrad(), pctxsmradl95(), pctxsmradu95(), NA, NA, NA, i18n$t("morbidity"), NA)
+    cbind(foura_year(), foura_scenario(), foura()[c(1, 2)], get_session_t("O3 Summer"), get_session_t("Minor Restricted Activity Days"), fivemrad(), sixmrad(), sevenmrad(), eightmrad(), ninemrad(), tenmrad(), tenamrad(), pctxsmrad(), pctxsmradl95(), pctxsmradu95(), NA, NA, NA, get_session_t("morbidity"), NA)
   })
   eleven15 <- reactive({
-    cbind(foura_year(), foura_scenario(), foura()[c(1, 2)], i18n$t("O3 Summer"), i18n$t("Acute Respiratory Symptom Days"), fiveo3arsd(), sixo3arsd(), seveno3arsd(), eighto3arsd(), nineo3arsd(), teno3arsd(), tenao3arsd(), pctxso3arsd(), pctxso3arsdl95(), pctxso3arsdu95(), NA, NA, NA, i18n$t("morbidity"), NA)
+    cbind(foura_year(), foura_scenario(), foura()[c(1, 2)], get_session_t("O3 Summer"), get_session_t("Acute Respiratory Symptom Days"), fiveo3arsd(), sixo3arsd(), seveno3arsd(), eighto3arsd(), nineo3arsd(), teno3arsd(), tenao3arsd(), pctxso3arsd(), pctxso3arsdl95(), pctxso3arsdu95(), NA, NA, NA, get_session_t("morbidity"), NA)
   })
   eleven16 <- reactive({
-    cbind(foura_year(), foura_scenario(), foura()[c(1, 2)], i18n$t("O3 Summer"), i18n$t("Asthma Symptom Days"), fiveo3asd(), sixo3asd(), seveno3asd(), eighto3asd(), nineo3asd(), teno3asd(), tenao3asd(), pctxso3asd(), pctxso3asdl95(), pctxso3asdu95(), NA, NA, NA, i18n$t("morbidity"), NA)
+    cbind(foura_year(), foura_scenario(), foura()[c(1, 2)], get_session_t("O3 Summer"), get_session_t("Asthma Symptom Days"), fiveo3asd(), sixo3asd(), seveno3asd(), eighto3asd(), nineo3asd(), teno3asd(), tenao3asd(), pctxso3asd(), pctxso3asdl95(), pctxso3asdu95(), NA, NA, NA, get_session_t("morbidity"), NA)
   })
   eleven17 <- reactive({
-    cbind(foura_year(), foura_scenario(), foura()[c(1, 2)], i18n$t("O3 Summer"), i18n$t("Respiratory Emergency Room Visits"), fiveo3rerv(), sixo3rerv(), seveno3rerv(), eighto3rerv(), nineo3rerv(), teno3rerv(), tenao3rerv(), pctxso3rerv(), pctxso3rervl95(), pctxso3rervu95(), NA, NA, NA, i18n$t("morbidity"), NA)
+    cbind(foura_year(), foura_scenario(), foura()[c(1, 2)], get_session_t("O3 Summer"), get_session_t("Respiratory Emergency Room Visits"), fiveo3rerv(), sixo3rerv(), seveno3rerv(), eighto3rerv(), nineo3rerv(), teno3rerv(), tenao3rerv(), pctxso3rerv(), pctxso3rervl95(), pctxso3rervu95(), NA, NA, NA, get_session_t("morbidity"), NA)
   })
   eleven18 <- reactive({
-    cbind(foura_year(), foura_scenario(), foura()[c(1, 2)], i18n$t("O3 Summer"), i18n$t("Respiratory Hospital Admissions"), fiveo3rha(), sixo3rha(), seveno3rha(), NA, NA, NA, tenao3rha(), pctxso3rha(), pctxso3rhal95(), pctxso3rhau95(), NA, NA, NA, i18n$t("morbidity"), NA)
+    cbind(foura_year(), foura_scenario(), foura()[c(1, 2)], get_session_t("O3 Summer"), get_session_t("Respiratory Hospital Admissions"), fiveo3rha(), sixo3rha(), seveno3rha(), NA, NA, NA, tenao3rha(), pctxso3rha(), pctxso3rhal95(), pctxso3rhau95(), NA, NA, NA, get_session_t("morbidity"), NA)
   })
   eleven19 <- reactive({
-    cbind(foura_year(), foura_scenario(), foura()[c(1, 2)], "SO2", i18n$t("Acute Exposure Mortality"), fiveso2aem(), sixso2aem(), sevenso2aem(), eightso2aem(), nineso2aem(), tenso2aem(), tenaso2aem(), pctxsso2aem(), pctxsso2aeml95(), pctxsso2aemu95(), NA, NA, NA, i18n$t("mortality"), NA)
+    cbind(foura_year(), foura_scenario(), foura()[c(1, 2)], "SO2", get_session_t("Acute Exposure Mortality"), fiveso2aem(), sixso2aem(), sevenso2aem(), eightso2aem(), nineso2aem(), tenso2aem(), tenaso2aem(), pctxsso2aem(), pctxsso2aeml95(), pctxsso2aemu95(), NA, NA, NA, get_session_t("mortality"), NA)
   })
   eleven20 <- reactive({
-    cbind(foura_year(), foura_scenario(), foura()[c(1, 2)], "CO 24h", i18n$t("Acute Exposure Mortality"), fiveco24aem(), sixco24aem(), sevenco24aem(), eightco24aem(), nineco24aem(), tenco24aem(), tenaco24aem(), pctxsco24aem(), pctxsco24aeml95(), pctxsco24aemu95(), NA, NA, NA, i18n$t("mortality"), NA)
+    cbind(foura_year(), foura_scenario(), foura()[c(1, 2)], "CO 24h", get_session_t("Acute Exposure Mortality"), fiveco24aem(), sixco24aem(), sevenco24aem(), eightco24aem(), nineco24aem(), tenco24aem(), tenaco24aem(), pctxsco24aem(), pctxsco24aeml95(), pctxsco24aemu95(), NA, NA, NA, get_session_t("mortality"), NA)
   })
   eleven21 <- reactive({
-    cbind(foura_year(), foura_scenario(), foura()[c(1, 2)], "CO 1h", i18n$t("Elderly Cardiac Hospital Admissions"), fiveecha(), sixecha(), sevenecha(), eightecha(), nineecha(), tenecha(), tenaecha(), pctxsecha(), pctxsechal95(), pctxsechau95(), NA, NA, NA, i18n$t("morbidity"), NA)
+    cbind(foura_year(), foura_scenario(), foura()[c(1, 2)], "CO 1h", get_session_t("Elderly Cardiac Hospital Admissions"), fiveecha(), sixecha(), sevenecha(), eightecha(), nineecha(), tenecha(), tenaecha(), pctxsecha(), pctxsechal95(), pctxsechau95(), NA, NA, NA, get_session_t("morbidity"), NA)
   })
 
 
@@ -8604,7 +8636,7 @@ s     } else {
   twelveb0 <- reactive({
     a <- reqvars()
     colnames(a) <- c(
-      i18n$t("year"), i18n$t("scenario"), i18n$t("CDUID"), "province", i18n$t("pollutant"), i18n$t("endpoint"), "counts",
+      get_session_t("year"), get_session_t("scenario"), get_session_t("CDUID"), "province", get_session_t("pollutant"), get_session_t("endpoint"), "counts",
       "L95CI_counts", "U95CI_counts", "valuation", "L95CI_val", "U95CI_val", "counts_per_100K",
       "proportional_change", "L95CI_p", "U95CI_p", "life_year", "L95CI_le", "U95CI_le", "mort", "pop"
     )
@@ -8612,7 +8644,7 @@ s     } else {
   })
 
   twelveb <- reactive({
-    if (currentlanguage == "en") {
+    if (get_session_lang() == "en") {
       twelveb0()[with(twelveb0(), order(year, scenario, CDUID, pollutant)), ]
     } else {
       twelveb0()[with(twelveb0(), order(année, scénario, IDUDR, polluant)), ]
@@ -8626,7 +8658,7 @@ s     } else {
   # })
   # # convert from wide to long format
   # plong1 <- reactive({
-  #   if (currentlanguage == "en") {
+  #   if (get_session_lang() == "en") {
   #     gather(pone(), pollutant, value, pm25_2, no2_2, o3_2, summero3_2, co24h_2, co1h_2, so2_2, bz_2, bt_2, ac_2, fm_2)
   #   } else {
   #     gather(pone(), polluant, valeur, pm25_2, no2_2, o3_2, o3été_2, co24h_2, co1h_2, so2_2, bz_2, bt_2, ac_2, fm_2)
@@ -8634,23 +8666,23 @@ s     } else {
   # })
 
   # plong2 <- reactive({
-  #   merge(plong1(), pollnames, by = i18n$t("pollutant"))
+  #   merge(plong1(), pollnames, by = get_session_t("pollutant"))
   # })
   # plong3 <- reactive({
-  #   cbind(plong2()[c(2:4, 6)], i18n$t("None"), i18n$t("Pollutant concentration"), plong2()[c(5)])
+  #   cbind(plong2()[c(2:4, 6)], get_session_t("None"), get_session_t("Pollutant concentration"), plong2()[c(5)])
   # })
   # plong <- reactive({
   #   a <- plong3()
-  #   colnames(a) <- c(i18n$t("year"), i18n$t("scenario"), i18n$t("CDUID"), i18n$t("pollutant"), i18n$t("endpoint"), i18n$t("metric"), i18n$t("value"))
+  #   colnames(a) <- c(get_session_t("year"), get_session_t("scenario"), get_session_t("CDUID"), get_session_t("pollutant"), get_session_t("endpoint"), get_session_t("metric"), get_session_t("value"))
   #   a
   # })
   # obtain counts/100k
   # map1a <- reactive({
-  #   cbind(twelveb()[c(1:3, 5, 6)], i18n$t("Counts/100k"), twelveb()[c(13)])
+  #   cbind(twelveb()[c(1:3, 5, 6)], get_session_t("Counts/100k"), twelveb()[c(13)])
   # })
   # map1 <- reactive({
   #   a <- map1a()
-  #   colnames(a) <- c(i18n$t("year"), i18n$t("scenario"), i18n$t("CDUID"), i18n$t("pollutant"), i18n$t("endpoint"), i18n$t("metric"), i18n$t("value"))
+  #   colnames(a) <- c(get_session_t("year"), get_session_t("scenario"), get_session_t("CDUID"), get_session_t("pollutant"), get_session_t("endpoint"), get_session_t("metric"), get_session_t("value"))
   #   a
   # })
   # obtain valuation, population, merge
@@ -8661,11 +8693,11 @@ s     } else {
   #   popdata()[c(1, 2, 10)]
   # })
   # vp <- reactive({
-  #   merge(vals(), pops(), by = c(i18n$t("year"), i18n$t("CDUID")))
+  #   merge(vals(), pops(), by = c(get_session_t("year"), get_session_t("CDUID")))
   # })
   # # calculate per capita valuation
   # map2a <- reactive({
-  #   if (currentlanguage == "en") {
+  #   if (get_session_lang() == "en") {
   #     cbind(vp(), vp()$valuation / vp()$allages)
   #   } else {
   #     cbind(vp(), vp()$valuation / vp()$touslesâges)
@@ -8673,20 +8705,20 @@ s     } else {
   # })
   #
   # map2b <- reactive({
-  #   cbind(map2a()[c(1, 3, 2, 4, 5)], i18n$t("Per capita valuation"), map2a()[c(8)])
+  #   cbind(map2a()[c(1, 3, 2, 4, 5)], get_session_t("Per capita valuation"), map2a()[c(8)])
   # })
   # map2 <- reactive({
   #   a <- map2b()
-  #   colnames(a) <- c(i18n$t("year"), i18n$t("scenario"), i18n$t("CDUID"), i18n$t("pollutant"), i18n$t("endpoint"), i18n$t("metric"), i18n$t("value"))
+  #   colnames(a) <- c(get_session_t("year"), get_session_t("scenario"), get_session_t("CDUID"), get_session_t("pollutant"), get_session_t("endpoint"), get_session_t("metric"), get_session_t("value"))
   #   a
   # })
   # obtain life years
   # map3a <- reactive({
-  #   cbind(twelveb()[c(1:3, 5, 6)], i18n$t("Change in life expectancy"), twelveb()[c(17)])
+  #   cbind(twelveb()[c(1:3, 5, 6)], get_session_t("Change in life expectancy"), twelveb()[c(17)])
   # })
   # map3 <- reactive({
   #   a <- map3a()
-  #   colnames(a) <- c(i18n$t("year"), i18n$t("scenario"), i18n$t("CDUID"), i18n$t("pollutant"), i18n$t("endpoint"), i18n$t("metric"), i18n$t("value"))
+  #   colnames(a) <- c(get_session_t("year"), get_session_t("scenario"), get_session_t("CDUID"), get_session_t("pollutant"), get_session_t("endpoint"), get_session_t("metric"), get_session_t("value"))
   #   a
   # })
 
@@ -8696,7 +8728,7 @@ s     } else {
   # })
   #
   # cdaggmort1 <- reactive({
-  #   if (currentlanguage == "en") {
+  #   if (get_session_lang() == "en") {
   #     mapagg()[which(mapagg()$endpoint == "Chronic Exposure Mortality" | mapagg()$endpoint == "Chronic Exposure Respiratory Mortality" | mapagg()$endpoint == "Acute Exposure Mortality"), ]
   #   } else {
   #     mapagg()[which(mapagg()$paramètre == "Mortalité liée à une exposition chronique" | mapagg()$paramètre == "Mortalité respiratoire liée à une exposition chronique" | mapagg()$paramètre == "Mortalité liée à une exposition aiguë"), ]
@@ -8704,7 +8736,7 @@ s     } else {
   # })
 
   # cdaggmort2 <- reactive({
-  #   if (currentlanguage == "en") {
+  #   if (get_session_lang() == "en") {
   #     as.data.frame(aggregate(counts ~ year + scenario + CDUID, cdaggmort1(), sum, na.action = NULL))
   #   } else {
   #     as.data.frame(aggregate(counts ~ année + scénario + IDUDR, cdaggmort1(), sum, na.action = NULL))
@@ -8715,11 +8747,11 @@ s     } else {
   #   popdata()[c(1, 2, 10)]
   # })
   # cdaggmort2b <- reactive({
-  #   merge(cdaggmort2(), cdaggmort2a(), by = c(i18n$t("year"), i18n$t("CDUID")))
+  #   merge(cdaggmort2(), cdaggmort2a(), by = c(get_session_t("year"), get_session_t("CDUID")))
   # })
 
   # cdaggmort2c <- reactive({
-  #   if (currentlanguage == "en") {
+  #   if (get_session_lang() == "en") {
   #     cbind(cdaggmort2b()[c(1, 3, 2)], "All (CO, NO2, O3, PM2.5, SO2)", "Total Mortality", "Counts/100k", 100000 * cdaggmort2b()$counts / cdaggmort2b()$allages)
   #   } else {
   #     cbind(cdaggmort2b()[c(1, 3, 2)], "Tous (CO, NO2, O3, PM2,5, SO2)", "Total du nombre de mortalités", "Comptes par 100 000", 100000 * cdaggmort2b()$counts / cdaggmort2b()$touslesâges)
@@ -8732,7 +8764,7 @@ s     } else {
   #
   # cdaggmort4 <- reactive({
   #   mtot <- cdaggmort3()
-  #   colnames(mtot) <- c(i18n$t("year"), i18n$t("scenario"), i18n$t("CDUID"), i18n$t("pollutant"), i18n$t("endpoint"), i18n$t("metric"), i18n$t("value"))
+  #   colnames(mtot) <- c(get_session_t("year"), get_session_t("scenario"), get_session_t("CDUID"), get_session_t("pollutant"), get_session_t("endpoint"), get_session_t("metric"), get_session_t("value"))
   #   mtot
   # })
 
@@ -8742,7 +8774,7 @@ s     } else {
   # })
   #
   # cdaggval2 <- reactive({
-  #   if (currentlanguage == "en") {
+  #   if (get_session_lang() == "en") {
   #     as.data.frame(aggregate(valuation ~ year + scenario + CDUID, mapaggv(), sum, na.action = NULL))
   #   } else {
   #     as.data.frame(aggregate(valuation ~ année + scénario + IDUDR, mapaggv(), sum, na.action = NULL))
@@ -8753,11 +8785,11 @@ s     } else {
   #   popdata()[c(1, 2, 10)]
   # })
   # cdaggval2b <- reactive({
-  #   merge(cdaggval2(), cdaggval2a(), by = c(i18n$t("year"), i18n$t("CDUID")))
+  #   merge(cdaggval2(), cdaggval2a(), by = c(get_session_t("year"), get_session_t("CDUID")))
   # })
   #
   # cdaggval2c <- reactive({
-  #   if (currentlanguage == "en") {
+  #   if (get_session_lang() == "en") {
   #     cbind(cdaggval2b()[c(1, 3, 2)], "All (CO, NO2, O3, PM2.5, SO2)", "Total Valuation", "Per capita valuation", cdaggval2b()$valuation / cdaggval2b()$allages)
   #   } else {
   #     cbind(cdaggval2b()[c(1, 3, 2)], "Tous (CO, NO2, O3, PM2,5, SO2)", "Évaluation économique totale", "Évaluation économique par habitant", cdaggval2b()$valuation / cdaggval2b()$touslesâges)
@@ -8771,50 +8803,50 @@ s     } else {
   #
   # cdaggval4 <- reactive({
   #   vtot <- cdaggval3()
-  #   colnames(vtot) <- c(i18n$t("year"), i18n$t("scenario"), i18n$t("CDUID"), i18n$t("pollutant"), i18n$t("endpoint"), i18n$t("metric"), i18n$t("value"))
+  #   colnames(vtot) <- c(get_session_t("year"), get_session_t("scenario"), get_session_t("CDUID"), get_session_t("pollutant"), get_session_t("endpoint"), get_session_t("metric"), get_session_t("value"))
   #   vtot
   # })
   #
   # mapbz1 <- reactive({
-  #   cbind(elevenbzc()[c(1, 2, 3, 5, 6)], i18n$t("Counts/100k"), elevenbzc()[c(8)])
+  #   cbind(elevenbzc()[c(1, 2, 3, 5, 6)], get_session_t("Counts/100k"), elevenbzc()[c(8)])
   # })
   # mapbz <- reactive({
   #   a <- mapbz1()
-  #   colnames(a) <- c(i18n$t("year"), i18n$t("scenario"), i18n$t("CDUID"), i18n$t("pollutant"), i18n$t("endpoint"), i18n$t("metric"), i18n$t("value"))
+  #   colnames(a) <- c(get_session_t("year"), get_session_t("scenario"), get_session_t("CDUID"), get_session_t("pollutant"), get_session_t("endpoint"), get_session_t("metric"), get_session_t("value"))
   #   a
   # })
   # mapbt1 <- reactive({
-  #   cbind(elevenbtc()[c(1, 2, 3, 5, 6)], i18n$t("Counts/100k"), elevenbtc()[c(8)])
+  #   cbind(elevenbtc()[c(1, 2, 3, 5, 6)], get_session_t("Counts/100k"), elevenbtc()[c(8)])
   # })
   # mapbt <- reactive({
   #   a <- mapbt1()
-  #   colnames(a) <- c(i18n$t("year"), i18n$t("scenario"), i18n$t("CDUID"), i18n$t("pollutant"), i18n$t("endpoint"), i18n$t("metric"), i18n$t("value"))
+  #   colnames(a) <- c(get_session_t("year"), get_session_t("scenario"), get_session_t("CDUID"), get_session_t("pollutant"), get_session_t("endpoint"), get_session_t("metric"), get_session_t("value"))
   #   a
   # })
 
   # mapbznc1 <- reactive({
-  #   cbind(elevenbznc()[c(1, 2, 3, 5, 6)], i18n$t("Hazard Quotient"), elevenbznc()[c(7)])
+  #   cbind(elevenbznc()[c(1, 2, 3, 5, 6)], get_session_t("Hazard Quotient"), elevenbznc()[c(7)])
   # })
   # mapbznc <- reactive({
   #   a <- mapbznc1()
-  #   colnames(a) <- c(i18n$t("year"), i18n$t("scenario"), i18n$t("CDUID"), i18n$t("pollutant"), i18n$t("endpoint"), i18n$t("metric"), i18n$t("value"))
+  #   colnames(a) <- c(get_session_t("year"), get_session_t("scenario"), get_session_t("CDUID"), get_session_t("pollutant"), get_session_t("endpoint"), get_session_t("metric"), get_session_t("value"))
   #   a
   # })
   # mapacc1 <- reactive({
-  #   cbind(elevenacc()[c(1, 2, 3, 5, 6)], i18n$t("Hazard Quotient"), elevenacc()[c(7)])
+  #   cbind(elevenacc()[c(1, 2, 3, 5, 6)], get_session_t("Hazard Quotient"), elevenacc()[c(7)])
   # })
   # mapacc <- reactive({
   #   a <- mapacc1()
-  #   colnames(a) <- c(i18n$t("year"), i18n$t("scenario"), i18n$t("CDUID"), i18n$t("pollutant"), i18n$t("endpoint"), i18n$t("metric"), i18n$t("value"))
+  #   colnames(a) <- c(get_session_t("year"), get_session_t("scenario"), get_session_t("CDUID"), get_session_t("pollutant"), get_session_t("endpoint"), get_session_t("metric"), get_session_t("value"))
   #   a
   # })
   #
   # mapfmc1 <- reactive({
-  #   cbind(elevenfmc()[c(1, 2, 3, 5, 6)], i18n$t("Hazard Quotient"), elevenfmc()[c(7)])
+  #   cbind(elevenfmc()[c(1, 2, 3, 5, 6)], get_session_t("Hazard Quotient"), elevenfmc()[c(7)])
   # })
   # mapfmc <- reactive({
   #   a <- mapfmc1()
-  #   colnames(a) <- c(i18n$t("year"), i18n$t("scenario"), i18n$t("CDUID"), i18n$t("pollutant"), i18n$t("endpoint"), i18n$t("metric"), i18n$t("value"))
+  #   colnames(a) <- c(get_session_t("year"), get_session_t("scenario"), get_session_t("CDUID"), get_session_t("pollutant"), get_session_t("endpoint"), get_session_t("metric"), get_session_t("value"))
   #   a
   # })
   #
@@ -8823,7 +8855,7 @@ s     } else {
   # })
   #
   # mapbzbt2 <- reactive({
-  #   if (currentlanguage == "en") {
+  #   if (get_session_lang() == "en") {
   #     aggregate(value ~ year + scenario + CDUID, mapbzbt1(), sum, na.action = NULL)
   #   } else {
   #     aggregate(valeur ~ année + scénario + IDUDR, mapbzbt1(), sum, na.action = NULL)
@@ -8831,20 +8863,20 @@ s     } else {
   # })
   #
   # mapbzbt3 <- reactive({
-  #   cbind(mapbzbt2()[c(1:3)], i18n$t("All Toxics (cancer)"), "Cancer", i18n$t("Counts/100k"), mapbzbt2()[c(4)])
+  #   cbind(mapbzbt2()[c(1:3)], get_session_t("All Toxics (cancer)"), "Cancer", get_session_t("Counts/100k"), mapbzbt2()[c(4)])
   # })
   # mapbzbt <- reactive({
   #   a <- mapbzbt3()
-  #   colnames(a) <- c(i18n$t("year"), i18n$t("scenario"), i18n$t("CDUID"), i18n$t("pollutant"), i18n$t("endpoint"), i18n$t("metric"), i18n$t("value"))
+  #   colnames(a) <- c(get_session_t("year"), get_session_t("scenario"), get_session_t("CDUID"), get_session_t("pollutant"), get_session_t("endpoint"), get_session_t("metric"), get_session_t("value"))
   #   a
   # })
   #
   # mapbmr1 <- reactive({
-  #   cbind(three[c(4)], i18n$t("None"), three[c(1)], i18n$t("None"), i18n$t("Non-accidental mortality"), i18n$t("Baseline rate/100k"), three[c(5)] / 10)
+  #   cbind(three[c(4)], get_session_t("None"), three[c(1)], get_session_t("None"), get_session_t("Non-accidental mortality"), get_session_t("Baseline rate/100k"), three[c(5)] / 10)
   # })
   # mapbmr <- reactive({
   #   a <- mapbmr1()
-  #   colnames(a) <- c(i18n$t("year"), i18n$t("scenario"), i18n$t("CDUID"), i18n$t("pollutant"), i18n$t("endpoint"), i18n$t("metric"), i18n$t("value"))
+  #   colnames(a) <- c(get_session_t("year"), get_session_t("scenario"), get_session_t("CDUID"), get_session_t("pollutant"), get_session_t("endpoint"), get_session_t("metric"), get_session_t("value"))
   #   a
   # })
   #
@@ -8855,20 +8887,20 @@ s     } else {
   #
   #
   # mapep <- reactive({
-  #   ifelse(input$mdp == i18n$t("PM2.5"), input$mde1,
+  #   ifelse(input$mdp == get_session_t("PM2.5"), input$mde1,
   #     ifelse(input$mdp == "NO2", input$mde2,
   #       ifelse(input$mdp == "CO 24h", input$mde3,
-  #         ifelse(input$mdp == i18n$t("1,3-Butadiene"), input$mde6,
+  #         ifelse(input$mdp == get_session_t("1,3-Butadiene"), input$mde6,
   #           ifelse(input$mdp == "SO2", input$mde11,
   #             ifelse(input$mdp == "O3", input$mde12,
-  #               ifelse(input$mdp == i18n$t("O3 Summer"), input$mde13,
-  #                 ifelse(input$mdp == i18n$t("All (CO, NO2, O3, PM2.5, SO2)"), input$mde4,
-  #                   ifelse(input$mdp == i18n$t("Benzene"), input$mde5,
-  #                     ifelse(input$mdp == i18n$t("Formaldehyde"), input$mde7,
-  #                       ifelse(input$mdp == i18n$t("Acetaldehyde"), input$mde8,
-  #                         ifelse(input$mdp == i18n$t("All Toxics (cancer)"), input$mde9,
-  #                           ifelse(input$mdp == i18n$t("All Toxics (non-cancer)"), input$mde10,
-  #                             ifelse(input$mdp == i18n$t("None"), input$mde14)
+  #               ifelse(input$mdp == get_session_t("O3 Summer"), input$mde13,
+  #                 ifelse(input$mdp == get_session_t("All (CO, NO2, O3, PM2.5, SO2)"), input$mde4,
+  #                   ifelse(input$mdp == get_session_t("Benzene"), input$mde5,
+  #                     ifelse(input$mdp == get_session_t("Formaldehyde"), input$mde7,
+  #                       ifelse(input$mdp == get_session_t("Acetaldehyde"), input$mde8,
+  #                         ifelse(input$mdp == get_session_t("All Toxics (cancer)"), input$mde9,
+  #                           ifelse(input$mdp == get_session_t("All Toxics (non-cancer)"), input$mde10,
+  #                             ifelse(input$mdp == get_session_t("None"), input$mde14)
   #                           )
   #                         )
   #                       )
@@ -8884,33 +8916,33 @@ s     } else {
   #   )
   # })
   # mapmt <- reactive({
-  #   ifelse(input$mdp == i18n$t("PM2.5"),
-  #     ifelse(input$mde1 == i18n$t("None"), input$mdc1, input$mdm1),
+  #   ifelse(input$mdp == get_session_t("PM2.5"),
+  #     ifelse(input$mde1 == get_session_t("None"), input$mdc1, input$mdm1),
   #     ifelse(input$mdp == "NO2",
-  #       ifelse(input$mde2 == i18n$t("None"), input$mdc2, input$mdm2),
-  #       ifelse(input$mdp == i18n$t("Benzene"),
-  #         ifelse(input$mde5 == i18n$t("None"), input$mdc3, ifelse(input$mde5 == "Cancer", input$mdm5, input$mdm6)),
-  #         ifelse(input$mdp == i18n$t("1,3-Butadiene"),
-  #           ifelse(input$mde6 == i18n$t("None"), input$mdc4, input$mdm7),
-  #           ifelse(input$mdp == i18n$t("Formaldehyde"),
-  #             ifelse(input$mde7 == i18n$t("None"), input$mdc5, input$mdm9),
-  #             ifelse(input$mdp == i18n$t("Acetaldehyde"),
-  #               ifelse(input$mde8 == i18n$t("None"), input$mdc6, input$mdm8),
+  #       ifelse(input$mde2 == get_session_t("None"), input$mdc2, input$mdm2),
+  #       ifelse(input$mdp == get_session_t("Benzene"),
+  #         ifelse(input$mde5 == get_session_t("None"), input$mdc3, ifelse(input$mde5 == "Cancer", input$mdm5, input$mdm6)),
+  #         ifelse(input$mdp == get_session_t("1,3-Butadiene"),
+  #           ifelse(input$mde6 == get_session_t("None"), input$mdc4, input$mdm7),
+  #           ifelse(input$mdp == get_session_t("Formaldehyde"),
+  #             ifelse(input$mde7 == get_session_t("None"), input$mdc5, input$mdm9),
+  #             ifelse(input$mdp == get_session_t("Acetaldehyde"),
+  #               ifelse(input$mde8 == get_session_t("None"), input$mdc6, input$mdm8),
   #               ifelse(input$mdp == "CO 24h",
-  #                 ifelse(input$mde3 == i18n$t("None"), input$mdc7, input$mdm13),
+  #                 ifelse(input$mde3 == get_session_t("None"), input$mdc7, input$mdm13),
   #                 ifelse(input$mdp == "SO2",
-  #                   ifelse(input$mde11 == i18n$t("None"), input$mdc8, input$mdm14),
+  #                   ifelse(input$mde11 == get_session_t("None"), input$mdc8, input$mdm14),
   #                   ifelse(input$mdp == "O3",
-  #                     ifelse(input$mde12 == i18n$t("None"), input$mdc9, input$mdm15),
-  #                     ifelse(input$mdp == i18n$t("O3 Summer"),
-  #                       ifelse(input$mde13 == i18n$t("None"), input$mdc10, input$mdm12),
-  #                       ifelse(input$mdp == i18n$t("All (CO, NO2, O3, PM2.5, SO2)"),
-  #                         ifelse(input$mde4 == i18n$t("Total Mortality"), input$mdm3, input$mdm4),
-  #                         ifelse(input$mdp == i18n$t("All Toxics (cancer)"),
+  #                     ifelse(input$mde12 == get_session_t("None"), input$mdc9, input$mdm15),
+  #                     ifelse(input$mdp == get_session_t("O3 Summer"),
+  #                       ifelse(input$mde13 == get_session_t("None"), input$mdc10, input$mdm12),
+  #                       ifelse(input$mdp == get_session_t("All (CO, NO2, O3, PM2.5, SO2)"),
+  #                         ifelse(input$mde4 == get_session_t("Total Mortality"), input$mdm3, input$mdm4),
+  #                         ifelse(input$mdp == get_session_t("All Toxics (cancer)"),
   #                           ifelse(input$mde9 == "Cancer", input$mdm10),
-  #                           ifelse(input$mdp == i18n$t("All Toxics (non-cancer)"),
-  #                             ifelse(input$mde10 == i18n$t("Non-cancer"), input$mdm11),
-  #                             ifelse(input$mdp == i18n$t("None"), input$mdm16)
+  #                           ifelse(input$mdp == get_session_t("All Toxics (non-cancer)"),
+  #                             ifelse(input$mde10 == get_session_t("Non-cancer"), input$mdm11),
+  #                             ifelse(input$mdp == get_session_t("None"), input$mdm16)
   #                           )
   #                         )
   #                       )
@@ -8927,7 +8959,7 @@ s     } else {
   # })
   #
   # mapdata1 <- reactive({
-  #   if (currentlanguage == "en") {
+  #   if (get_session_lang() == "en") {
   #     mapdata0()[which(mapdata0()$year == input$mdy & mapdata0()$scenario == input$scenario & mapdata0()$pollutant == input$mdp & mapdata0()$endpoint == mapep() & mapdata0()$metric == mapmt()), ]
   #   } else {
   #     mapdata0()[which(mapdata0()$année == input$mdy & mapdata0()$scénario == input$scenario & mapdata0()$polluant == input$mdp & mapdata0()$paramètre == mapep() & mapdata0()$mesure == mapmt()), ]
@@ -8935,7 +8967,7 @@ s     } else {
   # })
   #
   # prov1 <- reactive({
-  #   if (currentlanguage == "en") {
+  #   if (get_session_lang() == "en") {
   #     cbind(mapdata1()$CDUID, substr(mapdata1()$CDUID, 1, 2))
   #   } else {
   #     cbind(mapdata1()$IDUDR, substr(mapdata1()$IDUDR, 1, 2))
@@ -8944,7 +8976,7 @@ s     } else {
 
   # prov2 <- reactive({
   #   a <- prov1()
-  #   colnames(a) <- c(i18n$t("CDUID"), "PRUID")
+  #   colnames(a) <- c(get_session_t("CDUID"), "PRUID")
   #   a
   # })
   #
@@ -8956,21 +8988,21 @@ s     } else {
   # })
   # provn <- reactive({
   #   a <- prov4()
-  #   colnames(a) <- c(i18n$t("CDUID"), "Province")
+  #   colnames(a) <- c(get_session_t("CDUID"), "Province")
   #   a
   # })
   # mapdata2 <- reactive({
-  #   merge(mapdata1(), provn(), by = i18n$t("CDUID"))
+  #   merge(mapdata1(), provn(), by = get_session_t("CDUID"))
   # })
   # mapdata3 <- reactive({
   #   mapdata2()[c(2, 3, 1, 8, 4:7)]
   # })
   # mapdata <- reactive({
-  #   merge(cdmap, mapdata3(), by = i18n$t("CDUID"))
+  #   merge(cdmap, mapdata3(), by = get_session_t("CDUID"))
   # })
 
   # mapdatap1 <- reactive({
-  #   if (currentlanguage == "en") {
+  #   if (get_session_lang() == "en") {
   #     mapdata3()[which(mapdata3()$Province == input$mdg, mapdata3()$year == input$mdy & mapdata3()$scenario == input$scenario & mapdata3()$pollutant == input$mdp & mapdata3()$endpoint == mapep() & mapdata3()$metric == mapmt()), ]
   #   } else {
   #     mapdata3()[which(mapdata3()$Province == input$mdg, mapdata3()$année == input$mdy & mapdata3()$scénario == input$scenario & mapdata3()$polluant == input$mdp & mapdata3()$paramètre == mapep() & mapdata3()$mesure == mapmt()), ]
@@ -8978,7 +9010,7 @@ s     } else {
   # })
   #
   # mapdatap <- reactive({
-  #   if (currentlanguage == "en") {
+  #   if (get_session_lang() == "en") {
   #     merge(cdmap1, mapdatap1(), by = "CDUID", all.x = FALSE)
   #   } else {
   #     merge(cdmap1_download, mapdatap1(), by = "IDUDR", all.x = FALSE)
@@ -8990,17 +9022,17 @@ s     } else {
   })
 
   xtwelveb1 <- reactive({
-    subset(twelveb(), twelveb_endpoint() == i18n$t("Chronic Exposure Mortality") | twelveb_endpoint() == i18n$t("Chronic Exposure Respiratory Mortality"), select = c(1:19))
+    subset(twelveb(), twelveb_endpoint() == get_session_t("Chronic Exposure Mortality") | twelveb_endpoint() == get_session_t("Chronic Exposure Respiratory Mortality"), select = c(1:19))
   })
 
   xxtwelveb1 <- reactive({
     xhh2 <- xtwelveb1()
     colnames(xhh2) <- c(
-      i18n$t("Year"), i18n$t("Scenario"), i18n$t("CDUID"), "Province", i18n$t("Pollutant"), i18n$t("Endpoint"), i18n$t("Counts"),
-      i18n$t("L95CI Counts"), i18n$t("U95CI Counts"), i18n$t("Valuation"), i18n$t("L95CI Valuation"), i18n$t("U95CI Valuation"),
-      i18n$t("Counts per 100,000"), i18n$t("Proportional Change"), i18n$t("L95CI Proportional Change"),
-      i18n$t("U95CI Proportional Change"), i18n$t("Life Expectancy Change"),
-      i18n$t("L95CI Life Expectancy Change"), i18n$t("U95CI Life Expectancy Change")
+      get_session_t("Year"), get_session_t("Scenario"), get_session_t("CDUID"), "Province", get_session_t("Pollutant"), get_session_t("Endpoint"), get_session_t("Counts"),
+      get_session_t("L95CI Counts"), get_session_t("U95CI Counts"), get_session_t("Valuation"), get_session_t("L95CI Valuation"), get_session_t("U95CI Valuation"),
+      get_session_t("Counts per 100,000"), get_session_t("Proportional Change"), get_session_t("L95CI Proportional Change"),
+      get_session_t("U95CI Proportional Change"), get_session_t("Life Expectancy Change"),
+      get_session_t("L95CI Life Expectancy Change"), get_session_t("U95CI Life Expectancy Change")
     )
     xhh2
   })
@@ -9010,14 +9042,14 @@ s     } else {
     xxtwelveb1()[, c(1:3, 5, 6, 7:12)]
   })
   a1cdtable <- reactive({
-    if (currentlanguage == "en") {
+    if (get_session_lang() == "en") {
       cbind(xxxtwelveb1()[C(1:5)], as.data.frame(sapply((xxxtwelveb1()[c(6:11)]), format_numbers, simplify = FALSE)))
     } else {
       cbind(xxxtwelveb1()[C(1:5)], as.data.frame(sapply((xxxtwelveb1()[c(6:11)]), format_numbers2, simplify = FALSE)))
     }
   })
   xtwelveb2 <- reactive({
-    subset(twelveb(), twelveb_endpoint() != i18n$t("Chronic Exposure Mortality") & twelveb_endpoint() != i18n$t("Chronic Exposure Respiratory Mortality"), select = c(1:16))
+    subset(twelveb(), twelveb_endpoint() != get_session_t("Chronic Exposure Mortality") & twelveb_endpoint() != get_session_t("Chronic Exposure Respiratory Mortality"), select = c(1:16))
   })
   xtwelveb2b <- reactive({
     cbind(xtwelveb2(), NA, NA, NA)
@@ -9025,7 +9057,7 @@ s     } else {
   xtwelveb2c <- reactive({
     hh2 <- xtwelveb2b()
     colnames(hh2) <- c(
-      i18n$t("year"), i18n$t("scenario"), i18n$t("CDUID"), "province", i18n$t("pollutant"), i18n$t("endpoint"), "counts", "L95CI_counts", "U95CI_counts",
+      get_session_t("year"), get_session_t("scenario"), get_session_t("CDUID"), "province", get_session_t("pollutant"), get_session_t("endpoint"), "counts", "L95CI_counts", "U95CI_counts",
       "valuation", "L95CI_val", "U95CI_val", "counts_per_100K", "proportional_change", "L95CI_p", "U95CI_p", "life_year", "L95CI_le", "U95CI_le"
     )
     hh2
@@ -9041,14 +9073,14 @@ s     } else {
   twelveb3i <- reactive({
     hh3 <- xtwelveb3b()
     colnames(hh3) <- c(
-      i18n$t("year"), i18n$t("scenario"), i18n$t("CDUID"), "province", i18n$t("pollutant"), i18n$t("endpoint"), "counts", "L95CI_counts", "U95CI_counts",
+      get_session_t("year"), get_session_t("scenario"), get_session_t("CDUID"), "province", get_session_t("pollutant"), get_session_t("endpoint"), "counts", "L95CI_counts", "U95CI_counts",
       "valuation", "L95CI_val", "U95CI_val", "counts_per_100K", "proportional_change", "L95CI_p", "U95CI_p", "life_expectancy_chg", "L95CI_le", "U95CI_le"
     )
     hh3
   })
 
   twelveb3 <- reactive({
-    if (currentlanguage == "en") {
+    if (get_session_lang() == "en") {
       twelveb3i()[with(twelveb3i(), order(year, scenario, CDUID, province, pollutant, endpoint)), ]
     } else {
       twelveb3i()[with(twelveb3i(), order(année, scénario, IDUDR, province, polluant, paramètre)), ]
@@ -9056,7 +9088,7 @@ s     } else {
   })
 
   outresultcd <- reactive({
-    if (currentlanguage == "en") {
+    if (get_session_lang() == "en") {
       twelveb3()[with(twelveb3(), order(year, scenario, CDUID, province, pollutant, endpoint)), ]
     } else {
       twelveb3()[with(twelveb3(), order(année, scénario, IDUDR, province, polluant, paramètre)), ]
@@ -9064,7 +9096,7 @@ s     } else {
   })
 
   x1outresultcd <- reactive({
-    merge_data(outresultcd(), xprov, by.x = "province", by.y = "Province")
+    merge_data(outresultcd(), get_session_xprov(), by.x = "province", by.y = "Province")
   })
   x2outresultcd <- reactive({
     x1outresultcd()[, c(2, 3, 4, 21, 5:19)]
@@ -9073,16 +9105,16 @@ s     } else {
   x3outresultcd <- reactive({
     x3cd <- x2outresultcd()
     colnames(x3cd) <- c(
-      i18n$t("Year"), i18n$t("Scenario"), i18n$t("CDUID"), "Province", i18n$t("Pollutant"), i18n$t("Endpoint"), i18n$t("Counts"), i18n$t("L95CI Counts"),
-      i18n$t("U95CI Counts"), i18n$t("Valuation"), i18n$t("L95CI Valuation"), i18n$t("U95CI Valuation"), i18n$t("Counts per 100,000"),
-      i18n$t("Proportional Change"), i18n$t("L95CI Proportional Change"), i18n$t("U95CI Proportional Change"), i18n$t("Life Expectancy Change"),
-      i18n$t("L95CI Life Expectancy Change"), i18n$t("U95CI Life Expectancy Change")
+      get_session_t("Year"), get_session_t("Scenario"), get_session_t("CDUID"), "Province", get_session_t("Pollutant"), get_session_t("Endpoint"), get_session_t("Counts"), get_session_t("L95CI Counts"),
+      get_session_t("U95CI Counts"), get_session_t("Valuation"), get_session_t("L95CI Valuation"), get_session_t("U95CI Valuation"), get_session_t("Counts per 100,000"),
+      get_session_t("Proportional Change"), get_session_t("L95CI Proportional Change"), get_session_t("U95CI Proportional Change"), get_session_t("Life Expectancy Change"),
+      get_session_t("L95CI Life Expectancy Change"), get_session_t("U95CI Life Expectancy Change")
     )
     x3cd
   })
 
   x4outresultcd <- reactive({
-    if (currentlanguage == "en") {
+    if (get_session_lang() == "en") {
       x3outresultcd()[with(x3outresultcd(), order(Year, Scenario, CDUID, Province, Pollutant, Endpoint)), ]
     } else {
       x3outresultcd()[with(x3outresultcd(), order(Année, Scénario, IDUDR, Province, Polluant, Paramètre)), ]
@@ -9092,7 +9124,7 @@ s     } else {
   # aggregate results nationally
 
   Canaggcountval1 <- reactive({
-    if (currentlanguage == "en") {
+    if (get_session_lang() == "en") {
       aggregate(cbind(counts, L95CI_counts, U95CI_counts, valuation, L95CI_val, U95CI_val, chg7(counts, proportional_change), chg7(L95CI_counts, L95CI_p), chg7(U95CI_counts, U95CI_p)) ~ year + scenario + pollutant + endpoint, twelveb2(), sum, na.action = NULL)
     } else {
       aggregate(cbind(counts, L95CI_counts, U95CI_counts, valuation, L95CI_val, U95CI_val, chg7(counts, proportional_change), chg7(L95CI_counts, L95CI_p), chg7(U95CI_counts, U95CI_p)) ~ année + scénario + polluant + paramètre, twelveb2(), sum, na.action = NULL)
@@ -9115,18 +9147,18 @@ s     } else {
   Canaggcountval6 <- reactive({
     k <- Canaggcountval5()
     colnames(k) <- c(
-      i18n$t("year"), i18n$t("scenario"), "region", i18n$t("pollutant"), i18n$t("endpoint"), "counts", "L95CI_counts", "U95CI_counts",
+      get_session_t("year"), get_session_t("scenario"), "region", get_session_t("pollutant"), get_session_t("endpoint"), "counts", "L95CI_counts", "U95CI_counts",
       "valuation", "L95CI_val", "U95CI_val", "proportional_change", "L95CI_p", "U95CI_p"
     )
     k
   })
 
   Canagglifeyr1 <- reactive({
-    subset(twelveb(), twelveb_endpoint() == i18n$t("Chronic Exposure Mortality") | twelveb_endpoint() == i18n$t("Chronic Exposure Respiratory Mortality"), select = c(1:6, 17:21))
+    subset(twelveb(), twelveb_endpoint() == get_session_t("Chronic Exposure Mortality") | twelveb_endpoint() == get_session_t("Chronic Exposure Respiratory Mortality"), select = c(1:6, 17:21))
   })
 
   Canagglifeyr2 <- reactive({
-    if (currentlanguage == "en") {
+    if (get_session_lang() == "en") {
       aggregate(cbind(life_year * pop, L95CI_le * pop, U95CI_le * pop, pop) ~ year + scenario + pollutant + endpoint, Canagglifeyr1(), sum, na.action = NULL)
     } else {
       aggregate(cbind(life_year * pop, L95CI_le * pop, U95CI_le * pop, pop) ~ année + scénario + polluant + paramètre, Canagglifeyr1(), sum, na.action = NULL)
@@ -9134,7 +9166,7 @@ s     } else {
   })
 
   Canagglifeyr3a <- reactive({
-    if (currentlanguage == "en") {
+    if (get_session_lang() == "en") {
       cbind.data.frame(
         Canagglifeyr2()$year, Canagglifeyr2()$scenario, "Canada", Canagglifeyr2()$pollutant, Canagglifeyr2()$endpoint, as.data.frame(chg7(Canagglifeyr2()$V1, Canagglifeyr2()$pop)),
         as.data.frame(chg7(Canagglifeyr2()$V2, Canagglifeyr2()$pop)), as.data.frame(chg7(Canagglifeyr2()$V3, Canagglifeyr2()$pop))
@@ -9153,13 +9185,13 @@ s     } else {
 
   Canagglifeyr4 <- reactive({
     le <- Canagglifeyr3()
-    colnames(le) <- c(i18n$t("year"), i18n$t("scenario"), "region", i18n$t("pollutant"), i18n$t("endpoint"), "life_year", "L95CI_le", "U95CI_le")
+    colnames(le) <- c(get_session_t("year"), get_session_t("scenario"), "region", get_session_t("pollutant"), get_session_t("endpoint"), "life_year", "L95CI_le", "U95CI_le")
     le
   })
 
   # aggregate results by province
   paggcountval1 <- reactive({
-    if (currentlanguage == "en") {
+    if (get_session_lang() == "en") {
       aggregate(cbind(counts, L95CI_counts, U95CI_counts, valuation, L95CI_val, U95CI_val, chg7(counts, proportional_change), chg7(L95CI_counts, L95CI_p), chg7(U95CI_counts, U95CI_p)) ~ year + scenario + province + pollutant + endpoint, twelveb2(), sum, na.action = NULL)
     } else {
       aggregate(cbind(counts, L95CI_counts, U95CI_counts, valuation, L95CI_val, U95CI_val, chg7(counts, proportional_change), chg7(L95CI_counts, L95CI_p), chg7(U95CI_counts, U95CI_p)) ~ année + scénario + province + polluant + paramètre, twelveb2(), sum, na.action = NULL)
@@ -9176,18 +9208,18 @@ s     } else {
   paggcountval4 <- reactive({
     ac <- paggcountval3()
     colnames(ac) <- c(
-      i18n$t("year"), i18n$t("scenario"), "region", i18n$t("pollutant"), i18n$t("endpoint"), "counts", "L95CI_counts", "U95CI_counts",
+      get_session_t("year"), get_session_t("scenario"), "region", get_session_t("pollutant"), get_session_t("endpoint"), "counts", "L95CI_counts", "U95CI_counts",
       "valuation", "L95CI_val", "U95CI_val", "proportional_change", "L95CI_p", "U95CI_p"
     )
     ac
   })
 
   Proagglifeyr1 <- reactive({
-    subset(twelveb(), twelveb_endpoint() == i18n$t("Chronic Exposure Mortality") | twelveb_endpoint() == i18n$t("Chronic Exposure Respiratory Mortality"), select = c(1:6, 17:21))
+    subset(twelveb(), twelveb_endpoint() == get_session_t("Chronic Exposure Mortality") | twelveb_endpoint() == get_session_t("Chronic Exposure Respiratory Mortality"), select = c(1:6, 17:21))
   })
 
   Proagglifeyr2 <- reactive({
-    if (currentlanguage == "en") {
+    if (get_session_lang() == "en") {
       aggregate(cbind(life_year * pop, L95CI_le * pop, U95CI_le * pop, pop) ~ year + scenario + province + pollutant + endpoint, Proagglifeyr1(), sum, na.action = NULL)
     } else {
       aggregate(cbind(life_year * pop, L95CI_le * pop, U95CI_le * pop, pop) ~ année + scénario + province + polluant + paramètre, Proagglifeyr1(), sum, na.action = NULL)
@@ -9200,7 +9232,7 @@ s     } else {
 
   Proagglifeyr4 <- reactive({
     le <- Proagglifeyr3()
-    colnames(le) <- c(i18n$t("year"), i18n$t("scenario"), "region", i18n$t("pollutant"), i18n$t("endpoint"), "life_year", "L95CI_le", "U95CI_le")
+    colnames(le) <- c(get_session_t("year"), get_session_t("scenario"), "region", get_session_t("pollutant"), get_session_t("endpoint"), "life_year", "L95CI_le", "U95CI_le")
     le
   })
 
@@ -9209,7 +9241,7 @@ s     } else {
   })
 
   CanProagglifeyr2 <- reactive({
-    if (currentlanguage == "en") {
+    if (get_session_lang() == "en") {
       cbind(as.integer(CanProagglifeyr()$year), as.integer(CanProagglifeyr()$scenario), CanProagglifeyr()[c(3:8)])
     } else {
       cbind(as.integer(CanProagglifeyr()$année), as.integer(CanProagglifeyr()$scénario), CanProagglifeyr()[c(3:8)])
@@ -9218,7 +9250,7 @@ s     } else {
 
   CanProagglifeyr3 <- reactive({
     le2 <- CanProagglifeyr2()
-    colnames(le2) <- c(i18n$t("year"), i18n$t("scenario"), "region", i18n$t("pollutant"), i18n$t("endpoint"), "life_year", "L95CI_le", "U95CI_le")
+    colnames(le2) <- c(get_session_t("year"), get_session_t("scenario"), "region", get_session_t("pollutant"), get_session_t("endpoint"), "life_year", "L95CI_le", "U95CI_le")
     le2
   })
 
@@ -9229,11 +9261,11 @@ s     } else {
   })
 
   canproresults1a <- reactive({
-    left_join(canprocountval1(), CanProagglifeyr3(), by = c(i18n$t("year"), i18n$t("scenario"), "region", i18n$t("pollutant"), i18n$t("endpoint")))
+    left_join(canprocountval1(), CanProagglifeyr3(), by = c(get_session_t("year"), get_session_t("scenario"), "region", get_session_t("pollutant"), get_session_t("endpoint")))
   })
 
   canproresults1b <- reactive({
-    subset(canproresults1a(), canproresults1a_endpoint() != i18n$t("Chronic Exposure Mortality") & canproresults1a_endpoint() != i18n$t("Chronic Exposure Respiratory Mortality"), select = c(1:14))
+    subset(canproresults1a(), canproresults1a_endpoint() != get_session_t("Chronic Exposure Mortality") & canproresults1a_endpoint() != get_session_t("Chronic Exposure Respiratory Mortality"), select = c(1:14))
   })
   canproresults1c <- reactive({
     cbind(canproresults1b(), NA, NA, NA)
@@ -9241,14 +9273,14 @@ s     } else {
   canproresults1d <- reactive({
     re2 <- canproresults1c()
     colnames(re2) <- c(
-      i18n$t("year"), i18n$t("scenario"), "region", i18n$t("pollutant"), i18n$t("endpoint"), "counts", "L95CI_counts", "U95CI_counts",
+      get_session_t("year"), get_session_t("scenario"), "region", get_session_t("pollutant"), get_session_t("endpoint"), "counts", "L95CI_counts", "U95CI_counts",
       "valuation", "L95CI_val", "U95CI_val", "proportional_change", "L95CI_p", "U95CI_p", "life_year", "L95CI_le", "U95CI_le"
     )
     re2
   })
 
   canproresults1e <- reactive({
-    subset(canproresults1a(), canproresults1a_endpoint() == i18n$t("Chronic Exposure Mortality") | canproresults1a_endpoint() == i18n$t("Chronic Exposure Respiratory Mortality"))
+    subset(canproresults1a(), canproresults1a_endpoint() == get_session_t("Chronic Exposure Mortality") | canproresults1a_endpoint() == get_session_t("Chronic Exposure Respiratory Mortality"))
   })
   xcanproresults1 <- reactive({
     rbind(canproresults1e(), canproresults1d())
@@ -9257,14 +9289,14 @@ s     } else {
   xcanproresults1i <- reactive({
     hh5 <- xcanproresults1()
     colnames(hh5) <- c(
-      i18n$t("year"), i18n$t("scenario"), "region", i18n$t("pollutant"), i18n$t("endpoint"), "counts", "L95CI_counts", "U95CI_counts", "valuation",
+      get_session_t("year"), get_session_t("scenario"), "region", get_session_t("pollutant"), get_session_t("endpoint"), "counts", "L95CI_counts", "U95CI_counts", "valuation",
       "L95CI_val", "U95CI_val", "proportional_change", "L95CI_p", "U95CI_p", "life_expectancy_chg", "L95CI_le", "U95CI_le"
     )
     hh5
   })
 
   canproresults1 <- reactive({
-    if (currentlanguage == "en") {
+    if (get_session_lang() == "en") {
       xcanproresults1i()[with(xcanproresults1i(), order(year, scenario, region, pollutant, endpoint)), ]
     } else {
       xcanproresults1i()[with(xcanproresults1i(), order(année, scénario, region, polluant, paramètre)), ]
@@ -9272,7 +9304,7 @@ s     } else {
   })
 
   outresultcanpro3 <- reactive({
-    if (currentlanguage == "en") {
+    if (get_session_lang() == "en") {
       canproresults1()[with(canproresults1(), order(year, scenario, region, pollutant, endpoint)), ]
     } else {
       canproresults1()[with(canproresults1(), order(année, scénario, region, polluant, paramètre)), ]
@@ -9280,7 +9312,7 @@ s     } else {
   })
 
   x1outresultcanpro3 <- reactive({
-    merge_data(outresultcanpro3(), xprov, by.x = "region", by.y = "Province")
+    merge_data(outresultcanpro3(), get_session_xprov(), by.x = "region", by.y = "Province")
   })
   x2outresultcanpro3 <- reactive({
     x1outresultcanpro3()[, c(2, 3, 19, 4:17)]
@@ -9289,15 +9321,15 @@ s     } else {
   x3outresultcanpro3 <- reactive({
     x3pt <- x2outresultcanpro3()
     colnames(x3pt) <- c(
-      i18n$t("Year"), i18n$t("Scenario"), "Province", i18n$t("Pollutant"), i18n$t("Endpoint"), i18n$t("Counts"), i18n$t("L95CI Counts"), i18n$t("U95CI Counts"),
-      i18n$t("Valuation"), i18n$t("L95CI Valuation"), i18n$t("U95CI Valuation"), i18n$t("Proportional Change"), i18n$t("L95CI Proportional Change"),
-      i18n$t("U95CI Proportional Change"), i18n$t("Life Expectancy Change"), i18n$t("L95CI Life Expectancy Change"), i18n$t("U95CI Life Expectancy Change")
+      get_session_t("Year"), get_session_t("Scenario"), "Province", get_session_t("Pollutant"), get_session_t("Endpoint"), get_session_t("Counts"), get_session_t("L95CI Counts"), get_session_t("U95CI Counts"),
+      get_session_t("Valuation"), get_session_t("L95CI Valuation"), get_session_t("U95CI Valuation"), get_session_t("Proportional Change"), get_session_t("L95CI Proportional Change"),
+      get_session_t("U95CI Proportional Change"), get_session_t("Life Expectancy Change"), get_session_t("L95CI Life Expectancy Change"), get_session_t("U95CI Life Expectancy Change")
     )
     x3pt
   })
 
   x4outresultcanpro3 <- reactive({
-    if (currentlanguage == "en") {
+    if (get_session_lang() == "en") {
       x3outresultcanpro3()[with(x3outresultcanpro3(), order(Year, Scenario, Province, Pollutant, Endpoint)), ]
     } else {
       x3outresultcanpro3()[with(x3outresultcanpro3(), order(Année, Scénario, Province, Polluant, Paramètre)), ]
@@ -9309,7 +9341,7 @@ s     } else {
   # summary for variable "mort"
 
   provsummary1 <- reactive({
-    if (currentlanguage == "en") {
+    if (get_session_lang() == "en") {
       aggregate(cbind(counts, L95CI_counts, U95CI_counts, valuation, L95CI_val, U95CI_val) ~ year + scenario + province + mort, twelveb2(), sum, na.action = NULL)
     } else {
       aggregate(cbind(counts, L95CI_counts, U95CI_counts, valuation, L95CI_val, U95CI_val) ~ année + scénario + province + mort, twelveb2(), sum, na.action = NULL)
@@ -9317,7 +9349,7 @@ s     } else {
   })
 
   provsummary2 <- reactive({
-    if (currentlanguage == "en") {
+    if (get_session_lang() == "en") {
       provsummary1()[with(provsummary1(), order(year, scenario)), ]
     } else {
       provsummary1()[with(provsummary1(), order(année, scénario)), ]
@@ -9327,14 +9359,14 @@ s     } else {
   provsummary3 <- reactive({
     p1 <- provsummary2()
     colnames(p1) <- c(
-      i18n$t("year"), i18n$t("scenario"), "region", i18n$t("endpoint"), "counts", "L95CI_counts", "U95CI_counts",
+      get_session_t("year"), get_session_t("scenario"), "region", get_session_t("endpoint"), "counts", "L95CI_counts", "U95CI_counts",
       "valuation", "L95CI_val", "U95CI_val"
     )
     p1
   })
 
   cansummary1 <- reactive({
-    if (currentlanguage == "en") {
+    if (get_session_lang() == "en") {
       aggregate(cbind(counts, L95CI_counts, U95CI_counts, valuation, L95CI_val, U95CI_val) ~ year + scenario + mort, twelveb2(), sum, na.action = NULL)
     } else {
       aggregate(cbind(counts, L95CI_counts, U95CI_counts, valuation, L95CI_val, U95CI_val) ~ année + scénario + mort, twelveb2(), sum, na.action = NULL)
@@ -9342,7 +9374,7 @@ s     } else {
   })
 
   cansummary2 <- reactive({
-    if (currentlanguage == "en") {
+    if (get_session_lang() == "en") {
       cansummary1()[with(cansummary1(), order(year, scenario)), ]
     } else {
       cansummary1()[with(cansummary1(), order(année, scénario)), ]
@@ -9358,7 +9390,7 @@ s     } else {
   cansummary5 <- reactive({
     can1 <- cansummary4()
     colnames(can1) <- c(
-      i18n$t("year"), i18n$t("scenario"), "region", i18n$t("endpoint"), "counts", "L95CI_counts", "U95CI_counts",
+      get_session_t("year"), get_session_t("scenario"), "region", get_session_t("endpoint"), "counts", "L95CI_counts", "U95CI_counts",
       "valuation", "L95CI_val", "U95CI_val"
     )
     can1
@@ -9371,12 +9403,12 @@ s     } else {
   })
 
   canprovsummort <- reactive({
-    subset(canprovsummary(), canprovsummary_endpoint() == i18n$t("mortality"))
+    subset(canprovsummary(), canprovsummary_endpoint() == get_session_t("mortality"))
   })
 
   # for summary morbidity
   canprovsummorb <- reactive({
-    subset(canprovsummary(), canprovsummary_endpoint() == i18n$t("morbidity"))
+    subset(canprovsummary(), canprovsummary_endpoint() == get_session_t("morbidity"))
   })
 
   canprovsummorb1 <- reactive({
@@ -9385,7 +9417,7 @@ s     } else {
   canprovsummorb2 <- reactive({
     morb <- canprovsummorb1()
     colnames(morb) <- c(
-      i18n$t("year"), i18n$t("scenario"), "region", i18n$t("endpoint"), "counts", "L95CI_counts", "U95CI_counts",
+      get_session_t("year"), get_session_t("scenario"), "region", get_session_t("endpoint"), "counts", "L95CI_counts", "U95CI_counts",
       "valuation", "L95CI_val", "U95CI_val"
     )
     morb
@@ -9399,7 +9431,7 @@ s     } else {
   # for summary allendpoint
 
   sumallendpoint <- reactive({
-    if (currentlanguage == "en") {
+    if (get_session_lang() == "en") {
       aggregate(cbind(valuation, L95CI_val, U95CI_val) ~ year + scenario + region, canprovsummary(), sum, na.action = NULL)
     } else {
       aggregate(cbind(valuation, L95CI_val, U95CI_val) ~ année + scénario + region, canprovsummary(), sum, na.action = NULL)
@@ -9407,7 +9439,7 @@ s     } else {
   })
 
   sumallendpoint1 <- reactive({
-    if (currentlanguage == "en") {
+    if (get_session_lang() == "en") {
       sumallendpoint()[with(sumallendpoint(), order(year, scenario)), ]
     } else {
       sumallendpoint()[with(sumallendpoint(), order(année, scénario)), ]
@@ -9415,12 +9447,12 @@ s     } else {
   })
 
   sumallendpoint2 <- reactive({
-    cbind(sumallendpoint1()[c(1, 2, 3)], i18n$t("allendpoints"), NA, NA, NA, sumallendpoint1()[c(4, 5, 6)])
+    cbind(sumallendpoint1()[c(1, 2, 3)], get_session_t("allendpoints"), NA, NA, NA, sumallendpoint1()[c(4, 5, 6)])
   })
   sumallendpoint3 <- reactive({
     allendp <- sumallendpoint2()
     colnames(allendp) <- c(
-      i18n$t("year"), i18n$t("scenario"), "region", i18n$t("endpoint"), "counts", "L95CI_counts", "U95CI_counts",
+      get_session_t("year"), get_session_t("scenario"), "region", get_session_t("endpoint"), "counts", "L95CI_counts", "U95CI_counts",
       "valuation", "L95CI_val", "U95CI_val"
     )
     allendp
@@ -9432,7 +9464,7 @@ s     } else {
   })
 
   summaryresults <- reactive({
-    if (currentlanguage == "en") {
+    if (get_session_lang() == "en") {
       summaryresultsi()[with(summaryresultsi(), order(year, scenario, endpoint)), ]
     } else {
       summaryresultsi()[with(summaryresultsi(), order(année, scénario, paramètre)), ]
@@ -9440,7 +9472,7 @@ s     } else {
   })
 
   x1summaryresults <- reactive({
-    merge_data(summaryresults(), xprov, by.x = "region", by.y = "Province")
+    merge_data(summaryresults(), get_session_xprov(), by.x = "region", by.y = "Province")
   })
   x2summaryresults <- reactive({
     x1summaryresults()[, c(2, 3, 12, 4:10)]
@@ -9449,14 +9481,14 @@ s     } else {
   x3summaryresults <- reactive({
     x3sum <- x2summaryresults()
     colnames(x3sum) <- c(
-      i18n$t("Year"), i18n$t("Scenario"), "Province", i18n$t("Endpoint"), i18n$t("Counts"), i18n$t("L95CI Counts"), i18n$t("U95CI Counts"),
-      i18n$t("Valuation"), i18n$t("L95CI Valuation"), i18n$t("U95CI Valuation")
+      get_session_t("Year"), get_session_t("Scenario"), "Province", get_session_t("Endpoint"), get_session_t("Counts"), get_session_t("L95CI Counts"), get_session_t("U95CI Counts"),
+      get_session_t("Valuation"), get_session_t("L95CI Valuation"), get_session_t("U95CI Valuation")
     )
     x3sum
   })
 
   x4summaryresults <- reactive({
-    if (currentlanguage == "en") {
+    if (get_session_lang() == "en") {
       x3summaryresults()[with(x3summaryresults(), order(Year, Scenario, Province, Endpoint)), ]
     } else {
       x3summaryresults()[with(x3summaryresults(), order(Année, Scénario, Province, Paramètre)), ]
@@ -9468,7 +9500,7 @@ s     } else {
   # output CD,national and provincial aggregate results and summary results
 
   data_list1 <- reactive({
-    if (currentlanguage == "en") {
+    if (get_session_lang() == "en") {
       list(
         CDresults = x4outresultcd(),
         PTNationalresults = x4outresultcanpro3(),
@@ -9485,27 +9517,25 @@ s     } else {
 
   output$d2 <- downloadHandler(
     filename = function() {
-      i18n$t("AllResults.xlsx")
+      get_session_t("AllResults.xlsx")
     },
     content = function(file) {
       write_xlsx(data_list1(), path = file)
     }
   )
 
-  output$xsample <- downloadHandler(
-    filename = function() {
-      paste0(i18n$t("sample_inputs"), ".csv")
-    },
-    content = function(file) {
-      # session$userData$lang is set once per session from initial URL; other tabs cannot change it
-      lang <- get_session_lang()
-      data <- if (lang == "fr") xsample1_fr else xsample1_en
-      write.csv(data, file, row.names = FALSE)
-    }
+  # Two handlers so language is fixed by which button was rendered (works in iframe / cross-tab)
+  output$xsample_en <- downloadHandler(
+    filename = function() "sample_inputs.csv",
+    content = function(file) write.csv(xsample1_en, file, row.names = FALSE)
+  )
+  output$xsample_fr <- downloadHandler(
+    filename = function() "exemple_entrée.csv",
+    content = function(file) write.csv(xsample1_fr, file, row.names = FALSE)
   )
 
   data_listtx <- reactive({
-    if (currentlanguage == "en") {
+    if (get_session_lang() == "en") {
       list(
         Cancer = x4finaleleventx_r2(),
         `Non-cancer` = x4toxicnoncancerfinal2()
@@ -9520,7 +9550,7 @@ s     } else {
 
   output$d6 <- downloadHandler(
     filename = function() {
-      i18n$t("Toxics.xlsx")
+      get_session_t("Toxics.xlsx")
     },
     content = function(file) {
       write_xlsx(data_listtx(), path = file)
@@ -9529,7 +9559,7 @@ s     } else {
 
   output$d7 <- downloadHandler(
     filename = function() {
-      i18n$t("basedata.xlsx")
+      get_session_t("basedata.xlsx")
     },
     content = function(file) {
       write_xlsx(x4outbasedata(), path = file)
@@ -9598,7 +9628,7 @@ s     } else {
   })
 
   xxfinaleleventx_r2 <- reactive({
-    if (currentlanguage == "en") {
+    if (get_session_lang() == "en") {
       cbind(xfinaleleventx_r2()[c(1:7)], as.data.frame(sapply((xfinaleleventx_r2()[c(8:10)]), format_numbers, simplify = FALSE)))
     } else {
       cbind(xfinaleleventx_r2()[c(1:7)], as.data.frame(sapply((xfinaleleventx_r2()[c(8:10)]), format_numbers2, simplify = FALSE)))
@@ -9616,7 +9646,7 @@ s     } else {
   })
 
   pnametoxic <- reactive({
-    merge_data(xxfinaleleventx_r2(), xprov, by.x = i18n$t("Region"), by.y = "Province")
+    merge_data(xxfinaleleventx_r2(), get_session_xprov(), by.x = get_session_t("Region"), by.y = "Province")
   })
   xpnametoxic <- reactive({
     cbind(pnametoxic()[c(2, 3)], as.integer(pnametoxic_Geocode()), pnametoxic()[c(12, 6:10)])
@@ -9625,8 +9655,8 @@ s     } else {
   xxpnametoxic <- reactive({
     xthh2 <- xpnametoxic()
     colnames(xthh2) <- c(
-      i18n$t("Year"), i18n$t("Scenario"), i18n$t("Geocode"), "Province", i18n$t("Pollutant"), i18n$t("Endpoint"), i18n$t("Counts"),
-      i18n$t("Counts per 100,000"), i18n$t("Disability-Adjusted Life Years")
+      get_session_t("Year"), get_session_t("Scenario"), get_session_t("Geocode"), "Province", get_session_t("Pollutant"), get_session_t("Endpoint"), get_session_t("Counts"),
+      get_session_t("Counts per 100,000"), get_session_t("Disability-Adjusted Life Years")
     )
     xthh2
   })
@@ -9643,7 +9673,7 @@ s     } else {
 
   # Baseline Data
   xoutbasedata <- reactive({
-    merge_data(basedata(), xprov, by.x = "province", by.y = "Province")
+    merge_data(basedata(), get_session_xprov(), by.x = "province", by.y = "Province")
   })
   xxoutbasedata <- reactive({
     xoutbasedata()[c(2, 3, 31, 4:29)]
@@ -9651,21 +9681,21 @@ s     } else {
   xxxoutbasedata <- reactive({
     xbase <- xxoutbasedata()
     colnames(xbase) <- c(
-      i18n$t("Year"), i18n$t("CDUID"), "Province", i18n$t("Acute Exposure Mortality"), i18n$t("Chronic Exposure Mortality"),
-      i18n$t("Respiratory Mortality"), i18n$t("Cardiovascular Mortality"), i18n$t("Cerebrovascular Mortality"),
-      i18n$t("COPD Mortality"), i18n$t("Ischemic Heart Disease Mortality"), i18n$t("Lung Cancer Mortality"),
-      i18n$t("Acute Respiratory Symptom Days"), i18n$t("Adult Chronic Bronchitis Cases"), i18n$t("Asthma Symptom Days"),
-      i18n$t("Cardiac Emergency Room Visits"), i18n$t("Cardiac Hospital Admissions"), i18n$t("Child Acute Bronchitis"),
-      i18n$t("Elderly Cardiac Hospital Admissions"), i18n$t("Minor Restricted Activity Days"),
-      i18n$t("Respiratory Emergency Room Visits"), i18n$t("Respiratory Hospital Admissions"), i18n$t("Restricted Activity Days"),
-      i18n$t("Aged 5 to 19"), i18n$t("Aged 5 to 19 non-asthma"), i18n$t("Aged 20 plus"), i18n$t("Aged 25 plus"),
-      i18n$t("Aged 30 plus"), i18n$t("Aged 65 plus"), i18n$t("All Ages")
+      get_session_t("Year"), get_session_t("CDUID"), "Province", get_session_t("Acute Exposure Mortality"), get_session_t("Chronic Exposure Mortality"),
+      get_session_t("Respiratory Mortality"), get_session_t("Cardiovascular Mortality"), get_session_t("Cerebrovascular Mortality"),
+      get_session_t("COPD Mortality"), get_session_t("Ischemic Heart Disease Mortality"), get_session_t("Lung Cancer Mortality"),
+      get_session_t("Acute Respiratory Symptom Days"), get_session_t("Adult Chronic Bronchitis Cases"), get_session_t("Asthma Symptom Days"),
+      get_session_t("Cardiac Emergency Room Visits"), get_session_t("Cardiac Hospital Admissions"), get_session_t("Child Acute Bronchitis"),
+      get_session_t("Elderly Cardiac Hospital Admissions"), get_session_t("Minor Restricted Activity Days"),
+      get_session_t("Respiratory Emergency Room Visits"), get_session_t("Respiratory Hospital Admissions"), get_session_t("Restricted Activity Days"),
+      get_session_t("Aged 5 to 19"), get_session_t("Aged 5 to 19 non-asthma"), get_session_t("Aged 20 plus"), get_session_t("Aged 25 plus"),
+      get_session_t("Aged 30 plus"), get_session_t("Aged 65 plus"), get_session_t("All Ages")
     )
     xbase
   })
 
   x4outbasedata <- reactive({
-    if (currentlanguage == "en") {
+    if (get_session_lang() == "en") {
       xxxoutbasedata()[with(xxxoutbasedata(), order(Year, CDUID)), ]
     } else {
       xxxoutbasedata()[with(xxxoutbasedata(), order(Année, IDUDR)), ]
@@ -9673,7 +9703,7 @@ s     } else {
   })
 
   xxxbaserates <- reactive({
-    if (currentlanguage == "en") {
+    if (get_session_lang() == "en") {
       cbind(xxbaserates()[c(1:3)], as.data.frame(sapply((xxbaserates()[c(4:9)]), format_numbers, simplify = FALSE)))
     } else {
       cbind(xxbaserates()[c(1:3)], as.data.frame(sapply((xxbaserates()[c(4:9)]), format_numbers2, simplify = FALSE)))
@@ -9692,7 +9722,7 @@ s     } else {
 
 
   pnamebaseline <- reactive({
-    merge_data(xxxbaserates(), xprov, by.x = "Province", by.y = "Province")
+    merge_data(xxxbaserates(), get_session_xprov(), by.x = "Province", by.y = "Province")
   })
   xpnamebaseline <- reactive({
     pnamebaseline()[c(2, 3, 11, 4:9)]
@@ -9701,8 +9731,8 @@ s     } else {
   xxpnamebaseline <- reactive({
     xbphh2 <- xpnamebaseline()
     colnames(xbphh2) <- c(
-      i18n$t("Year"), i18n$t("Geocode"), "Province", i18n$t("Acute Exposure Mortality"), i18n$t("Chronic Exposure Mortality"), i18n$t("Respiratory Mortality"),
-      i18n$t("Cardiovascular Mortality"), i18n$t("Cerebrovascular Mortality"), i18n$t("COPD Mortality")
+      get_session_t("Year"), get_session_t("Geocode"), "Province", get_session_t("Acute Exposure Mortality"), get_session_t("Chronic Exposure Mortality"), get_session_t("Respiratory Mortality"),
+      get_session_t("Cardiovascular Mortality"), get_session_t("Cerebrovascular Mortality"), get_session_t("COPD Mortality")
     )
     xbphh2
   })
@@ -9719,22 +9749,22 @@ s     } else {
   )
   df <- eventReactive(input$genmap, {
     tm_shape(mapdata()) + tm_fill(
-      col = i18n$t("value"), title = paste(
-        input$mdy, ifelse(input$scenario == i18n$t("None"), "", paste(i18n$t("Scenario"), input$scenario)), ifelse(input$mdp == i18n$t("None"), "", input$mdp),
-        ifelse(mapep() == i18n$t("None"), "", mapep()), ifelse(mapmt() == i18n$t("Pollutant concentration"), "", mapmt()), ifelse(!mapep() == i18n$t("None"), "",
+      col = get_session_t("value"), title = paste(
+        input$mdy, ifelse(input$scenario == get_session_t("None"), "", paste(get_session_t("Scenario"), input$scenario)), ifelse(input$mdp == get_session_t("None"), "", input$mdp),
+        ifelse(mapep() == get_session_t("None"), "", mapep()), ifelse(mapmt() == get_session_t("Pollutant concentration"), "", mapmt()), ifelse(!mapep() == get_session_t("None"), "",
           ifelse(input$mdp == "CO 24h", "(ppm)",
-            ifelse(input$mdp == "NO2" | input$mdp == "O3" | input$mdp == i18n$t("O3 Summer") | input$mdp == "SO2", "(ppb)", "(ug/m3)")
+            ifelse(input$mdp == "NO2" | input$mdp == "O3" | input$mdp == get_session_t("O3 Summer") | input$mdp == "SO2", "(ppb)", "(ug/m3)")
           )
         )
       ),
-      palette = "Reds", n = 6, alpha = 0.5, id = i18n$t("CDNAME"), popup.vars = c(i18n$t("year"), i18n$t("scenario"), i18n$t("CDUID"), i18n$t("CDNAME"), "Province", i18n$t("pollutant"), i18n$t("endpoint"), i18n$t("metric"), i18n$t("value")),
+      palette = "Reds", n = 6, alpha = 0.5, id = get_session_t("CDNAME"), popup.vars = c(get_session_t("year"), get_session_t("scenario"), get_session_t("CDUID"), get_session_t("CDNAME"), "Province", get_session_t("pollutant"), get_session_t("endpoint"), get_session_t("metric"), get_session_t("value")),
       popup.format = popup_workaround()
     ) + tm_view(set.view = 4) + tm_layout(legend.format = legend_workaround(), legend.outside = TRUE) + tmap_options(qtm.minimap = TRUE) + tm_borders(col = "Black", lwd = 1, lty = "solid", alpha = NA, zindex = NA, group = NA)
   })
 
   # can't use i18n within a list, so need to create an object
   popup_workaround <- reactive({
-    if (currentlanguage == "en") {
+    if (get_session_lang() == "en") {
       list("value" = list(digits = 1), "year" = list(big.mark = ""), "CDUID" = list(big.mark = ""))
     } else {
       list("valeur" = list(digits = 1), "année" = list(big.mark = ""), "IDUDR" = list(big.mark = ""))
@@ -9742,7 +9772,7 @@ s     } else {
   })
 
   legend_workaround <- reactive({
-    if (currentlanguage == "en") {
+    if (get_session_lang() == "en") {
       list(text.separator = "to")
     } else {
       list(text.separator = "à")
@@ -9766,10 +9796,10 @@ s     } else {
   # generate national map for download
   output$downm <- downloadHandler(
     filename = function() {
-      paste0(input$mdy, ifelse(input$scenario == i18n$t("None"), "", paste(i18n$t("Scenario"), input$scenario)), ifelse(input$mdp == i18n$t("None"), "", input$mdp), ifelse(mapep() == i18n$t("None"), "", mapep()), ifelse(mapmt() == i18n$t("Pollutant concentration"), "", mapmt()), i18n$t("map"), ".jpg")
+      paste0(input$mdy, ifelse(input$scenario == get_session_t("None"), "", paste(get_session_t("Scenario"), input$scenario)), ifelse(input$mdp == get_session_t("None"), "", input$mdp), ifelse(mapep() == get_session_t("None"), "", mapep()), ifelse(mapmt() == get_session_t("Pollutant concentration"), "", mapmt()), get_session_t("map"), ".jpg")
     },
     content = function(file) {
-      m <- tm_shape(mapdata()) + tm_fill(col = i18n$t("value"), title = paste(input$mdy, ifelse(input$scenario == i18n$t("None"), "", paste(i18n$t("Scenario"), input$scenario)), ifelse(input$mdp == i18n$t("None"), "", input$mdp), ifelse(mapep() == i18n$t("None"), "", mapep()), ifelse(mapmt() == i18n$t("Pollutant concentration"), "", mapmt()), ifelse(!mapep() == i18n$t("None"), "", ifelse(input$mdp == "CO 24h", "(ppm)", ifelse(input$mdp == "NO2" | input$mdp == "O3" | input$mdp == i18n$t("O3 Summer") | input$mdp == "SO2", "(ppb)", "(ug/m3)")))), palette = "Reds", id = i18n$t("value")) + tm_borders(col = "Grey", lwd = 1, lty = "solid", zindex = NA, group = NA)
+      m <- tm_shape(mapdata()) + tm_fill(col = get_session_t("value"), title = paste(input$mdy, ifelse(input$scenario == get_session_t("None"), "", paste(get_session_t("Scenario"), input$scenario)), ifelse(input$mdp == get_session_t("None"), "", input$mdp), ifelse(mapep() == get_session_t("None"), "", mapep()), ifelse(mapmt() == get_session_t("Pollutant concentration"), "", mapmt()), ifelse(!mapep() == get_session_t("None"), "", ifelse(input$mdp == "CO 24h", "(ppm)", ifelse(input$mdp == "NO2" | input$mdp == "O3" | input$mdp == get_session_t("O3 Summer") | input$mdp == "SO2", "(ppb)", "(ug/m3)")))), palette = "Reds", id = get_session_t("value")) + tm_borders(col = "Grey", lwd = 1, lty = "solid", zindex = NA, group = NA)
       tmap_save(m, file = file)
     }
   )
@@ -9783,10 +9813,10 @@ s     } else {
 
   output$downmp <- downloadHandler(
     filename = function() {
-      paste0(input$mdg, input$mdy, ifelse(input$scenario == i18n$t("None"), "", paste(i18n$t("Scenario"), input$scenario)), ifelse(input$mdp == i18n$t("None"), "", input$mdp), ifelse(mapep() == i18n$t("None"), "", mapep()), ifelse(mapmt() == i18n$t("Pollutant concentration"), "", mapmt()), i18n$t("map"), ".jpg")
+      paste0(input$mdg, input$mdy, ifelse(input$scenario == get_session_t("None"), "", paste(get_session_t("Scenario"), input$scenario)), ifelse(input$mdp == get_session_t("None"), "", input$mdp), ifelse(mapep() == get_session_t("None"), "", mapep()), ifelse(mapmt() == get_session_t("Pollutant concentration"), "", mapmt()), get_session_t("map"), ".jpg")
     },
     content = function(file) {
-      mp <- tm_shape(mapdatap()) + tm_fill(col = i18n$t("value"), title = paste(input$mdy, ifelse(input$scenario == i18n$t("None"), "", paste(i18n$t("Scenario"), input$scenario)), ifelse(input$mdp == i18n$t("None"), "", input$mdp), ifelse(mapep() == i18n$t("None"), "", mapep()), ifelse(mapmt() == i18n$t("Pollutant concentration"), "", mapmt()), ifelse(!mapep() == i18n$t("None"), "", ifelse(input$mdp == "CO 24h", "(ppm)", ifelse(input$mdp == "NO2" | input$mdp == "O3" | input$mdp == i18n$t("O3 Summer") | input$mdp == "SO2", "(ppb)", "(ug/m3)")))), palette = "Reds", id = i18n$t("value")) + tm_borders(col = "Grey", lwd = 1, lty = "solid", zindex = NA, group = NA)
+      mp <- tm_shape(mapdatap()) + tm_fill(col = get_session_t("value"), title = paste(input$mdy, ifelse(input$scenario == get_session_t("None"), "", paste(get_session_t("Scenario"), input$scenario)), ifelse(input$mdp == get_session_t("None"), "", input$mdp), ifelse(mapep() == get_session_t("None"), "", mapep()), ifelse(mapmt() == get_session_t("Pollutant concentration"), "", mapmt()), ifelse(!mapep() == get_session_t("None"), "", ifelse(input$mdp == "CO 24h", "(ppm)", ifelse(input$mdp == "NO2" | input$mdp == "O3" | input$mdp == get_session_t("O3 Summer") | input$mdp == "SO2", "(ppb)", "(ug/m3)")))), palette = "Reds", id = get_session_t("value")) + tm_borders(col = "Grey", lwd = 1, lty = "solid", zindex = NA, group = NA)
       tmap_save(mp, file = file)
     }
   )
